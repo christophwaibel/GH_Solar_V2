@@ -32,18 +32,44 @@ namespace SolarModel
     /// </summary>
     public class SkyDome
     {
-        public List<SunVector> SunVectors;              //for each hour of the year, we need a sunvector
-        public sPatches patches;
+        //public sPatches patches; //maybe I don't need this.
 
+        /// <summary>
+        /// Icosphere, constructed using the IcoSphere class.
+        /// </summary>
         private IcoSphere ico;
-
-        public List<int[]> Faces;                       //faces of the hemisphere. referencing to VertexCoordinatesSphere
-        public List<double> FaceAreas;                  //surface area of each face. Most of them are identical, but since some had to be split when turning the sphere to a hemisphere, they are not all the same
-        public List<double[]> VertexCoordinatesSphere;  //all points of the complete sphere.
-        public List<int> VerticesHemisphere;            //used vertices of the hemisphere. referencing to VertexCoordinatesSphere
-        public List<int> VerticesHorizon;               //vertices lying on z=0. ref to VertexCoordinatesSphere
-        public List<double> HorizonSegments;            //unfortunately, the horizon vertices are not spaced equally. so this is the contribution of each vertex of the entire circle
-
+        /// <summary>
+        /// A list of sun vectors for each hour of the year. 8760 in total. Using the SunVector class.
+        /// </summary>
+        public List<SunVector> SunVectors;
+        /// <summary>
+        /// Boolean to indicate wether an hour of the year is day-time (true = there is sunshine) or night-time (false = no sunshine).
+        /// </summary>
+        public List<bool> Sunshine;
+        /// <summary>
+        /// Faces of the hemisphere. Indices, referencing to VertexCoordinatesSphere.
+        /// </summary>
+        public List<int[]> Faces;
+        /// <summary>
+        /// Surface area of each face. Most of them are identical, but since some had to be split when turning the sphere to a hemisphere, they are not all the same
+        /// </summary>
+        public List<double> FaceAreas;    
+        /// <summary>
+        /// All points (coordinates) of the complete sphere.
+        /// </summary>
+        public List<double[]> VertexCoordinatesSphere;
+        /// <summary>
+        /// Vertices of the hemisphere. Referencing to VertexCoordinatesSphere.
+        /// </summary>
+        public List<int> VerticesHemisphere;
+        /// <summary>
+        /// Vertices lying on z=0, i.e. the Horizon. Referencing to VertexCoordinatesSphere
+        /// </summary>
+        public List<int> VerticesHorizon;
+        /// <summary>
+        /// Unfortunately, the horizon vertices are not spaced equally. so this is the contribution of each vertex of the entire circle. In degree. Should sum up to 720 (2 circles).
+        /// </summary>
+        public List<double> HorizonSegments;
         /// <summary>
         /// Weighted fraction of the horizon, which is obstructed. 1 = full obstruction.
         /// </summary>
@@ -58,11 +84,16 @@ namespace SolarModel
         public List<bool> ShdwSunVector { get; private set; }
 
 
+
+
         /// <summary>
         /// Creates a sky dome (hemisphere) as a halfed icosahedron. 
         /// </summary>
         /// <param name="resolution">Resolution level of the sky dome.</param>
-        public SkyDome(int resolution, int year, double longitude, double latitude)
+        /// <param name="year">The year to be calcualted.</param>
+        /// <param name="latitude">The latitude of the location. In degree.</param>
+        /// <param name="longitude">The longitude of the location. In degree.</param>
+        public SkyDome(int resolution, int year, double latitude, double longitude)
         {
             ico = new IcoSphere(resolution);
             Faces = ico.getFaces();
@@ -73,16 +104,24 @@ namespace SolarModel
             HorizonSegments = new List<double>();
             FaceAreas = new List<double>();
 
+
+            //this is not specific to the skydome... it stays the same for each sensor point.
             SunVectors = new List<SunVector>();
-            for (int m = 1; m < 12; m++)
+            Sunshine = new List<bool>();
+            for (int m = 1; m <= 12; m++)
             {
                 int daysInMonth = System.DateTime.DaysInMonth(year, m);
-                for (int d = 1; d < daysInMonth; d++)
+                for (int d = 1; d <= daysInMonth; d++)
                 {
-                    for (int i = 1; i < 24; i++)
+                    for (int i = 1; i <= 24; i++)
                     {
-                        SunVectors.Add(new SunVector(year,m,d,i,0,0,longitude,latitude));
+                        SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
+                        SunVectors.Add(sunvec);
 
+                        if (sunvec.udtCoordinates.dZenithAngle <= 90)
+                            Sunshine.Add(true);
+                        else
+                            Sunshine.Add(false);
                         //GHSunVector.vb.... line 86..... add shadow-day list and stuff
                     }
                 }
@@ -104,14 +143,14 @@ namespace SolarModel
         /// Set the fraction of the dome, which is obstructed.
         /// <para>Needs some obstruction calculation, which you have to run in another program (e.g. Rhinoceros)</para>
         /// </summary>
-        /// <param name="obstructedFaces">Indicates, which face of the hemisphere is obstructed (true) and which is not (false).</param>
-        public void SetShadow_Dome(List <bool> obstructedFaces)
+        /// <param name="obstructedFaces">Indicates the ratio of obstruction of a face of the hemisphere. 1 = fully obstructed. 0 = clear view. This list needs to be generated somewhere else, e.g. in a CAD program such as Rhino.</param>
+        public void SetShadow_Dome(List <double> obstructedFaces)
         {
             double totalArea = 0.0;
             double weights = 0.0;
             for(int i=0; i<this.VerticesHemisphere.Count;i++)        //obstructedFaces must have the same length
             {
-                weights += (1 - Convert.ToInt32(obstructedFaces[i])) * this.FaceAreas[i];
+                weights += (1 - obstructedFaces[i]) * this.FaceAreas[i];
                 totalArea += this.FaceAreas[i];
             }
             this.ShdwDome = weights / totalArea;
@@ -141,22 +180,105 @@ namespace SolarModel
             this.ShdwSunVector = new List<bool>(obstructedSunVectors);
         }
 
+
+
+
+        //////////////////////////////////////////////////////////////////
+        // INTERPOLATION HERE!!!!!!!!!?????
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
         /// <summary>
         /// list of list of bools. Each list is one day (24) of values. The provided days will be used to fill the entire year.
         /// </summary>
         /// <param name="obstructedSunVectors">Keys: days of the year [1,365]. Items: list of length 24, for each hour of the day, true=obstructed, false=no obstruction.</param>
-
         public void SetShadow_SunVector(Dictionary<int, List<bool>> obstructedSunVectors)
         {
 
+            // do some interpolation
 
         }
 
-        public double CalcDiffIrradiation()
+
+
+
+
+
+
+
+        /// <summary>
+        /// Calculates diffuse irradiation on the sensor point for one hour of the year.
+        /// </summary>
+        /// <returns></returns>
+        private double CalcDI_unobstr(double DHI, double DNI, int month, int day, int hour)
+        {
+            Irradiation.Diffuse(DHI, DNI, SunVectors[0].udtCoordinates.dZenithAngle, SunVectors[0].udtCoordinates.dAzimuth, 0, 0, 0);
+            return 0.0;
+        }
+
+        /// <summary>
+        /// Calculates hourly diffuse radiation on the sensor point for the entire year.
+        /// </summary>
+        /// <returns></returns>
+        private double CalcDI_unobstr()
+        {
+            for (int i = 0; i < 8760; i++)
+            {
+                double a = CalcDI_unobstr(0,0,1, 1, 1);
+            }
+            return 0.0;
+        }
+
+        /// <summary>
+        /// Calculates beam (direct) irradiation on the sensor point for one hour of the year.
+        /// </summary>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
+        /// <param name="hour"></param>
+        /// <returns></returns>
+        private double CalcBI_unobstr(int month, int day, int hour)
+        {
+            return 0.0;
+        }
+
+        /// <summary>
+        /// Calculates hourly beam (direct) irradiation on the sensor point for the entire year.
+        /// </summary>
+        /// <returns></returns>
+        private double CalcBI_unobstr()
+        {
+            for (int i = 0; i < 8760; i++)
+            {
+                CalcBI_unobstr(1, 1, 1);
+            }
+            return 0.0;
+        }
+
+        /// <summary>
+        /// Calculates solar irradiation on a sensor point for one hour of the year.
+        /// </summary>
+        /// <param name="month"></param>
+        /// <param name="day"></param>
+        /// <param name="hour"></param>
+        /// <returns></returns>
+        public double CalcIrradiation(int month, int day, int hour)
         {
 
             return 0.0;
         }
+
+        /// <summary>
+        /// Calculates hourly irradiation on the sensor point for the entire year.
+        /// </summary>
+        /// <returns></returns>
+        public double CalcIrradiation()
+        {
+            for (int i = 0; i < 8760; i++)
+            {
+                CalcIrradiation(1, 1, 1);
+            }
+            return 0.0;
+        }
+
 
 
 
@@ -356,21 +478,21 @@ namespace SolarModel
 
 
 
-        public struct sPatches
-        {
-            public int count { get; private set; }                       //number of patches
-            public List<sVector> vertices { get; private set; }
-            public List<double> obstructed { get; private set; }         //overshadowed 0-1 , 1 = no sun
+        //public struct sPatches
+        //{
+        //    public int count { get; private set; }                       //number of patches
+        //    public List<sVector> vertices { get; private set; }
+        //    public List<double> obstructed { get; private set; }         //overshadowed 0-1 , 1 = no sun
 
-        }
+        //}
 
 
-        public struct sVector
-        {
-            public double x { get; private set; }
-            public double y { get; private set; }
-            public double z { get; private set; }  
-        }
+        //public struct sVector
+        //{
+        //    public double x { get; private set; }
+        //    public double y { get; private set; }
+        //    public double z { get; private set; }  
+        //}
 
 
 

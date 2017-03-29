@@ -45,8 +45,8 @@ namespace SolarModel
         /// <param name="_hours"></param>
         /// <param name="_minutes"></param>
         /// <param name="_seconds"></param>
-        /// <param name="_longitude"></param>
-        /// <param name="_latitude"></param>
+        /// <param name="_longitude">Longitude in degree.</param>
+        /// <param name="_latitude">Latitude in degree.</param>
         public SunVector(int _year, int _month, int _day, double _hours, double _minutes, double _seconds, double _longitude, double _latitude)
         {
             udtTime.iYear = _year;
