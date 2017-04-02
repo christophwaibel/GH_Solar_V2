@@ -30,11 +30,12 @@ namespace SolarModel
         const double dEarthMeanRadius = 6371.01;
         const double dAstronomicalUnit = 149597890.0;
 
-        public cTime udtTime = new cTime();
-        public cLocation udtLocation;
+        public Context.cTime udtTime;// = new Context.cTime();
+        public Context.cLocation udtLocation;
         public cSunCoordinates udtCoordinates;
         public cSunXYZ udtCoordXYZ;
 
+        public bool Sunshine;
 
         /// <summary>
         /// Create a Solar Vector for a specific time and location.
@@ -49,6 +50,7 @@ namespace SolarModel
         /// <param name="_latitude">Latitude in degree.</param>
         public SunVector(int _year, int _month, int _day, double _hours, double _minutes, double _seconds, double _longitude, double _latitude)
         {
+
             udtTime.iYear = _year;
             udtTime.iMonth = _month;
             udtTime.iDay = _day;
@@ -60,6 +62,11 @@ namespace SolarModel
 
             udtCoordinates = sunpos();
             udtCoordXYZ = SunposXYZ();
+
+            if (udtCoordinates.dZenithAngle <= 90)
+                Sunshine = true;
+            else
+                Sunshine = false;
         }
 
     //PSA position sun algorithm
@@ -168,20 +175,7 @@ namespace SolarModel
         return SunposXYZout;
      }
 
-        public struct cTime
-        {
-            public int iYear;
-            public int iMonth;
-            public int iDay;
-            public double dHours;
-            public double dMinutes;
-            public double dSeconds;
-        }
-        public struct cLocation
-        {
-            public double dLongitude;
-            public double dLatitude;
-        }
+        
         public struct cSunCoordinates
         {
             public double dZenithAngle;

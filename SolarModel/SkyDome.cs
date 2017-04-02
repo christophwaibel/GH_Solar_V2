@@ -38,14 +38,18 @@ namespace SolarModel
         /// Icosphere, constructed using the IcoSphere class.
         /// </summary>
         private IcoSphere ico;
-        /// <summary>
-        /// A list of sun vectors for each hour of the year. 8760 in total. Using the SunVector class.
-        /// </summary>
-        public List<SunVector> SunVectors;
-        /// <summary>
-        /// Boolean to indicate wether an hour of the year is day-time (true = there is sunshine) or night-time (false = no sunshine).
-        /// </summary>
-        public List<bool> Sunshine;
+
+
+        ///// <summary>
+        ///// A list of sun vectors for each hour of the year. 8760 in total. Using the SunVector class.
+        ///// </summary>
+        //public List<SunVector> SunVectors;
+        
+        ///// <summary>
+        ///// Boolean to indicate wether an hour of the year is day-time (true = there is sunshine) or night-time (false = no sunshine).
+        ///// </summary>
+        //public List<bool> Sunshine;
+
         /// <summary>
         /// Faces of the hemisphere. Indices, referencing to VertexCoordinatesSphere.
         /// </summary>
@@ -104,38 +108,11 @@ namespace SolarModel
             HorizonSegments = new List<double>();
             FaceAreas = new List<double>();
 
-
-            //this is not specific to the skydome... it stays the same for each sensor point.
-            SunVectors = new List<SunVector>();
-            Sunshine = new List<bool>();
-            for (int m = 1; m <= 12; m++)
-            {
-                int daysInMonth = System.DateTime.DaysInMonth(year, m);
-                for (int d = 1; d <= daysInMonth; d++)
-                {
-                    for (int i = 1; i <= 24; i++)
-                    {
-                        SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
-                        SunVectors.Add(sunvec);
-
-                        if (sunvec.udtCoordinates.dZenithAngle <= 90)
-                            Sunshine.Add(true);
-                        else
-                            Sunshine.Add(false);
-                        //GHSunVector.vb.... line 86..... add shadow-day list and stuff
-                    }
-                }
-            }
-
-
             CalcHalfSphere(ref Faces, ref VertexCoordinatesSphere, ref VerticesHemisphere, ref FaceAreas);
             CalcHorizonSegmentWeights(ref HorizonSegments, ref VerticesHorizon, VerticesHemisphere, VertexCoordinatesSphere);
 
-
-
             //create a list of size of the facaes of the dome. use this list for shadow factors...
 
-            //c#class for hitray3d stuff? faster than rhino?
         }
 
 
@@ -203,81 +180,6 @@ namespace SolarModel
 
 
 
-
-
-        /// <summary>
-        /// Calculates diffuse irradiation on the sensor point for one hour of the year.
-        /// </summary>
-        /// <returns></returns>
-        private double CalcDI_unobstr(double DHI, double DNI, int month, int day, int hour)
-        {
-            Irradiation.Diffuse(DHI, DNI, SunVectors[0].udtCoordinates.dZenithAngle, SunVectors[0].udtCoordinates.dAzimuth, 0, 0, 0);
-            return 0.0;
-        }
-
-        /// <summary>
-        /// Calculates hourly diffuse radiation on the sensor point for the entire year.
-        /// </summary>
-        /// <returns></returns>
-        private double CalcDI_unobstr()
-        {
-            for (int i = 0; i < 8760; i++)
-            {
-                double a = CalcDI_unobstr(0,0,1, 1, 1);
-            }
-            return 0.0;
-        }
-
-        /// <summary>
-        /// Calculates beam (direct) irradiation on the sensor point for one hour of the year.
-        /// </summary>
-        /// <param name="month"></param>
-        /// <param name="day"></param>
-        /// <param name="hour"></param>
-        /// <returns></returns>
-        private double CalcBI_unobstr(int month, int day, int hour)
-        {
-            return 0.0;
-        }
-
-        /// <summary>
-        /// Calculates hourly beam (direct) irradiation on the sensor point for the entire year.
-        /// </summary>
-        /// <returns></returns>
-        private double CalcBI_unobstr()
-        {
-            for (int i = 0; i < 8760; i++)
-            {
-                CalcBI_unobstr(1, 1, 1);
-            }
-            return 0.0;
-        }
-
-        /// <summary>
-        /// Calculates solar irradiation on a sensor point for one hour of the year.
-        /// </summary>
-        /// <param name="month"></param>
-        /// <param name="day"></param>
-        /// <param name="hour"></param>
-        /// <returns></returns>
-        public double CalcIrradiation(int month, int day, int hour)
-        {
-
-            return 0.0;
-        }
-
-        /// <summary>
-        /// Calculates hourly irradiation on the sensor point for the entire year.
-        /// </summary>
-        /// <returns></returns>
-        public double CalcIrradiation()
-        {
-            for (int i = 0; i < 8760; i++)
-            {
-                CalcIrradiation(1, 1, 1);
-            }
-            return 0.0;
-        }
 
 
 

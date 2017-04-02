@@ -37,14 +37,15 @@ namespace SolarModel
         /// Diffuse radiation, considering anisotropic sky. See Perez 1990, or EnergyPlus Engineering Documentation.
         /// </summary>
         /// <param name="DHI">Diffuse Horizontal Irradiation (DHI). From a weatherfile, e.g. *.epw.</param>
-        /// <param name="DOY">Direct Normal Irradiation (DNI). From a weatherfile, e.g. *.epw.</param>
+        /// <param name="DNI">Direct Normal Irradiation (DNI). From a weatherfile, e.g. *.epw.</param>
         /// <param name="θZ">Solar Zenith, in degree.</param>
         /// <param name="θA">Solar Azimuth, in degree.</param>
         /// <param name="θβ">Analysis surface tilt angle.</param>
         /// <param name="θAsrf">Analysis surface azimuth.</param>
-        /// <param name="DNI">Day of year (DOY).</param>
-        ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.</returns>
-        public static double Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY)
+        /// <param name="DOY">Day of year (DOY).</param>
+        ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.
+        ///[0] is total diffuse, [1]: horizon, [2]: dome, [3]: circumsolar.</returns>
+        public static double [] Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY)
         {
             //relative optical air mass
             double m = 1.0 / Math.Cos(rad * θZ);
@@ -74,18 +75,18 @@ namespace SolarModel
                 { -0.0220216, -0.0288748, -0.0260542, -0.0139754, 0.0012448, 0.0558651, 0.1310694, 0.2506212}           //F23
                 };
                 double Fijvalue = 0.0;
-                if (εcheck < 1.065) Fijvalue = Fijmatrix[0, ij];
-                else if (εcheck >= 1.065 && εcheck < 1.230) Fijvalue = Fijmatrix[1, ij];
-                else if (εcheck >= 1.230 && εcheck < 1.500) Fijvalue = Fijmatrix[2, ij];
-                else if (εcheck >= 1.500 && εcheck < 1.950) Fijvalue = Fijmatrix[3, ij];
-                else if (εcheck >= 1.950 && εcheck < 2.800) Fijvalue = Fijmatrix[4, ij];
-                else if (εcheck >= 2.800 && εcheck < 4.500) Fijvalue = Fijmatrix[5, ij];
-                else if (εcheck >= 4.500 && εcheck < 6.200) Fijvalue = Fijmatrix[6, ij];
-                else  Fijvalue = Fijmatrix[7, ij];//(ε >= 6.200)
+                if (εcheck < 1.065) Fijvalue = Fijmatrix[ij, 0];
+                else if (εcheck >= 1.065 && εcheck < 1.230) Fijvalue = Fijmatrix[ij, 1];
+                else if (εcheck >= 1.230 && εcheck < 1.500) Fijvalue = Fijmatrix[ij, 2];
+                else if (εcheck >= 1.500 && εcheck < 1.950) Fijvalue = Fijmatrix[ij, 3];
+                else if (εcheck >= 1.950 && εcheck < 2.800) Fijvalue = Fijmatrix[ij, 4];
+                else if (εcheck >= 2.800 && εcheck < 4.500) Fijvalue = Fijmatrix[ij, 5];
+                else if (εcheck >= 4.500 && εcheck < 6.200) Fijvalue = Fijmatrix[ij, 6];
+                else  Fijvalue = Fijmatrix[ij, 7];//(ε >= 6.200)
                 return Fijvalue;
             };
 
-            double F1 = Fij(0, ε) + Fij(1, ε) * Δ + Fij(2, ε) * θZ;
+            double F1 = Math.Max(0, Fij(0, ε) + Fij(1, ε) * Δ + Fij(2, ε) * θZ);
             double F2 = Fij(3, ε) + Fij(4, ε) * Δ + Fij(5, ε) * θZ;
 
             //angle of incidence
@@ -93,9 +94,15 @@ namespace SolarModel
             double a = Math.Max(0, Math.Cos(AOI));
             b = Math.Max(Math.Cos(85 * rad), Math.Cos(θZ * rad));
 
+            double tt = Math.Sin(θβ * rad);
+            double ttt = Math.Cos(θβ * rad);
             // Dhorizon + Ddome + Dcircumsolar
-            double D = DHI * ((1 - F1) * ((1 + Math.Cos(θβ * rad) / 2) + F1 * (a / b) + F1 * Math.Sin(θβ * rad)));
-            return D;
+            double D = DHI * ((1 - F1) *((1 + Math.Cos(θβ * rad)) / 2) + F1 * (a / b) + F2 * Math.Sin(θβ * rad));
+            double Dhorizon = DHI * F2 * Math.Sin(θβ * rad);
+            double Ddome = DHI * (1 - F1) * (1 + Math.Cos(θβ * rad)) / 2;
+            double Dcircum = DHI * F1 * (a / b);
+
+            return new double[4]{D,Dhorizon, Ddome,Dcircum};
         }
 
         /// <summary>
