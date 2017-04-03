@@ -63,7 +63,7 @@ namespace Tester
 
             // Read the file and display it line by line.
             System.IO.StreamReader file =
-               new System.IO.StreamReader("C:\\Users\\Chris\\Desktop\\DHI.txt");
+               new System.IO.StreamReader("C:\\Users\\wach\\Desktop\\SolarV2\\DHI.txt");
             while ((line = file.ReadLine()) != null)
             {
                 DHI.Add(Convert.ToDouble(line));
@@ -72,7 +72,7 @@ namespace Tester
             }
             file.Close();
 
-            System.IO.StreamReader file2 = new System.IO.StreamReader("C:\\Users\\Chris\\Desktop\\DNI.txt");
+            System.IO.StreamReader file2 = new System.IO.StreamReader("C:\\Users\\wach\\Desktop\\SolarV2\\DNI.txt");
             while ((line = file2.ReadLine()) != null)
             {
                 DNI.Add(Convert.ToDouble(line));
@@ -92,20 +92,9 @@ namespace Tester
             int year = 2016;
 
 
-            List<SunVector> sunvectors = new List<SunVector>();
-            for (int m = 1; m <= 12; m++)
-            {
-                int daysInMonth = System.DateTime.DaysInMonth(year, m);
-                for (int d = 1; d <= daysInMonth; d++)
-                {
-                    for (int i = 1; i <= 24; i++)
-                    {
-                        SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
-                        sunvectors.Add(sunvec);
-                    }
-                }
-            }
 
+            List<SunVector> sunvectors = new List<SunVector>(); 
+            Context.Create8760SunVectors(ref sunvectors, longitude, latitude, year);
             Context.cWeatherdata weather;
             weather.DHI = new List<double>();
             weather.DNI = new List<double>();
@@ -120,7 +109,7 @@ namespace Tester
             location.dLongitude = longitude;
             location.dTgmt = 1;
 
-            Sensorpoint p = new Sensorpoint(year, weather, location, sunvectors,0,0,recursion);
+            Sensorpoint p = new Sensorpoint(year, weather, location, sunvectors,90,30,recursion);
             p.CalcIrradiation();
 
             for (int i = 0; i < p.I.Count(); i++)
