@@ -93,7 +93,7 @@ namespace SolarModel
         /// <summary>
         /// Creates a sky dome (hemisphere) as a halfed icosahedron. 
         /// </summary>
-        /// <param name="resolution">Resolution level of the sky dome.</param>
+        /// <param name="resolution">Resolution level of the sky dome. 0: 12 faces, 10 vertices; 1: 44 faces, 29 vertices; 2: 168 faces, 97 vertices; 3: 656 faces, 353 vertices. 1 or 2 recommended.</param>
         /// <param name="year">The year to be calcualted.</param>
         /// <param name="latitude">The latitude of the location. In degree.</param>
         /// <param name="longitude">The longitude of the location. In degree.</param>
