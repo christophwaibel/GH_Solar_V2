@@ -45,12 +45,12 @@ namespace SolarModel
 
         public struct cWeatherdata
         {
-            public List<double> DHI;            // W/m2. ∀ hour of the year
-            public List<double> DNI;            // W/m2. ∀ hour of the year
-            //public List<double> Snow;           // mm. ∀ hour of the year
-            //public List<double> Rain;           // mm. ∀ hour of the year
-            //public List<double> Windspeed;      // m/s. ∀ hour of the year
-            //public List<double> Winddirection;  // degree. ∀ hour of the year
+            public List<double> DHI;            // W/m2. ∀ hours of the year
+            public List<double> DNI;            // W/m2. ∀ hours of the year
+            public List<double> Snow;           // mm. ∀ hours of the year
+            //public List<double> Rain;           // mm. ∀ hours of the year
+            //public List<double> Windspeed;      // m/s. ∀ hours of the year
+            //public List<double> Winddirection;  // degree. ∀ hours of the year
         }
 
     }
