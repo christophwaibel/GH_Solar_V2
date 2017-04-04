@@ -70,7 +70,7 @@ namespace GHSolar
 
 
             //Hemisphere
-            SkyDome dome = new SkyDome(reclvl,1,1,1);           //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            SkyDome dome = new SkyDome(reclvl);           //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //List<Point3d> points = new List<Point3d>();
             Mesh mesh = new Mesh();
             foreach (double[] p in dome.VertexCoordinatesSphere)

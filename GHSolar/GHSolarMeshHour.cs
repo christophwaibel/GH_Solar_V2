@@ -4,6 +4,9 @@ using Grasshopper.Kernel;
 using Rhino.Geometry;
 
 using SolarModel;
+using System.Threading.Tasks;
+
+
 /*
  * GHSOlarMeshHour.cs
  * Copyright 2017 Christoph Waibel <chwaibel@student.ethz.ch>
@@ -52,11 +55,13 @@ namespace GHSolar
             pManager.AddIntegerParameter("Skydome Resolution", "SkyRes", "Sykdome resolution for diffuse shading mask. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Interreflection Resolution", "RefllllRes", "Hemisphere resolution for interreflections. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
             pManager[16].Optional = true;
+
+            pManager.AddBooleanParameter("MT", "MT", "Multi threading?", GH_ParamAccess.item);
+            pManager[17].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-
             pManager.AddNumberParameter("Total I", "I", "I", GH_ParamAccess.list);
             pManager.AddNumberParameter("Ib", "Ib", "Ib", GH_ParamAccess.list);
             pManager.AddNumberParameter("Ih", "Ih", "Ih", GH_ParamAccess.list);
@@ -66,17 +71,6 @@ namespace GHSolar
         {
             Mesh msh = new Mesh();
             if (!DA.GetData(0, ref msh)) { return; }
-
-
-            //List<ObstacleObject> obstacles = new List<ObstacleObject>();
-            //if (!DA.GetDataList(1, obstacles)) { return; }
-            ////Mesh mesh = obstacles[0].mesh;
-
-
-            //List<TreeObject> trees = new List<TreeObject>();
-            //if (!DA.GetDataList(2, trees)) { return; }
-            ////Mesh treemesh = trees[0].mesh;
-
 
             double latitude = 0.0;
             if (!DA.GetData(3, ref latitude)) { return; }
@@ -103,6 +97,11 @@ namespace GHSolar
 
 
 
+            bool mt = false;
+            if (!DA.GetData(17, ref mt)) { mt = false; }
+
+
+
             double rad = Math.PI / 180;
 
             List<SunVector> sunvectors = new List<SunVector>();
@@ -116,8 +115,8 @@ namespace GHSolar
             location.dLongitude = longitude;
             location.dTgmt = 1;
 
-            int []daysInMonth = new int[12];
-            for (int i=0; i< daysInMonth.Length; i++)
+            int[] daysInMonth = new int[12];
+            for (int i = 0; i < daysInMonth.Length; i++)
             {
                 daysInMonth[i] = System.DateTime.DaysInMonth(year, month);
             }
@@ -140,38 +139,54 @@ namespace GHSolar
 
 
             List<Sensorpoint> ps = new List<Sensorpoint>();
-            Point3d [] mshvrt = msh.Vertices.ToPoint3dArray();
+            Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
             Vector3f[] mshvrtnorm = new Vector3f[mshvrt.Length];
             msh.FaceNormals.ComputeFaceNormals();
-            for (int i=0; i< mshvrt.Length; i++)
+
+            double[] arrbeta = new double[mshvrt.Length];
+            double[] arrpsi = new double[mshvrt.Length];
+            
+            Vector3d betaangle = new Vector3d(0, 0, 1);
+            Vector3d psiangle = new Vector3d(0, -1, 0);
+            Plane psiplane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+            for (int i = 0; i < mshvrt.Length; i++)
             {
                 mshvrtnorm[i] = msh.Normals[i];
 
-
                 //sensor point tilt angle (beta) and azimuth (psi)
-                Vector3d betaangle = new Vector3d(0, 0, 1);
-                Vector3d psiangle = new Vector3d(0, -1, 0);
-                Plane psiplane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
                 double beta = Vector3d.VectorAngle(mshvrtnorm[i], betaangle) / rad;
                 double psi = Vector3d.VectorAngle(mshvrtnorm[i], psiangle, psiplane) / rad;
+                if (Double.IsNaN(psi) || Double.IsInfinity(psi))
+                {
+                    psi = 0;
+                }
+
+                arrbeta[i] = beta;
+                arrpsi[i] = psi;
+            }
+            Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
 
 
-                Sensorpoint p = new Sensorpoint(year, weather, location, sunvectors,beta, psi, rec);
+
+            if (!mt)
                 p.CalcIrradiation(DOY, hour);
-                ps.Add(p);
-
-
-                I.Add(p.I[HOY]);
-                Ih.Add(p.Idiff[HOY][0]);
-                Ib.Add(p.Ibeam[HOY]);
+            else
+            {
+                p.CalcIrradiationMT(DOY, hour);
             }
 
+            for (int i = 0; i < mshvrt.Length; i++)
+            {
+                I.Add(p.I[i][HOY]);
+                Ib.Add(p.Ibeam[i][HOY]);
+                Ih.Add(p.Idiff[i][HOY][0]);
+            }
+
+           
 
             DA.SetDataList(0, I);
             DA.SetDataList(1, Ib);
             DA.SetDataList(2, Ih);
-
-
         }
 
         protected override System.Drawing.Bitmap Icon
