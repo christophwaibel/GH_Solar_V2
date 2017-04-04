@@ -74,6 +74,7 @@ namespace SolarModel
         /// Unfortunately, the horizon vertices are not spaced equally. so this is the contribution of each vertex of the entire circle. In degree. Should sum up to 720 (2 circles).
         /// </summary>
         public List<double> HorizonSegments;
+
         /// <summary>
         /// Weighted fraction of the horizon, which is obstructed. 1 = full obstruction.
         /// </summary>
@@ -94,10 +95,7 @@ namespace SolarModel
         /// Creates a sky dome (hemisphere) as a halfed icosahedron. 
         /// </summary>
         /// <param name="resolution">Resolution level of the sky dome. 0: 12 faces, 10 vertices; 1: 44 faces, 29 vertices; 2: 168 faces, 97 vertices; 3: 656 faces, 353 vertices. 1 or 2 recommended.</param>
-        /// <param name="year">The year to be calcualted.</param>
-        /// <param name="latitude">The latitude of the location. In degree.</param>
-        /// <param name="longitude">The longitude of the location. In degree.</param>
-        public SkyDome(int resolution, int year, double latitude, double longitude)
+        public SkyDome(int resolution)
         {
             ico = new IcoSphere(resolution);
             Faces = ico.getFaces();
@@ -115,14 +113,40 @@ namespace SolarModel
 
         }
 
+        public SkyDome(SkyDome copy)
+        {
+            ico = copy.ico;
+            Faces = copy.Faces;
+            FaceAreas = copy.FaceAreas;
+            VertexCoordinatesSphere = copy.VertexCoordinatesSphere;
+            VerticesHemisphere = copy.VerticesHemisphere;
+            VerticesHorizon = copy.VerticesHorizon;
+            HorizonSegments = copy.HorizonSegments;
+
+            //ShdwHorizon, ShdwDome, ShdwSunVector must be re-evaluated for new sensor point
+        }
+
+
+
 
         /// <summary>
         /// Set the fraction of the dome, which is obstructed.
         /// <para>Needs some obstruction calculation, which you have to run in another program (e.g. Rhinoceros)</para>
         /// </summary>
         /// <param name="obstructedFaces">Indicates the ratio of obstruction of a face of the hemisphere. 1 = fully obstructed. 0 = clear view. This list needs to be generated somewhere else, e.g. in a CAD program such as Rhino.</param>
-        public void SetShadow_Dome(List <double> obstructedFaces)
+        /// <param name="beta">tilt angle of sensor point</param>
+        /// <param name="psi">azimuth level of sensor point</param>
+        public void SetShadow_Dome(List <double> obstructedFaces, double beta, double psi)
         {
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //identify, which faces are potentially affecting sensor point (via angles)
+
+
+
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //use only sky patches, which account to sensor point for shdwfactor:
+
+
             double totalArea = 0.0;
             double weights = 0.0;
             for(int i=0; i<this.VerticesHemisphere.Count;i++)        //obstructedFaces must have the same length
@@ -131,6 +155,10 @@ namespace SolarModel
                 totalArea += this.FaceAreas[i];
             }
             this.ShdwDome = weights / totalArea;
+
+
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // do the same for horizon.
         }
 
         /// <summary>

@@ -119,19 +119,14 @@ namespace SolarModel
         /// <param name="domeshdw">0-1 fraction of the obstructed skydome. (1 = fully obstructed; 0 = no obstruction)</param>
         /// <param name="circumsolshdw">Boolean, indicating if solar vector of that moment is obstructed. (true = obstructed; false = no obstruction)</param>
         ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.</returns>
-        public static double Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, bool circumsolshdw)
+        public static double [] Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, bool circumsolshdw)
         {
-      
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            double Dhorizon = 0.0;
-            double Ddome = 0.0;
-            double Dcircumsolar = 0.0;
-            Dhorizon *= 1 - horizonshdw;
-            Ddome *= 1 - domeshdw;
-            Dcircumsolar *= 1 - Convert.ToInt32(circumsolshdw);
-            return Dhorizon + Ddome + Dcircumsolar;
+            double[] D4 = Diffuse(DHI, DNI, θZ, θA, θβ, θAsrf, DOY);
+            double Dhorizon = D4[1] * (1 - horizonshdw);
+            double Ddome = D4[2] * (1 - domeshdw);
+            double Dcircumsolar = D4[3] * (1 - Convert.ToInt32(circumsolshdw));
+
+            return new double[4] { Dhorizon + Ddome + Dcircumsolar, Dhorizon, Ddome, Dcircumsolar };
         }
 
 

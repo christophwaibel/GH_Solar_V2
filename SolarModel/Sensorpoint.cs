@@ -67,7 +67,7 @@ namespace SolarModel
             weather = _weather;
             sunvectors = new List<SunVector>(_sunvectors);
 
-            sky = new SkyDome(reclvlsky, year, location.dLatitude, location.dLongitude);
+            sky = new SkyDome(reclvlsky);
 
             this.beta = beta;
             this.psi = psi;
