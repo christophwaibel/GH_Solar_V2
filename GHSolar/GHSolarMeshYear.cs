@@ -112,6 +112,7 @@ namespace GHSolar
             Context.cWeatherdata weather;
             weather.DHI = new List<double>(DHI);
             weather.DNI = new List<double>(DNI);
+            weather.Snow = new List<double>();
 
             Context.cLocation location;
             location.dLatitude = latitude;
@@ -155,7 +156,11 @@ namespace GHSolar
                 arrpsi[i] = psi;
             }
             Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
-            p.CalcIrradiation();
+
+            if (!mt)
+                p.CalcIrradiation();
+            else
+                p.CalcIrradiationMT();
 
 
             

@@ -109,6 +109,7 @@ namespace GHSolar
             Context.cWeatherdata weather;
             weather.DHI = new List<double>(DHI);
             weather.DNI = new List<double>(DNI);
+            weather.Snow = new List<double>();
 
             Context.cLocation location;
             location.dLatitude = latitude;
@@ -135,9 +136,6 @@ namespace GHSolar
             List<double> Ib = new List<double>();
             int HOY = (DOY - 1) * 24 + hour;
 
-
-
-
             List<Sensorpoint> ps = new List<Sensorpoint>();
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
             Vector3f[] mshvrtnorm = new Vector3f[mshvrt.Length];
@@ -152,7 +150,6 @@ namespace GHSolar
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 mshvrtnorm[i] = msh.Normals[i];
-
                 //sensor point tilt angle (beta) and azimuth (psi)
                 double beta = Vector3d.VectorAngle(mshvrtnorm[i], betaangle) / rad;
                 double psi = Vector3d.VectorAngle(mshvrtnorm[i], psiangle, psiplane) / rad;
@@ -170,6 +167,7 @@ namespace GHSolar
 
             if (!mt)
                 p.CalcIrradiation(DOY, hour);
+
             else
             {
                 p.CalcIrradiationMT(DOY, hour);
