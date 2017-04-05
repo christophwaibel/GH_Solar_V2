@@ -72,6 +72,15 @@ namespace GHSolar
             Mesh msh = new Mesh();
             if (!DA.GetData(0, ref msh)) { return; }
 
+            //should containt analysis surface itself
+            List<ObstacleObject> objObst = new List<ObstacleObject>();
+            if (!DA.GetDataList(1, objObst)) { return; }
+            Mesh[] obst = new Mesh[objObst.Count];
+            for (int i = 0; i < objObst.Count; i++)
+            {
+                obst[i] = objObst[i].mesh;
+            }
+
             double latitude = 0.0;
             if (!DA.GetData(3, ref latitude)) { return; }
             double longitude = 0.0;
@@ -160,8 +169,56 @@ namespace GHSolar
 
                 arrbeta[i] = beta;
                 arrpsi[i] = psi;
+
             }
             Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
+
+
+            List<bool[]> ShdwBeam_equinox = new List<bool[]>();
+            List<bool[]> ShdwBeam_summer = new List<bool[]>();
+            List<bool[]> ShdwBeam_winter = new List<bool[]>();
+            List<bool[]> ShdwHorizon = new List<bool[]>();
+            List<bool[]> ShdwSky = new List<bool[]>();
+
+            for(int i=0; i<mshvrt.Length; i++)
+            {
+                Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
+
+                //sky dome
+                Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
+                for (int u = 0; u < vec_sky.Length; u++)
+                {
+                    vec_sky[u] = new Vector3d(
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
+                }
+                bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
+                ShdwSky.Add(shdw_sky);
+    
+                for (int u = 0; u < vec_sky.Length; u++)
+                {
+                    p.sky[i].VertexShadowSphere[p.sky[i].VerticesHemisphere[u]] = shdw_sky[u];   
+                }
+
+
+                //horizon
+                bool[] shdw_hor = new bool[p.sky[i].VerticesHorizon.Count];
+                for (int u = 0; u < shdw_hor.Length; u++)
+                {
+                    shdw_hor[u] = p.sky[i].VertexShadowSphere[p.sky[i].VerticesHorizon[u]];
+                }
+                ShdwHorizon.Add(shdw_hor);
+
+                //put this into sensorpoints function .SetShadows()?
+                p.sky[i].SetShadow_Dome();
+                p.sky[i].SetShadow_Horizon();
+
+                //beam
+                Vector3d[] vec_beam = new Vector3d[24];
+            }
+
 
 
 
@@ -179,8 +236,13 @@ namespace GHSolar
                 Ib.Add(p.Ibeam[i][HOY]);
                 Ih.Add(p.Idiff[i][HOY][0]);
             }
+            
+            //put this into p.CalcIrradiation. less loops
+            //p.SetShadows();
+            //p.SetSnowcover();
+            //p.SetInterreflection();
 
-           
+
 
             DA.SetDataList(0, I);
             DA.SetDataList(1, Ib);
