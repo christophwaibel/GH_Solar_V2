@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using SolarModel;
 using System.Diagnostics;
 
+
+
+
 namespace Tester
 {
     class Program
@@ -98,6 +101,7 @@ namespace Tester
             Context.cWeatherdata weather;
             weather.DHI = new List<double>();
             weather.DNI = new List<double>();
+            weather.Snow = new List<double>();
             for (int i = 0; i < 8760; i++)
             {
                 weather.DHI.Add(DHI[i]);
@@ -112,10 +116,13 @@ namespace Tester
             Sensorpoint p = new Sensorpoint(year, weather, location, sunvectors,90,30,recursion);
             p.CalcIrradiation();
 
-            for (int i = 0; i < p.I.Count(); i++)
-            {
-                Console.WriteLine(p.I[i]);
-            }
+            //for (int i = 0; i < p.I.Count(); i++)
+            //{
+            //    Console.WriteLine(p.I[i]);
+            //}
+
+     
+
 
             Console.ReadKey();
         }
