@@ -325,9 +325,16 @@ namespace SolarModel
         /// <summary>
         /// Sets the obstruction factors (i.e. shadows) of each sensor point.
         /// <para>Split into shadows of diffuse radiation (further split into horizon and dome) and beam radiation.</para>
+        /// <para>Using three days for beam radiation shadow calculation, and interpolates for the other days of the year.</para>
         /// </summary>
-        public void SetShadows()
+        /// <param name="SunVShdw_equinox">List (for each sensorpoint) of boolean arrays with each 24 elements (for each hour of the day) indicating for the equinox day, wether beam radiation hits the sensorpoint.</param>
+        /// <param name="SunVShdw_summer">List (for each sensorpoint) of boolean arrays with each 24 elements (for each hour of the day) indicating for the summer solstice day, wether beam radiation hits the sensorpoint.</param>
+        /// <param name="SunVShdw_winter">List (for each sensorpoint) of boolean arrays with each 24 elements (for each hour of the day) indicating for the winter solstice day, wether beam radiation hits the sensorpoint.</param>
+        /// <param name="HorizonShdw">List (for each sensorpoint) of boolean arrays with each n elements (for each segment of the horizon, accessible with Sensorpoints[i].sky.VerticesHorizon and .HorizonSegments) indicating, wether the sensorpoint has free view to the respective horizon segment.</param>
+        /// <param name="SkyShdw">List (for each sensorpoint) of boolean arrays with each m elements (for each vertex of the skydome, accessible with Sensorpoints[i].sky.VerticesHemisphere) indicating, wether the sensorpoint has free view to the respective skydome vertex.</param>
+        public void SetShadows(List<bool[]> SunVShdw_equinox, List<bool[]> SunVShdw_summer, List<bool[]> SunVShdw_winter, List<bool[]> HorizonShdw, List<bool[]> SkyShdw)
         {
+            //List: foreach sensorpoint in sensorpoints; bool[24] foreach hour of day.
 
             //!!!!!!!!!! quite trivial. rhino will provide list of vectors for obstruction. INTERPOLATION!!! take 3 days! and itnerpolate in-between.
             // I wonder if a meta-model would work, which takes 3 calculated days as features (and longi+latitude) and tells me for the rest days, if the rays are also blocked. I cuold try that quite quickly, coz I can calculate the training data in rhino. Just run 8760 obstruction checks. Then, meta model in matlab, python, Accord.net or whatever
@@ -337,6 +344,11 @@ namespace SolarModel
             //some calc needs to be further done to account for the regions, that are blocked anyway. these should be ommited for the factor calcualtion! only consider those faces, which would also be hit by sun rays 
             //sky[i].SetShadow_Dome(
             //sky[i].SetShadow_Horizon(
+
+
+
+
+
 
             for (int i = 0; i < this.I.Length; i++)
             {

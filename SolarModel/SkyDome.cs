@@ -62,6 +62,9 @@ namespace SolarModel
         /// All points (coordinates) of the complete sphere.
         /// </summary>
         public List<double[]> VertexCoordinatesSphere;
+
+        public bool [] VertexShadowSphere;
+
         /// <summary>
         /// Vertices of the hemisphere. Referencing to VertexCoordinatesSphere.
         /// </summary>
@@ -109,6 +112,7 @@ namespace SolarModel
             CalcHalfSphere(ref Faces, ref VertexCoordinatesSphere, ref VerticesHemisphere, ref FaceAreas);
             CalcHorizonSegmentWeights(ref HorizonSegments, ref VerticesHorizon, VerticesHemisphere, VertexCoordinatesSphere);
 
+            VertexShadowSphere = new bool[VertexCoordinatesSphere.Count];
             //create a list of size of the facaes of the dome. use this list for shadow factors...
 
         }
@@ -122,7 +126,7 @@ namespace SolarModel
             VerticesHemisphere = copy.VerticesHemisphere;
             VerticesHorizon = copy.VerticesHorizon;
             HorizonSegments = copy.HorizonSegments;
-
+            VertexShadowSphere = new bool[VertexCoordinatesSphere.Count];
             //ShdwHorizon, ShdwDome, ShdwSunVector must be re-evaluated for new sensor point
         }
 
@@ -133,32 +137,23 @@ namespace SolarModel
         /// Set the fraction of the dome, which is obstructed.
         /// <para>Needs some obstruction calculation, which you have to run in another program (e.g. Rhinoceros)</para>
         /// </summary>
-        /// <param name="obstructedFaces">Indicates the ratio of obstruction of a face of the hemisphere. 1 = fully obstructed. 0 = clear view. This list needs to be generated somewhere else, e.g. in a CAD program such as Rhino.</param>
-        /// <param name="beta">tilt angle of sensor point</param>
-        /// <param name="psi">azimuth level of sensor point</param>
-        public void SetShadow_Dome(List <double> obstructedFaces, double beta, double psi)
+        public void SetShadow_Dome()
         {
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //identify, which faces are potentially affecting sensor point (via angles)
-
-
-
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //use only sky patches, which account to sensor point for shdwfactor:
-
-
             double totalArea = 0.0;
             double weights = 0.0;
-            for(int i=0; i<this.VerticesHemisphere.Count;i++)        //obstructedFaces must have the same length
+            for(int i=0; i<this.Faces.Count;i++)        
             {
-                weights += (1 - obstructedFaces[i]) * this.FaceAreas[i];
+                double w = 0;
+                int wl = this.Faces[i].Length;
+                for (int u = 0; u < wl; u++)
+                {
+                    w += Convert.ToDouble(this.VertexShadowSphere[this.Faces[i][u]]);
+                }
+                w = w / Convert.ToDouble(wl);
+                weights += w * this.FaceAreas[i];
                 totalArea += this.FaceAreas[i];
             }
             this.ShdwDome = weights / totalArea;
-
-
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // do the same for horizon.
         }
 
         /// <summary>
@@ -166,14 +161,14 @@ namespace SolarModel
         /// <para>Needs some obstruction calculation, which you have to run in another program (e.g. Rhinoceros)</para>
         /// </summary>
         /// <param name="obstructedHorizonVectors">Indicates, which segment of the horizon is obstructed (true) and which is not (false).</param>
-        public void SetShadow_Horizon(List<bool> obstructedHorizonVectors)
+        public void SetShadow_Horizon()
         {
             double weights = 0.0;
             for (int i = 0; i < this.VerticesHorizon.Count; i++)
             {
-                weights += (1 - Convert.ToInt32(obstructedHorizonVectors[i])) * this.HorizonSegments[i];
+                weights += (1 - Convert.ToInt32(this.VertexShadowSphere[this.VerticesHorizon[i]])) * this.HorizonSegments[i];
             }
-            this.ShdwHorizon = weights / 720.0;     //720 is 2 circles : the sum angle of all horizon segments
+            this.ShdwHorizon = Convert.ToDouble(weights) / 720.0;     //720 is 2 circles : the sum angle of all horizon segments
         }
 
         /// <summary>
