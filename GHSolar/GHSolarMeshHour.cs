@@ -90,7 +90,11 @@ namespace GHSolar
             if (!DA.GetDataList(5, DNI)) { return; }
             List<double> DHI = new List<double>();
             if (!DA.GetDataList(6, DHI)) { return; }
-
+            List<double> SNOW = new List<double>();
+            if (!DA.GetDataList(7, SNOW))
+                for (int i = 0; i < 8760; i++)
+                    SNOW.Add(0.0);
+             
 
             int year = 0;
             if (!DA.GetData(8, ref year)) { return; }
@@ -111,6 +115,10 @@ namespace GHSolar
 
 
 
+
+            double snow_threshold = 10;
+            double tilt_treshold = 30;
+
             double rad = Math.PI / 180;
 
             List<SunVector> sunvectors = new List<SunVector>();
@@ -118,7 +126,7 @@ namespace GHSolar
             Context.cWeatherdata weather;
             weather.DHI = new List<double>(DHI);
             weather.DNI = new List<double>(DNI);
-            weather.Snow = new List<double>();
+            weather.Snow = new List<double>(SNOW);
 
             Context.cLocation location;
             location.dLatitude = latitude;
@@ -128,12 +136,12 @@ namespace GHSolar
             int[] daysInMonth = new int[12];
             for (int i = 0; i < daysInMonth.Length; i++)
             {
-                daysInMonth[i] = System.DateTime.DaysInMonth(year, month);
+                daysInMonth[i] = System.DateTime.DaysInMonth(year, i+1);
             }
             int DOY = 0;
             for (int i = 0; i < month - 1; i++)
             {
-                DOY += (i + 1) * daysInMonth[i];
+                DOY += daysInMonth[i];
                 //month * 1;            //1-365
             }
             DOY += day;
@@ -174,10 +182,11 @@ namespace GHSolar
             Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
 
 
-            List<bool[]> ShdwBeam_equinox = new List<bool[]>();
-            List<bool[]> ShdwBeam_summer = new List<bool[]>();
-            List<bool[]> ShdwBeam_winter = new List<bool[]>();
-            List<bool[]> ShdwHorizon = new List<bool[]>();
+            //List<bool[]> ShdwBeam_equinox = new List<bool[]>();
+            //List<bool[]> ShdwBeam_summer = new List<bool[]>();
+            //List<bool[]> ShdwBeam_winter = new List<bool[]>();
+            List<bool> ShdwBeam_hour = new List<bool>();
+            //List<bool[]> ShdwHorizon = new List<bool[]>();
             List<bool[]> ShdwSky = new List<bool[]>();
 
             for(int i=0; i<mshvrt.Length; i++)
@@ -197,29 +206,44 @@ namespace GHSolar
                 cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
                 ShdwSky.Add(shdw_sky);
     
-                for (int u = 0; u < vec_sky.Length; u++)
-                {
-                    p.sky[i].VertexShadowSphere[p.sky[i].VerticesHemisphere[u]] = shdw_sky[u];   
-                }
+                //for (int u = 0; u < vec_sky.Length; u++)
+                //{
+                //    p.sky[i].VertexShadowSphere[p.sky[i].VerticesHemisphere[u]] = shdw_sky[u];   
+                //}
 
 
-                //horizon
-                bool[] shdw_hor = new bool[p.sky[i].VerticesHorizon.Count];
-                for (int u = 0; u < shdw_hor.Length; u++)
-                {
-                    shdw_hor[u] = p.sky[i].VertexShadowSphere[p.sky[i].VerticesHorizon[u]];
-                }
-                ShdwHorizon.Add(shdw_hor);
+                ////horizon
+                //bool[] shdw_hor = new bool[p.sky[i].VerticesHorizon.Count];
+                //for (int u = 0; u < shdw_hor.Length; u++)
+                //{
+                //    shdw_hor[u] = p.sky[i].VertexShadowSphere[p.sky[i].VerticesHorizon[u]];
+                //}
+                //ShdwHorizon.Add(shdw_hor);
+
+
+
+                //beam for one hour only.
+                Vector3d[] vec_beam = new Vector3d[1];
+                vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
+                bool[] shdw_beam = new bool[1];
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam, obst, ref shdw_beam);
+                ShdwBeam_hour.Add(shdw_beam[0]);
+
+
 
                 //put this into sensorpoints function .SetShadows()?
-                p.sky[i].SetShadow_Dome();
-                p.sky[i].SetShadow_Horizon();
-
-                //beam
-                Vector3d[] vec_beam = new Vector3d[24];
+                //p.sky[i].SetShadow_Dome();
+                //p.sky[i].SetShadow_Horizon();
+                //p.sky[i].SetShadow_Beam(HOY, shdw_beam[0]);
             }
+            
+            p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
+            p.SetSnowcover(snow_threshold, tilt_treshold);
 
-
+            //put this into p.CalcIrradiation. less loops?
+            //p.SetShadows();
+            //p.SetSnowcover();
+            //p.SetInterreflection();
 
 
             if (!mt)
@@ -237,10 +261,7 @@ namespace GHSolar
                 Ih.Add(p.Idiff[i][HOY][0]);
             }
             
-            //put this into p.CalcIrradiation. less loops
-            //p.SetShadows();
-            //p.SetSnowcover();
-            //p.SetInterreflection();
+
 
 
 
