@@ -89,7 +89,7 @@ namespace SolarModel
         /// <summary>
         /// 8760 list (for each hour of the year) of booleans, indicating if the sun vector is obstructed or not (1=obstructed).
         /// </summary>
-        public List<bool> ShdwSunVector { get; private set; }
+        public bool[] ShdwBeam { get; private set; }
 
 
 
@@ -109,6 +109,8 @@ namespace SolarModel
             HorizonSegments = new List<double>();
             FaceAreas = new List<double>();
 
+            ShdwBeam = new bool[8760];
+
             CalcHalfSphere(ref Faces, ref VertexCoordinatesSphere, ref VerticesHemisphere, ref FaceAreas);
             CalcHorizonSegmentWeights(ref HorizonSegments, ref VerticesHorizon, VerticesHemisphere, VertexCoordinatesSphere);
 
@@ -122,6 +124,7 @@ namespace SolarModel
             ico = copy.ico;
             Faces = copy.Faces;
             FaceAreas = copy.FaceAreas;
+            ShdwBeam = new bool[8760];
             VertexCoordinatesSphere = copy.VertexCoordinatesSphere;
             VerticesHemisphere = copy.VerticesHemisphere;
             VerticesHorizon = copy.VerticesHorizon;
@@ -171,32 +174,41 @@ namespace SolarModel
             this.ShdwHorizon = Convert.ToDouble(weights) / 720.0;     //720 is 2 circles : the sum angle of all horizon segments
         }
 
-        /// <summary>
-        /// Input has 8760 values. Just copy.
-        /// </summary>
-        /// <param name="obstructedSunVectors"></param>
-        public void SetShadow_SunVector(List<bool> obstructedSunVectors)
+
+
+
+        public void SetShadow_Beam(int HOY, bool shadow)
         {
-            this.ShdwSunVector = new List<bool>(obstructedSunVectors);
+            this.ShdwBeam[HOY] = shadow;
         }
 
 
+        ///// <summary>
+        ///// Input has 8760 values. Just copy.
+        ///// </summary>
+        ///// <param name="obstructedSunVectors"></param>
+        //public void SetShadow_Beam(List<bool> obstructedSunVectors)
+        //{
+        //    //this.ShdwBeam = new List<bool>(obstructedSunVectors);
+        //}
 
 
-        //////////////////////////////////////////////////////////////////
-        // INTERPOLATION HERE!!!!!!!!!?????
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+        ////////////////////////////////////////////////////////////////////
+        //// interpolation here!!!!!!!!!?????
+        ////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
-        /// <summary>
-        /// list of list of bools. Each list is one day (24) of values. The provided days will be used to fill the entire year.
-        /// </summary>
-        /// <param name="obstructedSunVectors">Keys: days of the year [1,365]. Items: list of length 24, for each hour of the day, true=obstructed, false=no obstruction.</param>
-        public void SetShadow_SunVector(Dictionary<int, List<bool>> obstructedSunVectors)
-        {
+        ///// <summary>
+        ///// list of list of bools. each list is one day (24) of values. the provided days will be used to fill the entire year.
+        ///// </summary>
+        ///// <param name="obstructedsunvectors">keys: days of the year [1,365]. items: list of length 24, for each hour of the day, true=obstructed, false=no obstruction.</param>
+        //public void setshadow_beam(dictionary<int, list<bool>> obstructedsunvectors)
+        //{
 
-            // do some interpolation
+        //    // do some interpolation
 
-        }
+        //}
 
 
 
