@@ -69,6 +69,57 @@ namespace SolarModel
                 Sunshine = false;
         }
 
+
+        /// <summary>
+        /// Identify the equinox and solstice days of a year.
+        /// <para>TO DO: Algorithm, calculating precise equinox and solstice days.</para>
+        /// </summary>
+        /// <param name="year"></param>
+        /// <returns>[0]: spring equinox, [1]: summer solstice, [2]: autumn equinox, [3]: winter solstice. ∈ [1, 365]</returns>
+        public static int [] GetEquinoxSolstice(int year)
+        {
+            //http://farside.ph.utexas.edu/Books/Syntaxis/Almagest/node36.html
+            //view-source:https://stellafane.org/misc/equinox.html
+            //https://ch.mathworks.com/matlabcentral/fileexchange/39356-a-matlab-script-for-predicting-equinoxes-and-solstices?requestedDomain=www.mathworks.com
+            //
+
+            int[] dm = new int[12];
+            int[] equsol = new int[4];
+            for (int i = 0; i < 12; i++)
+            {
+                dm[i] = System.DateTime.DaysInMonth(year, i + 1);
+                if (i < 2)
+                {
+                    equsol[0] += dm[i];
+                }
+                if (i < 5)
+                {
+                    equsol[1] += dm[i];
+                }
+                if (i < 8)
+                {
+                    equsol[2] += dm[i];
+                }
+                if (i < 11)
+                {
+                    equsol[3] += dm[i];
+                }
+            }
+
+            equsol[0] += 20;
+            equsol[1] += 21;
+            equsol[2] += 22;
+            equsol[3] += 21;
+            // spring equinox:      march 20
+            // summer solstice:     june 21
+            // autumn equinox:      september 22
+            // winter solstice:     december 21     
+
+            return equsol;
+        }
+
+
+
     //PSA position sun algorithm
     //http://www.psa.es/sdg/sunpos.htm
     //http://www.sciencedirect.com/science/article/pii/S0038092X00001560

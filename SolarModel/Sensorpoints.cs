@@ -34,47 +34,49 @@ namespace SolarModel
         /// <summary>
         /// Sensor point tilt angle in degree.
         /// </summary>
-        public double [] beta;
+        public double[] beta { get; private set; }
         /// <summary>
         /// Sensor point azimuth angle in degree.
         /// </summary>
-        public double [] psi;
+        public double[] psi { get; private set; }
         /// <summary>
         /// Diffuse irradiation. 
         /// <para>2D array, [8760][4].</para>
         /// <para>[t][0]: total diffuse irradiation; [t][1]: horizon component; [t][2]: anisotropic sky component; [t][3]: circumsolar component.</para>
         /// </summary>
-        public double[][][] Idiff;
+        public double[][][] Idiff { get; private set; }
         /// <summary>
         /// Beam (direct) irradiation.
         /// <para>Array with 8760 doubles, for each hour of the year.</para>
         /// </summary>
-        public double[][] Ibeam;
+        public double[][] Ibeam { get; private set; }
         /// <summary>
         /// Total irradiation (beam + diffuse).
         /// <para>Array with 8760 doubles, for each hour of the year.</para>
         /// </summary>
-        public double[][] I;
-
+        public double[][] I { get; private set; }
+        /// <summary>
+        /// Indicates snow cover for each sensor point and each hour of the year.
+        /// <para>this.snowcovered[i][HOY], i ∈ n sensorpoints, HOY ∈ [0, 8759]</para>
+        /// </summary>
         public bool[][] snowcovered { get; private set; }
-
 
 
         /// <summary>
         /// Sensor point object, to calculate solar irradiation.
         /// </summary>
         /// <param name="year">Year to calculate.</param>
-        /// <param name="_weather">Weather data. See structure "Context.cWeatherdata".</param>
-        /// <param name="_location">Location data. See structure "Context.cLocation".</param>
-        /// <param name="_sunvectors">8760 sun vectors, for each hour of the year. See class "SunVector".</param>
+        /// <param name="weather">Weather data. See structure "Context.cWeatherdata".</param>
+        /// <param name="location">Location data. See structure "Context.cLocation".</param>
+        /// <param name="sunvectors">8760 sun vectors, for each hour of the year. See class "SunVector".</param>
         /// <param name="beta">Tilt angle of sensor point.</param>
         /// <param name="psi">Azimuth angle of sensor point.</param>
         /// <param name="reclvlsky">Recursion level for sky hemisphere. 1 or 2 recommended. See class "SkyDome".</param>
-        public Sensorpoints(int year, Context.cWeatherdata _weather, Context.cLocation _location, List<SunVector> _sunvectors, double []beta, double []psi, int reclvlsky)
+        public Sensorpoints(int year, Context.cWeatherdata weather, Context.cLocation location, List<SunVector> sunvectors, double []beta, double []psi, int reclvlsky)
         {
-            this.location = _location;
-            this.weather = _weather;
-            this.sunvectors = new List<SunVector>(_sunvectors);
+            this.location = location;
+            this.weather = weather;
+            this.sunvectors = new List<SunVector>(sunvectors);
 
             this.beta = new double[beta.Length];
             this.psi = new double[psi.Length];
@@ -86,7 +88,6 @@ namespace SolarModel
                 if (i == 0) this.sky[i] = new SkyDome(reclvlsky);
                 else this.sky[i] = new SkyDome(this.sky[0]);
             }
-
 
             this.Idiff = new double[beta.Length][][];
             this.Ibeam = new double[beta.Length][];
@@ -110,12 +111,19 @@ namespace SolarModel
             }
         }
 
-
+        /// <summary>
+        /// Returns the number of sensor points in this object.
+        /// </summary>
+        /// <returns>Number of sensor points.</returns>
+        public int GetSPCount()
+        {
+            return this.beta.Length;
+        }
 
 
         /// <summary>
         /// Calculates diffuse irradiation on the sensor point for one hour of the year.
-        /// <para>Access: total: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
+        /// <para>Access: total diffuse irradiation: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
         /// </summary>
         /// <param name="DOY">Day of the year, ∈ [1, 365].</param>
         /// <param name="HOY">Hour of the year, ∈ [0, 8759].</param>
@@ -390,7 +398,12 @@ namespace SolarModel
 
 
 
-
+        /// <summary>
+        /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
+        /// </summary>
+        /// <param name="ShdwBeam_hour">Indicate for one hour of the year, if a sensor point is obstructed from beam radiation (true), or not (false). The list must have booleans for each sensor point.</param>
+        /// <param name="ShdwSky">Indicate for each vertex of a sensor point's skydome, if the view between sensor point and vertex is obstructed (true), or not (false). The list has boolean arrays for each sensor point; an array is of length of the sky dome vertex count (this.sky[i].VerticesHemisphere.Count).</param>
+        /// <param name="HOY"></param>
         public void SetShadows(List<bool> ShdwBeam_hour, List<bool[]> ShdwSky, int HOY)
         {
             for (int i = 0; i < sky.Length; i++)
@@ -406,13 +419,27 @@ namespace SolarModel
             }
         }
 
+        public void SetShadows(List<bool[]> ShdwBeam_Equinox, List<bool[]> ShdwBeam_Summer, List<bool[]> ShdwBeam_Winter, List<bool[]> ShdwSky)
+        {
+            //shdwbeam_summer, winter ewquinox have different lengths!!! coz only when sunshine true. 
+            //but its always 
+            //march 20
+            //june 21
+            //december 21
+
+            //interpolate!   check github solar_v1
+            
+
+
+        }
+
 
 
 
         /// <summary>
-        /// Goes through each hour and applys snow blockage, if surface angle is flat enough and if the weather data indicates snow on that hour.
+        /// Goes through each hour of the year and applys snow cover, if surface angle is flat enough and if the weather data indicates snow on that hour.
         /// </summary>
-        /// <param name="snow_threshold">Snow threshold (mm), after which no radiation is assumed to reach the sensor point.</param>
+        /// <param name="snow_threshold">Snow threshold, after which no radiation is assumed to reach the sensor point.</param>
         /// <param name="tilt_treshold">Sensor point tilt threshold (degree). More flat angles will not allow irradiation. Steeper angles are assumed to let the snow slide down the sensor point.</param>
         public void SetSnowcover(double snow_threshold, double tilt_treshold)
         {
