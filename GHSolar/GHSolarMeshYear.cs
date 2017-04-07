@@ -37,8 +37,8 @@ namespace GHSolar
             pManager.AddGenericParameter("TreeObject", "TreeObj", "Input tree objects (generic).", GH_ParamAccess.list);    //each tree object is : (i) a mesh obstacle, (ii) a 8760-timeseries of 0-1 fractions, indicating leave-coverage 1 is full of leaves=full obstruction.
             pManager[2].Optional = true;
 
-            pManager.AddNumberParameter("φ", "φ", "Latitude of the location in [°].", GH_ParamAccess.item);
-            pManager.AddNumberParameter("λ", "λ", "Longitude of the location in [°].", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Latitude", "Latitude", "Latitude of the location in [°].", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Longitude", "Longitude", "Longitude of the location in [°].", GH_ParamAccess.item);
 
             pManager.AddNumberParameter("DNI", "DNI", "Direct normal irradiation 8760-time series.", GH_ParamAccess.list);
             pManager.AddNumberParameter("DHI", "DHI", "Diffuse horizontal irradiation 8760-time series.", GH_ParamAccess.list);
@@ -47,18 +47,15 @@ namespace GHSolar
 
             pManager.AddIntegerParameter("Year", "Year", "Year", GH_ParamAccess.item);
 
-            pManager.AddBooleanParameter("Simplified Direct", "SimplDir", "Simplified shading mask for direct radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
-            pManager[9].Optional = true;
-            pManager.AddBooleanParameter("Simplified Diffuse", "SimplDiff", "Simplified shading mask for diffuse radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
-            pManager[10].Optional = true;
             pManager.AddIntegerParameter("Bounces", "Bounces", "Number of bounces for inter-reflections. 0 (min) - 2 (max).", GH_ParamAccess.item);
-            pManager[11].Optional = true;
+            pManager[9].Optional = true;
             pManager.AddIntegerParameter("Skydome Resolution", "SkyRes", "Sykdome resolution for diffuse shading mask. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
+            pManager[10].Optional = true;
             pManager.AddIntegerParameter("Interreflection Resolution", "RefllllRes", "Hemisphere resolution for interreflections. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
-            pManager[13].Optional = true;
+            pManager[11].Optional = true;
 
             pManager.AddBooleanParameter("MT", "MT", "Multi threading?", GH_ParamAccess.item);
-            pManager[14].Optional = true;
+            pManager[12].Optional = true;
         }
 
         /// <summary>
@@ -66,9 +63,13 @@ namespace GHSolar
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddNumberParameter("I", "I", "Total kWh/a", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ib", "Ib", "Ib", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ih", "Ih", "Ih", GH_ParamAccess.list);
+            pManager.AddNumberParameter("I annual", "I annual", "Annual total irradiation in [kWh/a]", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Ib annual", "Ib annual", "Annual beam irradiation in [kWh/a]", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Ih annual", "Ih annual", "Annual diffuse irradiation in [kWh/h]", GH_ParamAccess.list);
+
+            pManager.AddMatrixParameter("I hourly", "I hourly", "Hourly total irradiation in [Wh]", GH_ParamAccess.list);
+            pManager.AddMatrixParameter("Ib hourly", "Ib hourly", "Hourly beam irradiation in [Wh]", GH_ParamAccess.list);
+            pManager.AddMatrixParameter("Ih hourly", "Ih hourly", "Hourly diffuse irradiation in [Wh]", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -80,6 +81,14 @@ namespace GHSolar
             Mesh msh = new Mesh();
             if (!DA.GetData(0, ref msh)) { return; }
 
+            List<ObstacleObject> objObst = new List<ObstacleObject>();
+            if (!DA.GetDataList(1, objObst)) { return; }
+            Mesh[] obst = new Mesh[objObst.Count];
+            for (int i = 0; i < objObst.Count; i++)
+            {
+                obst[i] = objObst[i].mesh;
+            }
+
             double latitude = 0.0;
             if (!DA.GetData(3, ref latitude)) { return; }
             double longitude = 0.0;
@@ -89,20 +98,27 @@ namespace GHSolar
             if (!DA.GetDataList(5, DNI)) { return; }
             List<double> DHI = new List<double>();
             if (!DA.GetDataList(6, DHI)) { return; }
-
+            List<double> SNOW = new List<double>();
+            if (!DA.GetDataList(7, SNOW))
+                for (int i = 0; i < 8760; i++)
+                    SNOW.Add(0.0);
 
             int year = 0;
             if (!DA.GetData(8, ref year)) { return; }
 
 
             int rec = 0;
-            if (!DA.GetData(12, ref rec)) { return; }
+            if (!DA.GetData(10, ref rec)) { rec = 1; }
 
 
 
             bool mt = false;
-            if (!DA.GetData(14, ref mt)) { mt = false; }
+            if (!DA.GetData(12, ref mt)) { mt = false; }
 
+
+            //these two should be inputs
+            double snow_threshold = 10;
+            double tilt_treshold = 30;
 
 
             double rad = Math.PI / 180;
@@ -112,22 +128,16 @@ namespace GHSolar
             Context.cWeatherdata weather;
             weather.DHI = new List<double>(DHI);
             weather.DNI = new List<double>(DNI);
-            weather.Snow = new List<double>();
+            weather.Snow = new List<double>(SNOW);
 
             Context.cLocation location;
             location.dLatitude = latitude;
             location.dLongitude = longitude;
             location.dTgmt = 1;
 
-
-
-
             List<double> I = new List<double>();
             List<double> Ih = new List<double>();
             List<double> Ib = new List<double>();
-
-
-
 
             List<Sensorpoint> ps = new List<Sensorpoint>();
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
@@ -143,7 +153,6 @@ namespace GHSolar
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 mshvrtnorm[i] = msh.Normals[i];
-
                 //sensor point tilt angle (beta) and azimuth (psi)
                 double beta = Vector3d.VectorAngle(mshvrtnorm[i], betaangle) / rad;
                 double psi = Vector3d.VectorAngle(mshvrtnorm[i], psiangle, psiplane) / rad;
@@ -154,8 +163,82 @@ namespace GHSolar
 
                 arrbeta[i] = beta;
                 arrpsi[i] = psi;
+
             }
             Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
+
+
+            List<bool[]> ShdwBeam_equinox = new List<bool[]>();
+            List<bool[]> ShdwBeam_summer = new List<bool[]>();
+            List<bool[]> ShdwBeam_winter = new List<bool[]>();
+            //List<bool> ShdwBeam_hour = new List<bool>();
+            List<bool[]> ShdwSky = new List<bool[]>();
+
+
+            int[] equsol = SunVector.GetEquinoxSolstice(year);//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            int HOYequ = (equsol[0] - 1) * 24;
+            int HOYsum = (equsol[1] - 1) * 24;
+            int HOYwin = (equsol[3] - 1) * 24;
+
+            for (int i = 0; i < mshvrt.Length; i++)
+            {
+                Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
+
+                //sky dome diffuse
+                Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
+                for (int u = 0; u < vec_sky.Length; u++)
+                {
+                    vec_sky[u] = new Vector3d(
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
+                }
+                bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
+                ShdwSky.Add(shdw_sky);
+
+                //beam for 24 hours. no! don´t use those vectors, where its night time anyway!
+                // equinox:             march 20
+                // summer solstice:     june 21
+                // winter solstice:     december 21
+                List<Vector3d> list_beam_equ = new List<Vector3d>();
+                List<Vector3d> list_beam_sum = new List<Vector3d>();
+                List<Vector3d> list_beam_win = new List<Vector3d>();
+                for (int t = 0; t < 24; t++)
+                {
+                    if (sunvectors[HOYequ + t].Sunshine)
+                    {
+                        list_beam_equ.Add(new Vector3d(sunvectors[HOYequ + t].udtCoordXYZ.x, sunvectors[HOYequ + t].udtCoordXYZ.y, sunvectors[HOYequ + t].udtCoordXYZ.z));
+                    }
+                    if (sunvectors[HOYsum + t].Sunshine)
+                    {
+                        list_beam_sum.Add(new Vector3d(sunvectors[HOYsum + t].udtCoordXYZ.x, sunvectors[HOYsum + t].udtCoordXYZ.y, sunvectors[HOYsum + t].udtCoordXYZ.z));
+                    }
+                    if (sunvectors[HOYwin + t].Sunshine)
+                    {
+                        list_beam_win.Add(new Vector3d(sunvectors[HOYwin + t].udtCoordXYZ.x, sunvectors[HOYwin + t].udtCoordXYZ.y, sunvectors[HOYwin + t].udtCoordXYZ.z));
+                    }
+                }
+                Vector3d[] vec_beam_equ = list_beam_equ.ToArray();
+                Vector3d[] vec_beam_sum = list_beam_sum.ToArray();
+                Vector3d[] vec_beam_win = list_beam_win.ToArray();
+                bool[] shdw_beam_equ = new bool[vec_beam_equ.Length];
+                bool[] shdw_beam_sum = new bool[vec_beam_sum.Length];
+                bool[] shdw_beam_win = new bool[vec_beam_win.Length];
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, obst, ref shdw_beam_equ);
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, obst, ref shdw_beam_sum);
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, obst, ref shdw_beam_win);
+                ShdwBeam_equinox.Add(shdw_beam_equ);
+                ShdwBeam_summer.Add(shdw_beam_sum);
+                ShdwBeam_winter.Add(shdw_beam_win);
+
+
+            }
+
+            p.SetShadows(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
+            p.SetSnowcover(snow_threshold, tilt_treshold);
+            //p.SetInterreflection();
+
 
             if (!mt)
                 p.CalcIrradiation();
@@ -176,9 +259,9 @@ namespace GHSolar
                     Ibtot += p.Ibeam[i][t];
                     Idtot += p.Idiff[i][t][0];
                 }
-                I.Add(Itot);
-                Ib.Add(Ibtot);
-                Ih.Add(Idtot);
+                I.Add(Itot / 1000);     //in kWh/a
+                Ib.Add(Ibtot / 1000);   //in kWh/a
+                Ih.Add(Idtot / 1000);   //in kWh/a
             }
 
 

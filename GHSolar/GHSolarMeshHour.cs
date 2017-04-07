@@ -33,8 +33,8 @@ namespace GHSolar
             pManager.AddGenericParameter("TreeObject", "TreeObj", "Input tree objects (generic).", GH_ParamAccess.list);    //each tree object is : (i) a mesh obstacle, (ii) a 8760-timeseries of 0-1 fractions, indicating leave-coverage 1 is full of leaves=full obstruction.
             pManager[2].Optional = true;
 
-            pManager.AddNumberParameter("φ", "φ", "Latitude of the location in [°].", GH_ParamAccess.item);
-            pManager.AddNumberParameter("λ", "λ", "Longitude of the location in [°].", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Latitude", "Latitude", "Latitude of the location in [°].", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Longitude", "Longitude", "Longitude of the location in [°].", GH_ParamAccess.item);
 
             pManager.AddNumberParameter("DNI", "DNI", "Direct normal irradiation 8760-time series.", GH_ParamAccess.list);
             pManager.AddNumberParameter("DHI", "DHI", "Diffuse horizontal irradiation 8760-time series.", GH_ParamAccess.list);
@@ -46,18 +46,22 @@ namespace GHSolar
             pManager.AddIntegerParameter("Day", "Day", "Day", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Hour", "Hour", "Hour ∈ [0, 23]", GH_ParamAccess.item);
 
-            pManager.AddBooleanParameter("Simplified Direct", "SimplDir", "Simplified shading mask for direct radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
-            pManager[12].Optional = true;
-            pManager.AddBooleanParameter("Simplified Diffuse", "SimplDiff", "Simplified shading mask for diffuse radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
-            pManager[13].Optional = true;
+            ////don´t know if I need these 2
+            //pManager.AddBooleanParameter("Simplified Direct", "SimplDir", "Simplified shading mask for direct radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
+            //pManager[12].Optional = true;
+            //pManager.AddBooleanParameter("Simplified Diffuse", "SimplDiff", "Simplified shading mask for diffuse radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
+            //pManager[13].Optional = true;
+
+
             pManager.AddIntegerParameter("Bounces", "Bounces", "Number of bounces for inter-reflections. 0 (min) - 2 (max).", GH_ParamAccess.item);
-            pManager[14].Optional = true;
+            pManager[12].Optional = true;
             pManager.AddIntegerParameter("Skydome Resolution", "SkyRes", "Sykdome resolution for diffuse shading mask. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
+            pManager[13].Optional = true;
             pManager.AddIntegerParameter("Interreflection Resolution", "RefllllRes", "Hemisphere resolution for interreflections. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
-            pManager[16].Optional = true;
+            pManager[14].Optional = true;
 
             pManager.AddBooleanParameter("MT", "MT", "Multi threading?", GH_ParamAccess.item);
-            pManager[17].Optional = true;
+            pManager[15].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -106,18 +110,18 @@ namespace GHSolar
             if (!DA.GetData(11, ref hour)) { return; }
 
             int rec = 0;
-            if (!DA.GetData(15, ref rec)) { return; }
+            if (!DA.GetData(13, ref rec)) { rec = 1; }
 
 
 
             bool mt = false;
-            if (!DA.GetData(17, ref mt)) { mt = false; }
+            if (!DA.GetData(15, ref mt)) { mt = false; }
 
 
-
-
+            //these two should be inputs
             double snow_threshold = 10;
             double tilt_treshold = 30;
+
 
             double rad = Math.PI / 180;
 
@@ -142,7 +146,6 @@ namespace GHSolar
             for (int i = 0; i < month - 1; i++)
             {
                 DOY += daysInMonth[i];
-                //month * 1;            //1-365
             }
             DOY += day;
 
@@ -182,18 +185,14 @@ namespace GHSolar
             Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
 
 
-            //List<bool[]> ShdwBeam_equinox = new List<bool[]>();
-            //List<bool[]> ShdwBeam_summer = new List<bool[]>();
-            //List<bool[]> ShdwBeam_winter = new List<bool[]>();
             List<bool> ShdwBeam_hour = new List<bool>();
-            //List<bool[]> ShdwHorizon = new List<bool[]>();
             List<bool[]> ShdwSky = new List<bool[]>();
 
             for(int i=0; i<mshvrt.Length; i++)
             {
                 Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
 
-                //sky dome
+                //sky dome diffuse
                 Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
                 for (int u = 0; u < vec_sky.Length; u++)
                 {
@@ -206,43 +205,16 @@ namespace GHSolar
                 cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
                 ShdwSky.Add(shdw_sky);
     
-                //for (int u = 0; u < vec_sky.Length; u++)
-                //{
-                //    p.sky[i].VertexShadowSphere[p.sky[i].VerticesHemisphere[u]] = shdw_sky[u];   
-                //}
-
-
-                ////horizon
-                //bool[] shdw_hor = new bool[p.sky[i].VerticesHorizon.Count];
-                //for (int u = 0; u < shdw_hor.Length; u++)
-                //{
-                //    shdw_hor[u] = p.sky[i].VertexShadowSphere[p.sky[i].VerticesHorizon[u]];
-                //}
-                //ShdwHorizon.Add(shdw_hor);
-
-
-
                 //beam for one hour only.
                 Vector3d[] vec_beam = new Vector3d[1];
                 vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
                 bool[] shdw_beam = new bool[1];
                 cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam, obst, ref shdw_beam);
                 ShdwBeam_hour.Add(shdw_beam[0]);
-
-
-
-                //put this into sensorpoints function .SetShadows()?
-                //p.sky[i].SetShadow_Dome();
-                //p.sky[i].SetShadow_Horizon();
-                //p.sky[i].SetShadow_Beam(HOY, shdw_beam[0]);
             }
             
             p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
             p.SetSnowcover(snow_threshold, tilt_treshold);
-
-            //put this into p.CalcIrradiation. less loops?
-            //p.SetShadows();
-            //p.SetSnowcover();
             //p.SetInterreflection();
 
 
