@@ -67,9 +67,9 @@ namespace GHSolar
             pManager.AddNumberParameter("Ib annual", "Ib annual", "Annual beam irradiation in [kWh/a]", GH_ParamAccess.list);
             pManager.AddNumberParameter("Ih annual", "Ih annual", "Annual diffuse irradiation in [kWh/h]", GH_ParamAccess.list);
 
-            pManager.AddMatrixParameter("I hourly", "I hourly", "Hourly total irradiation in [Wh]", GH_ParamAccess.list);
-            pManager.AddMatrixParameter("Ib hourly", "Ib hourly", "Hourly beam irradiation in [Wh]", GH_ParamAccess.list);
-            pManager.AddMatrixParameter("Ih hourly", "Ih hourly", "Hourly diffuse irradiation in [Wh]", GH_ParamAccess.list);
+            pManager.AddGenericParameter("I hourly", "I hourly", "Hourly total irradiation in [Wh]", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Ib hourly", "Ib hourly", "Hourly beam irradiation in [Wh]", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Ih hourly", "Ih hourly", "Hourly diffuse irradiation in [Wh]", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -201,41 +201,37 @@ namespace GHSolar
                 // equinox:             march 20
                 // summer solstice:     june 21
                 // winter solstice:     december 21
-                List<Vector3d> list_beam_equ = new List<Vector3d>();
-                List<Vector3d> list_beam_sum = new List<Vector3d>();
-                List<Vector3d> list_beam_win = new List<Vector3d>();
+                Vector3d[] vec_beam_equ = new Vector3d[24];
+                Vector3d[] vec_beam_sum = new Vector3d[24];
+                Vector3d[] vec_beam_win = new Vector3d[24];
+                bool[] sunshine_equ= new bool[24];
+                bool[] sunshine_sum = new bool[24];
+                bool[] sunshine_win = new bool[24];
                 for (int t = 0; t < 24; t++)
                 {
                     if (sunvectors[HOYequ + t].Sunshine)
-                    {
-                        list_beam_equ.Add(new Vector3d(sunvectors[HOYequ + t].udtCoordXYZ.x, sunvectors[HOYequ + t].udtCoordXYZ.y, sunvectors[HOYequ + t].udtCoordXYZ.z));
-                    }
+                        sunshine_equ[t] = true;
                     if (sunvectors[HOYsum + t].Sunshine)
-                    {
-                        list_beam_sum.Add(new Vector3d(sunvectors[HOYsum + t].udtCoordXYZ.x, sunvectors[HOYsum + t].udtCoordXYZ.y, sunvectors[HOYsum + t].udtCoordXYZ.z));
-                    }
+                        sunshine_sum[t] = true;
                     if (sunvectors[HOYwin + t].Sunshine)
-                    {
-                        list_beam_win.Add(new Vector3d(sunvectors[HOYwin + t].udtCoordXYZ.x, sunvectors[HOYwin + t].udtCoordXYZ.y, sunvectors[HOYwin + t].udtCoordXYZ.z));
-                    }
+                        sunshine_win[t] = true;
+                    vec_beam_equ[t] = new Vector3d(sunvectors[HOYequ + t].udtCoordXYZ.x, sunvectors[HOYequ + t].udtCoordXYZ.y, sunvectors[HOYequ + t].udtCoordXYZ.z);
+                    vec_beam_sum[t] = new Vector3d(sunvectors[HOYsum + t].udtCoordXYZ.x, sunvectors[HOYsum + t].udtCoordXYZ.y, sunvectors[HOYsum + t].udtCoordXYZ.z);
+                    vec_beam_win[t] = new Vector3d(sunvectors[HOYwin + t].udtCoordXYZ.x, sunvectors[HOYwin + t].udtCoordXYZ.y, sunvectors[HOYwin + t].udtCoordXYZ.z);
                 }
-                Vector3d[] vec_beam_equ = list_beam_equ.ToArray();
-                Vector3d[] vec_beam_sum = list_beam_sum.ToArray();
-                Vector3d[] vec_beam_win = list_beam_win.ToArray();
+
                 bool[] shdw_beam_equ = new bool[vec_beam_equ.Length];
                 bool[] shdw_beam_sum = new bool[vec_beam_sum.Length];
                 bool[] shdw_beam_win = new bool[vec_beam_win.Length];
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, obst, ref shdw_beam_equ);
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, obst, ref shdw_beam_sum);
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, obst, ref shdw_beam_win);
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
                 ShdwBeam_equinox.Add(shdw_beam_equ);
                 ShdwBeam_summer.Add(shdw_beam_sum);
                 ShdwBeam_winter.Add(shdw_beam_win);
-
-
             }
 
-            p.SetShadows(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
+            p.SetShadowsInterpolated(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
             p.SetSnowcover(snow_threshold, tilt_treshold);
             //p.SetInterreflection();
 
@@ -246,8 +242,11 @@ namespace GHSolar
                 p.CalcIrradiationMT();
 
 
-            
 
+            Matrix I_hourly = new Matrix(mshvrt.Length, 8760);
+            Matrix Ib_hourly = new Matrix(mshvrt.Length, 8760);
+            Matrix Ih_hourly = new Matrix(mshvrt.Length, 8760);
+            
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 double Itot = 0;
@@ -255,6 +254,9 @@ namespace GHSolar
                 double Idtot = 0;
                 for (int t = 0; t < 8760; t++)
                 {
+                    I_hourly[i, t] = p.I[i][t];
+                    Ib_hourly[i, t] = p.Ibeam[i][t];
+                    Ih_hourly[i, t] = p.Idiff[i][t][0];
                     Itot += p.I[i][t];
                     Ibtot += p.Ibeam[i][t];
                     Idtot += p.Idiff[i][t][0];
@@ -269,6 +271,10 @@ namespace GHSolar
             DA.SetDataList(0, I);
             DA.SetDataList(1, Ib);
             DA.SetDataList(2, Ih);
+
+            DA.SetData(3, I_hourly);
+            DA.SetData(4, Ib_hourly);
+            DA.SetData(5, Ih_hourly);
         }
 
         /// <summary>
