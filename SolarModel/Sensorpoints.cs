@@ -18,7 +18,7 @@ namespace SolarModel
         /// <summary>
         /// Sky hemisphere. See class "SykDome".
         /// </summary>
-        public SkyDome [] sky { get; private set; }
+        public SkyDome[] sky { get; private set; }
         /// <summary>
         /// 8760 hourly annual sun vectors. See class "Sunvectors".
         /// </summary>
@@ -72,7 +72,7 @@ namespace SolarModel
         /// <param name="beta">Tilt angle of sensor point.</param>
         /// <param name="psi">Azimuth angle of sensor point.</param>
         /// <param name="reclvlsky">Recursion level for sky hemisphere. 1 or 2 recommended. See class "SkyDome".</param>
-        public Sensorpoints(int year, Context.cWeatherdata weather, Context.cLocation location, List<SunVector> sunvectors, double []beta, double []psi, int reclvlsky)
+        public Sensorpoints(int year, Context.cWeatherdata weather, Context.cLocation location, List<SunVector> sunvectors, double[] beta, double[] psi, int reclvlsky)
         {
             this.location = location;
             this.weather = weather;
@@ -412,15 +412,40 @@ namespace SolarModel
                 {
                     this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
                 }
-                
+
                 this.sky[i].SetShadow_Dome();
                 this.sky[i].SetShadow_Horizon();
                 this.sky[i].SetShadow_Beam(HOY, ShdwBeam_hour[i]);
             }
         }
 
-        public void SetShadows(List<bool[]> ShdwBeam_Equinox, List<bool[]> ShdwBeam_Summer, List<bool[]> ShdwBeam_Winter, List<bool[]> ShdwSky)
+        /// <summary>
+        /// 3 days interpolation (equinox, summer, winter solstices)
+        /// </summary>
+        /// <param name="ShdwBeam_Equinox"></param>
+        /// <param name="ShdwBeam_Summer"></param>
+        /// <param name="ShdwBeam_Winter"></param>
+        /// <param name="ShdwSky"></param>
+        public void SetShadowsInterpolated(
+            List<bool[]> ShdwBeam_Equinox,
+            List<bool[]> ShdwBeam_Summer,
+            List<bool[]> ShdwBeam_Winter,
+            List<bool[]> ShdwSky)
         {
+
+            for (int i = 0; i < sky.Length; i++)
+            {
+                for (int u = 0; u < ShdwSky[i].Length; u++)
+                {
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
+                }
+
+                this.sky[i].SetShadow_Dome();
+                this.sky[i].SetShadow_Horizon();
+                //this.sky[i].SetShadow_Beam(HOY, ShdwBeam_hour[i]);
+            }
+
+
             //shdwbeam_summer, winter ewquinox have different lengths!!! coz only when sunshine true. 
             //but its always 
             //march 20
@@ -428,12 +453,295 @@ namespace SolarModel
             //december 21
 
             //interpolate!   check github solar_v1
-            
 
+
+            //            'interpolating all 8760 between correct dates equinox, summer, winter
+            //Private Function InterpolateShadowDays(radList As List(Of Double), _
+            //                                       _shadowsummer As ShadowFactor, _
+            //                                       _shadowwinter As ShadowFactor, _
+            //                                       _shadowequinox As ShadowFactor) As List(Of Double)
+
+            //    '100% equinox is 20 march and 23 Sept
+            //    '100% summer is 21 june
+            //    '100% winter is 22 decemebr
+
+            //    Dim y1, y2, y3, y4, y5, y6 As Integer
+            //    y1 = -9     'winter solstice
+            //    y2 = 78     'equinox spring
+            //    y3 = 171    'summer solstice
+            //    y4 = 265    'equinox autumn
+            //    y5 = 355    'winter solstice
+            //    y6 = 443    'equinox spring
+            int y1, y2, y3, y4, y5, y6;
+            y1 = -9;    //winter solstice
+            y2 = 78;    //equinox spring
+            y3 = 171;   // summer solstice
+            y4 = 265;   //equinox solstice
+            y5 = 355;   //winter solstice
+            y6 = 443;   //equinox spring
+
+            //    Dim fullF1, fullF2 As Integer
+            int fullF1, fullF2;
+
+            //    Dim factor As Double = 1
+            //    Dim i, u As Integer
+            //    Dim InterpolInterv As Integer
+            //    Dim dist1, dist2 As Double
+            double factor = 1.0;
+            int InterpolInterv;
+            double dist1, dist2;
+
+
+            for (int i = 0; i < ShdwBeam_Equinox.Count; i++)
+            {
+                //    fullF1 = y1                    '100% shadowwinter on this day
+                //    fullF2 = y2                     '100% shadowequinox on this day
+                //    InterpolInterv = y2 + (y1 * -1)
+                fullF1 = y1;    //100% shadowwinter on this day
+                fullF2 = y2;    //100% shadowequinox on this day
+                InterpolInterv = y2 + y1 * -1;
+                //    For i = 0 To y2 - 1             'from 0.Jan to 19.March
+                for (int d = 0; d < y2; d++)
+                {
+                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
+                    //        dist1 = 1 - dist1
+                    //        dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
+                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
+                    //        dist2 = 1 - dist1
+                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
+                    dist2 = 1 - dist1;
+                    //        For u = 0 To 23
+                    //            factor = ((1 - Math.Round(_shadowwinter.ShadowFactors(u), 4)) * dist1) * _shadowwinter.sunshine(u) + _
+                    //                ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist2) * _shadowequinox.sunshine(u)
+
+                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
+                    //            If factor > 1 Then
+                    //                factor = 1
+                    //            End If
+                    //        Next
+                    for (int u = 0; u < 24; u++)
+                    {
+                        factor = ((1 - Convert.ToDouble(ShdwBeam_Winter[i][u])) * dist1) +
+                            ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
+                        bool shdw = (factor >= 0.5) ? true : false;
+                        int HOY = d * 24 + u;
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                    //    Next
+                }
+
+
+                //    fullF1 = y2                      '100% shadowequinox on this day
+                //    fullF2 = y3                     '100% shadowsummer on this day
+                //    InterpolInterv = y3 - y2
+                fullF1 = y2;        // 100% shadowequinox on this day
+                fullF2 = y3;        // 100% shadowsummer on this day
+                InterpolInterv = y3 - y2;
+                //    For i = y2 To y3 - 1            'from 20.March to 20.june
+                for (int d = y2; d < y3; d++)
+                {
+                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
+                    //        'dist1 = 1 - dist1
+                    //        dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
+                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
+                    //        dist2 = 1 - dist1
+                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
+                    dist2 = 1 - dist1;
+                    //        For u = 0 To 23
+                    //            factor = ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist1) * _shadowequinox.sunshine(u) + _
+                    //               ((1 - Math.Round(_shadowsummer.ShadowFactors(u), 4)) * dist2) * _shadowsummer.sunshine(u)
+                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
+                    //            If factor > 1 Then
+                    //                factor = 1
+                    //            End If
+                    //        Next
+                    for (int u = 0; u < 24; u++)
+                    {
+                        factor = ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist1) +
+                            ((1 - Convert.ToDouble(ShdwBeam_Summer[i][u])) * dist2);
+                        bool shdw = (factor >= 0.5) ? true : false;
+                        int HOY = d * 24 + u;
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                    //    Next
+                }
+
+                //    fullF1 = y3                      '100% shadowsummer on this day
+                //    fullF2 = y4                     '100% shadowequinox on this day
+                //    InterpolInterv = y4 - y3
+                fullF1 = y3;        //100% shadowsummer on this day
+                fullF2 = y4;        //100% shadowequinox on this day
+                InterpolInterv = y4 - y3;
+                //    For i = y3 To y4 - 1            'from 21.June to 22.Sept
+                for (int d = y3; d < y4; d++)
+                {
+                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
+                    //        dist1 = 1 - dist1
+                    //        dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
+                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
+                    //        dist2 = 1 - dist1
+                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
+                    dist2 = 1 - dist1;
+                    //        For u = 0 To 23
+                    //            factor = ((1 - Math.Round(_shadowsummer.ShadowFactors(u), 4)) * dist1) * _shadowsummer.sunshine(u) + _
+                    //               ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist2) * _shadowequinox.sunshine(u)
+                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
+                    //            If factor > 1 Then
+                    //                factor = 1
+                    //            End If
+                    //        Next
+                    for (int u = 0; u < 24; u++)
+                    {
+                        factor = ((1 - Convert.ToDouble(ShdwBeam_Summer[i][u])) * dist1) +
+                            ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
+                        bool shdw = (factor >= 0.5) ? true : false;
+                        int HOY = d * 24 + u;
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                    //    Next
+                }
+                //    fullF1 = y4                      '100% shadowequinox on this day
+                //    fullF2 = y5                     '100% shadowwinter on this day
+                //    InterpolInterv = y5 - y4
+                fullF1 = y4;
+                fullF2 = y5;
+                InterpolInterv = y5 - y4;
+                //    For i = y4 To y5 - 1            'from 23.Sept to 21.Dec
+                for (int d = y4; d < y5; d++)
+                {
+                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
+                    //        'dist1 = 1 - dist1
+                    //        dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
+                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
+                    //        dist2 = 1 - dist1
+                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
+                    dist2 = 1 - dist1;
+                    //        For u = 0 To 23
+                    //            factor = ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist1) * _shadowequinox.sunshine(u) + _
+                    //               ((1 - Math.Round(_shadowwinter.ShadowFactors(u), 4)) * dist2) * _shadowwinter.sunshine(u)
+                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
+                    //            If factor > 1 Then
+                    //                factor = 1
+                    //            End If
+                    //        Next
+                    for (int u = 0; u < 24; u++)
+                    {
+                        factor = ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist1) +
+                            ((1 - Convert.ToDouble(ShdwBeam_Winter[i][u])) * dist2);
+                        bool shdw = (factor >= 0.5) ? true : false;
+                        int HOY = d * 24 + u;
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                    //    Next
+                }
+
+                //    fullF1 = y5                      '100% shadowwinter on this day
+                //    fullF2 = y6                     '100% shadowequinox spring on this day
+                //    InterpolInterv = y6 - y5
+                fullF1 = y5;
+                fullF2 = y6;
+                InterpolInterv = y6 - y5;
+                //    For i = y5 To 364            'from 22.Dec to 31.Dec
+                for (int d = y5; d < 365; d++)
+                {
+                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
+                    //        dist1 = 1 - dist1
+                    //        dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
+                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
+                    //        dist2 = 1 - dist1
+                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
+                    dist2 = 1 - dist1;
+                    //        For u = 0 To 23
+                    //            factor = ((1 - Math.Round(_shadowwinter.ShadowFactors(u), 4)) * dist1) * _shadowwinter.sunshine(u) + _
+                    //               ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist2) * _shadowequinox.sunshine(u)
+                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
+                    //            If factor > 1 Then
+                    //                factor = 1
+                    //            End If
+                    //        Next
+                    for (int u = 0; u < 24; u++)
+                    {
+                        factor = ((1 - Convert.ToDouble(ShdwBeam_Winter[i][u])) * dist1) +
+                            ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
+                        bool shdw = (factor >= 0.5) ? true : false;
+                        int HOY = d * 24 + u;
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                    //    Next
+                }
+
+            }
+            //    Return radList
+            //End Function
 
         }
 
+        public void SetShadowsInterpolated(int[] StartDays, int[] EndDays, List<bool[]>[] ShdwBeam, List<bool[]> ShdwSky)
+        {
 
+            /*'interpolating between 4 days in this case. shadow days 1, 92, 183 and 274
+   ' for 3 days, summer, winter solstice and equinox, see GHpvmodule.vb
+   Private Function interpolateShadowDays2(_dayStart As Integer(), _dayEnd As Integer(), _
+                                           Radiation As List(Of Double), shadowDays As List(Of ShadowFactor)) As List(Of Double)
+       'dayStart   {1,     92,     183,    274}
+       'dayEnd     {92,    183,    274,    365}
+       'shadowDays {1,     92,     183,    274}
+       Dim dayStart As Integer
+       Dim dayEnd As Integer
+       Dim dayIntervalls As Integer = _dayEnd(0) - _dayStart(0)
+
+       Dim maxPi As Double = 2 * Math.PI / shadowDays.Count
+
+
+       Dim ii As Integer
+       For i As Integer = 0 To shadowDays.Count - 1
+           If i = shadowDays.Count - 1 Then ii = 0 Else ii = i + 1
+           dayStart = _dayStart(i) - 1
+           dayEnd = _dayEnd(i) - 1
+           For n As Integer = dayStart To dayEnd
+
+               Dim dist1 As Double = (dayIntervalls - Math.Abs(dayStart - n)) / dayIntervalls
+               If i < (shadowDays.Count / 4) Then
+                   dist1 = 1 - dist1
+                   dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
+               ElseIf i < ((shadowDays.Count / 4) * 2) And i >= ((shadowDays.Count / 4) * 1) Then
+                   dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
+               ElseIf i < ((shadowDays.Count / 4) * 3) And i >= ((shadowDays.Count / 4) * 2) Then
+                   dist1 = 1 - dist1
+                   dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
+               ElseIf i < ((shadowDays.Count / 4) * 4) And i >= ((shadowDays.Count / 4) * 3) Then
+                   dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
+               End If
+ 
+               'Dim dist2 As Double = (dayIntervalls - Math.Abs(dayEnd - n)) / dayIntervalls
+               Dim dist2 As Double = 1 - dist1
+
+               For u As Integer = 0 To 23
+                   Dim factor As Double
+                   factor = ((1 - Math.Round(shadowDays(i).ShadowFactors(u), 4)) * dist1) * shadowDays(i).sunshine(u) + _
+                  ((1 - Math.Round(shadowDays(ii).ShadowFactors(u), 4)) * dist2) * shadowDays(ii).sunshine(u)
+                   Radiation(n * 24 + u) = Radiation(n * 24 + u) * factor
+               Next
+           Next
+       Next
+       interpolateShadowDays2 = Radiation
+   End Function*/
+        }
 
 
         /// <summary>
