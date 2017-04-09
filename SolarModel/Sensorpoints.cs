@@ -691,56 +691,107 @@ namespace SolarModel
 
         }
 
-        public void SetShadowsInterpolated(int[] StartDays, int[] EndDays, List<bool[]>[] ShdwBeam, List<bool[]> ShdwSky)
+        /// <summary>
+        /// Multiple days interpolation (e.g. 12 days: 1st day of each month)
+        /// </summary>
+        /// <param name="StartDays"></param>
+        /// <param name="EndDays"></param>
+        /// <param name="ShdwBeam"></param>
+        /// <param name="ShdwSky"></param>
+        public void SetShadowsInterpolated(int[] StartDays, int[] EndDays, List<bool[][]> ShdwBeam, List<bool[]> ShdwSky)
         {
-
-            /*'interpolating between 4 days in this case. shadow days 1, 92, 183 and 274
-   ' for 3 days, summer, winter solstice and equinox, see GHpvmodule.vb
-   Private Function interpolateShadowDays2(_dayStart As Integer(), _dayEnd As Integer(), _
-                                           Radiation As List(Of Double), shadowDays As List(Of ShadowFactor)) As List(Of Double)
-       'dayStart   {1,     92,     183,    274}
-       'dayEnd     {92,    183,    274,    365}
-       'shadowDays {1,     92,     183,    274}
-       Dim dayStart As Integer
-       Dim dayEnd As Integer
-       Dim dayIntervalls As Integer = _dayEnd(0) - _dayStart(0)
-
-       Dim maxPi As Double = 2 * Math.PI / shadowDays.Count
+            // list... -> for each mesh vertex... <bool[each day][24]> ShdwBeam
+            // int[start day for each day of ShdwBeam] StartDays
+            // int[end day for each day of ShdwBeam] EndDays
 
 
-       Dim ii As Integer
-       For i As Integer = 0 To shadowDays.Count - 1
-           If i = shadowDays.Count - 1 Then ii = 0 Else ii = i + 1
-           dayStart = _dayStart(i) - 1
-           dayEnd = _dayEnd(i) - 1
-           For n As Integer = dayStart To dayEnd
+   //         'interpolating between 4 days in this case. shadow days 1, 92, 183 and 274
+   //' for 3 days, summer, winter solstice and equinox, see GHpvmodule.vb
+   //Private Function interpolateShadowDays2(_dayStart As Integer(), _dayEnd As Integer(), _
+   //                                        Radiation As List(Of Double), shadowDays As List(Of ShadowFactor)) As List(Of Double)
+   //    'dayStart   {1,     92,     183,    274}
+   //    'dayEnd     {92,    183,    274,    365}
+   //    'shadowDays {1,     92,     183,    274}
+   //    Dim dayStart As Integer
+   //    Dim dayEnd As Integer
+   //    Dim dayIntervalls As Integer = _dayEnd(0) - _dayStart(0)
 
-               Dim dist1 As Double = (dayIntervalls - Math.Abs(dayStart - n)) / dayIntervalls
-               If i < (shadowDays.Count / 4) Then
-                   dist1 = 1 - dist1
-                   dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
-               ElseIf i < ((shadowDays.Count / 4) * 2) And i >= ((shadowDays.Count / 4) * 1) Then
-                   dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
-               ElseIf i < ((shadowDays.Count / 4) * 3) And i >= ((shadowDays.Count / 4) * 2) Then
-                   dist1 = 1 - dist1
-                   dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
-               ElseIf i < ((shadowDays.Count / 4) * 4) And i >= ((shadowDays.Count / 4) * 3) Then
-                   dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
-               End If
- 
-               'Dim dist2 As Double = (dayIntervalls - Math.Abs(dayEnd - n)) / dayIntervalls
-               Dim dist2 As Double = 1 - dist1
+   //    Dim maxPi As Double = 2 * Math.PI / shadowDays.Count
+            int dayStart, dayEnd;
+            int dayIntervals = EndDays[0] - StartDays[0];
+            double maxPi = 2 * Math.PI / Convert.ToDouble(ShdwBeam[0].Length);
 
-               For u As Integer = 0 To 23
-                   Dim factor As Double
-                   factor = ((1 - Math.Round(shadowDays(i).ShadowFactors(u), 4)) * dist1) * shadowDays(i).sunshine(u) + _
-                  ((1 - Math.Round(shadowDays(ii).ShadowFactors(u), 4)) * dist2) * shadowDays(ii).sunshine(u)
-                   Radiation(n * 24 + u) = Radiation(n * 24 + u) * factor
-               Next
-           Next
-       Next
-       interpolateShadowDays2 = Radiation
-   End Function*/
+            for (int i = 0; i < ShdwBeam.Count; i++)    //foreach sensor point
+            {
+                //    Dim ii As Integer
+                int dd;
+                //    For i As Integer = 0 To shadowDays.Count - 1
+                for (int d = 0; d < ShdwBeam[0].Length; d++)
+                {
+                    //        If i = shadowDays.Count - 1 Then ii = 0 Else ii = i + 1
+                    if (d == ShdwBeam[0].Length - 1)
+                        dd = 0;
+                    else
+                        dd = d + 1;
+                    //        dayStart = _dayStart(i) - 1
+                    //        dayEnd = _dayEnd(i) - 1
+                    dayStart = StartDays[d] - 1;
+                    dayEnd = EndDays[d] - 1;
+                    //        For n As Integer = dayStart To dayEnd
+                    for (int n = dayStart; n < dayEnd + 1; n++ )
+                    {
+                    //            Dim dist1 As Double = (dayIntervalls - Math.Abs(dayStart - n)) / dayIntervalls
+                        double dist1 = (dayIntervals - Math.Abs(dayStart - n)) / dayIntervals;
+                    //            If i < (shadowDays.Count / 4) Then
+                    //                dist1 = 1 - dist1
+                    //                dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
+                    //            ElseIf i < ((shadowDays.Count / 4) * 2) And i >= ((shadowDays.Count / 4) * 1) Then
+                    //                dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
+                    //            ElseIf i < ((shadowDays.Count / 4) * 3) And i >= ((shadowDays.Count / 4) * 2) Then
+                    //                dist1 = 1 - dist1
+                    //                dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
+                    //            ElseIf i < ((shadowDays.Count / 4) * 4) And i >= ((shadowDays.Count / 4) * 3) Then
+                    //                dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
+                    //            End If
+                        if (d < (ShdwBeam[0].Length / 4))
+                        {
+                            dist1 = 1 - dist1;
+                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((ShdwBeam[0].Length / 4) * 2) && d >= ((ShdwBeam[0].Length / 4) * 1))
+                        {
+                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                        }else if(d<((ShdwBeam[0].Length/4)*3) && d>=((ShdwBeam[0].Length / 4)*2))
+                        {
+                            dist1 = 1 - dist1;
+                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((ShdwBeam[0].Length / 4) * 4) && d >= ((ShdwBeam[0].Length / 4) * 3))
+                        {
+                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                        }
+                    //            'Dim dist2 As Double = (dayIntervalls - Math.Abs(dayEnd - n)) / dayIntervalls
+                    //            Dim dist2 As Double = 1 - dist1
+                        double dist2 = 1-dist1;
+                    //            For u As Integer = 0 To 23
+                    //                Dim factor As Double
+                    //                factor = ((1 - Math.Round(shadowDays(i).ShadowFactors(u), 4)) * dist1) * shadowDays(i).sunshine(u) + _
+                    //               ((1 - Math.Round(shadowDays(ii).ShadowFactors(u), 4)) * dist2) * shadowDays(ii).sunshine(u)
+                    //                Radiation(n * 24 + u) = Radiation(n * 24 + u) * factor
+                    //            Next
+                        for (int u = 0; u < 24; u++)
+                        {
+                            double factor;
+                            //!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        }
+                    //        Next
+                    }
+
+                    //    Next
+                }
+            }
+   //    interpolateShadowDays2 = Radiation
+   //End Function
         }
 
 
