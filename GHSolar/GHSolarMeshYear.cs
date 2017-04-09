@@ -53,9 +53,11 @@ namespace GHSolar
             pManager[10].Optional = true;
             pManager.AddIntegerParameter("Interreflection Resolution", "RefllllRes", "Hemisphere resolution for interreflections. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
             pManager[11].Optional = true;
+            pManager.AddIntegerParameter("Interpolation mode", "Interp", "Interpolation mode. Options: 0 = 3 days interpolation, 1 = 12 days interpolation (slower, but more accurate).", GH_ParamAccess.item);
+            pManager[12].Optional = true;
 
             pManager.AddBooleanParameter("MT", "MT", "Multi threading?", GH_ParamAccess.item);
-            pManager[12].Optional = true;
+            pManager[13].Optional = true;
         }
 
         /// <summary>
@@ -111,9 +113,11 @@ namespace GHSolar
             if (!DA.GetData(10, ref rec)) { rec = 1; }
 
 
+            int interpmode = 0;
+            if (!DA.GetData(12, ref interpmode)) { interpmode = 0; }
 
             bool mt = false;
-            if (!DA.GetData(12, ref mt)) { mt = false; }
+            if (!DA.GetData(13, ref mt)) { mt = false; }
 
 
             //these two should be inputs
@@ -180,58 +184,67 @@ namespace GHSolar
             int HOYsum = (equsol[1] - 1) * 24;
             int HOYwin = (equsol[3] - 1) * 24;
 
-            for (int i = 0; i < mshvrt.Length; i++)
+            if (interpmode == 0)
             {
-                Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
 
-                //sky dome diffuse
-                Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
-                for (int u = 0; u < vec_sky.Length; u++)
+                for (int i = 0; i < mshvrt.Length; i++)
                 {
-                    vec_sky[u] = new Vector3d(
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
-                }
-                bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
-                ShdwSky.Add(shdw_sky);
+                    Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
 
-                //beam for 24 hours. no! don´t use those vectors, where its night time anyway!
-                // equinox:             march 20
-                // summer solstice:     june 21
-                // winter solstice:     december 21
-                Vector3d[] vec_beam_equ = new Vector3d[24];
-                Vector3d[] vec_beam_sum = new Vector3d[24];
-                Vector3d[] vec_beam_win = new Vector3d[24];
-                bool[] sunshine_equ= new bool[24];
-                bool[] sunshine_sum = new bool[24];
-                bool[] sunshine_win = new bool[24];
-                for (int t = 0; t < 24; t++)
-                {
-                    if (sunvectors[HOYequ + t].Sunshine)
-                        sunshine_equ[t] = true;
-                    if (sunvectors[HOYsum + t].Sunshine)
-                        sunshine_sum[t] = true;
-                    if (sunvectors[HOYwin + t].Sunshine)
-                        sunshine_win[t] = true;
-                    vec_beam_equ[t] = new Vector3d(sunvectors[HOYequ + t].udtCoordXYZ.x, sunvectors[HOYequ + t].udtCoordXYZ.y, sunvectors[HOYequ + t].udtCoordXYZ.z);
-                    vec_beam_sum[t] = new Vector3d(sunvectors[HOYsum + t].udtCoordXYZ.x, sunvectors[HOYsum + t].udtCoordXYZ.y, sunvectors[HOYsum + t].udtCoordXYZ.z);
-                    vec_beam_win[t] = new Vector3d(sunvectors[HOYwin + t].udtCoordXYZ.x, sunvectors[HOYwin + t].udtCoordXYZ.y, sunvectors[HOYwin + t].udtCoordXYZ.z);
+                    //sky dome diffuse
+                    Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
+                    for (int u = 0; u < vec_sky.Length; u++)
+                    {
+                        vec_sky[u] = new Vector3d(
+                            p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
+                            p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
+                            p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
+                    }
+                    bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
+                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
+                    ShdwSky.Add(shdw_sky);
+
+                    //beam for 24 hours. no! don´t use those vectors, where its night time anyway!
+                    // equinox:             march 20
+                    // summer solstice:     june 21
+                    // winter solstice:     december 21
+                    Vector3d[] vec_beam_equ = new Vector3d[24];
+                    Vector3d[] vec_beam_sum = new Vector3d[24];
+                    Vector3d[] vec_beam_win = new Vector3d[24];
+                    bool[] sunshine_equ = new bool[24];
+                    bool[] sunshine_sum = new bool[24];
+                    bool[] sunshine_win = new bool[24];
+                    for (int t = 0; t < 24; t++)
+                    {
+                        if (sunvectors[HOYequ + t].Sunshine)
+                            sunshine_equ[t] = true;
+                        if (sunvectors[HOYsum + t].Sunshine)
+                            sunshine_sum[t] = true;
+                        if (sunvectors[HOYwin + t].Sunshine)
+                            sunshine_win[t] = true;
+                        vec_beam_equ[t] = new Vector3d(sunvectors[HOYequ + t].udtCoordXYZ.x, sunvectors[HOYequ + t].udtCoordXYZ.y, sunvectors[HOYequ + t].udtCoordXYZ.z);
+                        vec_beam_sum[t] = new Vector3d(sunvectors[HOYsum + t].udtCoordXYZ.x, sunvectors[HOYsum + t].udtCoordXYZ.y, sunvectors[HOYsum + t].udtCoordXYZ.z);
+                        vec_beam_win[t] = new Vector3d(sunvectors[HOYwin + t].udtCoordXYZ.x, sunvectors[HOYwin + t].udtCoordXYZ.y, sunvectors[HOYwin + t].udtCoordXYZ.z);
+                    }
+
+                    bool[] shdw_beam_equ = new bool[vec_beam_equ.Length];
+                    bool[] shdw_beam_sum = new bool[vec_beam_sum.Length];
+                    bool[] shdw_beam_win = new bool[vec_beam_win.Length];
+                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                    ShdwBeam_equinox.Add(shdw_beam_equ);
+                    ShdwBeam_summer.Add(shdw_beam_sum);
+                    ShdwBeam_winter.Add(shdw_beam_win);
                 }
 
-                bool[] shdw_beam_equ = new bool[vec_beam_equ.Length];
-                bool[] shdw_beam_sum = new bool[vec_beam_sum.Length];
-                bool[] shdw_beam_win = new bool[vec_beam_win.Length];
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
-                ShdwBeam_equinox.Add(shdw_beam_equ);
-                ShdwBeam_summer.Add(shdw_beam_sum);
-                ShdwBeam_winter.Add(shdw_beam_win);
+                p.SetShadowsInterpolated(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
+            }
+            else
+            {
+
             }
 
-            p.SetShadowsInterpolated(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
             p.SetSnowcover(snow_threshold, tilt_treshold);
             //p.SetInterreflection();
 
@@ -246,7 +259,7 @@ namespace GHSolar
             Matrix I_hourly = new Matrix(mshvrt.Length, 8760);
             Matrix Ib_hourly = new Matrix(mshvrt.Length, 8760);
             Matrix Ih_hourly = new Matrix(mshvrt.Length, 8760);
-            
+
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 double Itot = 0;

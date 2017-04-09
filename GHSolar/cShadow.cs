@@ -26,6 +26,8 @@ namespace GHSolar
         //inter-reflections? n
 
 
+        //MT versions !! is it possible with rhino?
+
         /// <summary>
         /// 
         /// </summary>
