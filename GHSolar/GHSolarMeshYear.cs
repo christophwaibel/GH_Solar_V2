@@ -175,7 +175,11 @@ namespace GHSolar
             List<bool[]> ShdwBeam_equinox = new List<bool[]>();
             List<bool[]> ShdwBeam_summer = new List<bool[]>();
             List<bool[]> ShdwBeam_winter = new List<bool[]>();
-            //List<bool> ShdwBeam_hour = new List<bool>();
+
+            List<bool[][]> ShdwBeam = new List<bool[][]>();
+            int[] startDays = new int[12];
+            int[] endDays = new int[12];
+
             List<bool[]> ShdwSky = new List<bool[]>();
 
 
@@ -184,26 +188,34 @@ namespace GHSolar
             int HOYsum = (equsol[1] - 1) * 24;
             int HOYwin = (equsol[3] - 1) * 24;
 
-            if (interpmode == 0)
+
+            for (int i = 0; i < mshvrt.Length; i++)
             {
+                double status = (100 / Convert.ToDouble(mshvrt.Length)) * Convert.ToDouble(i + 1);
+                Rhino.RhinoApp.WriteLine("SOLAR_V2: (1/6) Shadow calculation... " + Convert.ToString(Math.Round(status,2) + "%"));
 
-                for (int i = 0; i < mshvrt.Length; i++)
+                Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
+                //Rhino.RhinoDoc.ActiveDoc.Objects.AddPoint(orig);
+
+                //sky dome diffuse
+                Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
+                for (int u = 0; u < vec_sky.Length; u++)
                 {
-                    Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
-
-                    //sky dome diffuse
-                    Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
-                    for (int u = 0; u < vec_sky.Length; u++)
-                    {
-                        vec_sky[u] = new Vector3d(
-                            p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
-                            p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
-                            p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
-                    }
-                    bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
+                    vec_sky[u] = new Vector3d(
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
+                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
+                }
+                bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
+                if (mt)
+                    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
+                else 
                     cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
-                    ShdwSky.Add(shdw_sky);
 
+                ShdwSky.Add(shdw_sky);
+
+                if (interpmode == 0)
+                {
                     //beam for 24 hours. no! don´t use those vectors, where its night time anyway!
                     // equinox:             march 20
                     // summer solstice:     june 21
@@ -227,39 +239,100 @@ namespace GHSolar
                         vec_beam_win[t] = new Vector3d(sunvectors[HOYwin + t].udtCoordXYZ.x, sunvectors[HOYwin + t].udtCoordXYZ.y, sunvectors[HOYwin + t].udtCoordXYZ.z);
                     }
 
-                    bool[] shdw_beam_equ = new bool[vec_beam_equ.Length];
-                    bool[] shdw_beam_sum = new bool[vec_beam_sum.Length];
-                    bool[] shdw_beam_win = new bool[vec_beam_win.Length];
-                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
-                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
-                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                    bool[] shdw_beam_equ = new bool[24];
+                    bool[] shdw_beam_sum = new bool[24];
+                    bool[] shdw_beam_win = new bool[24];
+                    if (mt)
+                    {
+                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                    }
+                    else
+                    {
+                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                    }
                     ShdwBeam_equinox.Add(shdw_beam_equ);
                     ShdwBeam_summer.Add(shdw_beam_sum);
                     ShdwBeam_winter.Add(shdw_beam_win);
                 }
+                else
+                {
+                    bool[][] shdw_beam = new bool[12][];
+                    int dmcount = 1;    //days in month counter
+                    for (int d = 0; d < 12; d++)
+                    {
+                        Vector3d[] vec_beam = new Vector3d[24];
+                        int dm = System.DateTime.DaysInMonth(year, d + 1);
+                        startDays[d] = dmcount;
+                        endDays[d] = dm + dmcount;
+                        dmcount += dm;
 
-                p.SetShadowsInterpolated(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
+                        bool[] sunshine = new bool[24];
+                        int HOY = (startDays[d] - 1) * 24;
+                        for (int t = 0; t < 24; t++) 
+                        {
+                            if (sunvectors[HOY + t].Sunshine)
+                                sunshine[t] = true;
+                            vec_beam[t] = new Vector3d(sunvectors[HOY + t].udtCoordXYZ.x, sunvectors[HOY + t].udtCoordXYZ.y, sunvectors[HOY + t].udtCoordXYZ.z);
+                        }
+                        shdw_beam[d] = new bool[24];
+                        if (mt)
+                            cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam, sunshine, obst, ref shdw_beam[d]);
+                        else
+                            cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam, sunshine, obst, ref shdw_beam[d]);
+                    }
+                    ShdwBeam.Add(shdw_beam);
+                }
+            }
+
+            //Matrix I_hourly = new Matrix(msh.Vertices.Count, 8760); //= new Matrix(mshvrt.Length, 8760);
+            //Matrix Ib_hourly = new Matrix(msh.Vertices.Count, 8760);//= new Matrix(mshvrt.Length, 8760);
+            //Matrix Ih_hourly=new Matrix(msh.Vertices.Count, 8760);// = new Matrix(mshvrt.Length, 8760);
+            //if (mt)
+            //    cShadow.CalcShadowMeshMT(year, sunvectors, msh, obst, interpmode, weather, location, rec,
+            //        ref I, ref Ih, ref Ib, ref I_hourly, ref Ih_hourly, ref Ib_hourly);
+            //else
+            //    cShadow.CalcShadowMeshMT(year, sunvectors, msh, obst, interpmode, weather, location, rec,
+            //        ref I, ref Ih, ref Ib, ref I_hourly, ref Ih_hourly, ref Ib_hourly);
+
+
+            Rhino.RhinoApp.WriteLine("SOLAR_V2: (2/6) Setting interpolated shadows...");
+            if (mt)
+            {
+                if (interpmode == 0)
+                    p.SetShadowsInterpolatedMT(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
+                else
+                    p.SetShadowsInterpolatedMT(startDays, endDays, ShdwBeam, ShdwSky);
             }
             else
             {
-
+                if (interpmode == 0)
+                    p.SetShadowsInterpolated(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
+                else
+                    p.SetShadowsInterpolated(startDays, endDays, ShdwBeam, ShdwSky);
             }
 
+            Rhino.RhinoApp.WriteLine("SOLAR_V2: (3/6) Setting snow cover...");
             p.SetSnowcover(snow_threshold, tilt_treshold);
+
+            Rhino.RhinoApp.WriteLine("SOLAR_V2: (4/6) Calculating inter-reflections...");
             //p.SetInterreflection();
 
-
-            if (!mt)
-                p.CalcIrradiation();
-            else
+            Rhino.RhinoApp.WriteLine("SOLAR_V2: (5/6) Calculating irradiation...");
+            if (mt)
                 p.CalcIrradiationMT();
+            else
+                p.CalcIrradiation();
 
 
+            Rhino.RhinoApp.WriteLine("SOLAR_V2: (6/6) Writing data to Rhino...");
 
             Matrix I_hourly = new Matrix(mshvrt.Length, 8760);
             Matrix Ib_hourly = new Matrix(mshvrt.Length, 8760);
             Matrix Ih_hourly = new Matrix(mshvrt.Length, 8760);
-
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 double Itot = 0;
@@ -269,10 +342,10 @@ namespace GHSolar
                 {
                     I_hourly[i, t] = p.I[i][t];
                     Ib_hourly[i, t] = p.Ibeam[i][t];
-                    Ih_hourly[i, t] = p.Idiff[i][t][0];
+                    Ih_hourly[i, t] = p.Idiff[i][t];
                     Itot += p.I[i][t];
                     Ibtot += p.Ibeam[i][t];
-                    Idtot += p.Idiff[i][t][0];
+                    Idtot += p.Idiff[i][t];
                 }
                 I.Add(Itot / 1000);     //in kWh/a
                 Ib.Add(Ibtot / 1000);   //in kWh/a
@@ -288,6 +361,8 @@ namespace GHSolar
             DA.SetData(3, I_hourly);
             DA.SetData(4, Ib_hourly);
             DA.SetData(5, Ih_hourly);
+
+            Rhino.RhinoApp.WriteLine("SOLAR_V2... Done");
         }
 
         /// <summary>

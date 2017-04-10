@@ -230,7 +230,7 @@ namespace GHSolar
             {
                 I.Add(p.I[i][HOY]);
                 Ib.Add(p.Ibeam[i][HOY]);
-                Ih.Add(p.Idiff[i][HOY][0]);
+                Ih.Add(p.Idiff[i][HOY]);
             }
             
 
