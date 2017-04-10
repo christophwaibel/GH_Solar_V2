@@ -93,7 +93,7 @@ namespace SolarModel
         private void CalcIdiff_unobstr(int DOY, int HOY)
         {
             if (this.sunvectors[HOY].Sunshine == true)
-                this.Idiff[HOY] = Irradiation.Diffuse(this.weather.DHI[HOY], this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle, this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta, this.psi, DOY);
+                this.Idiff[HOY] = Irradiation.Diffuse_old(this.weather.DHI[HOY], this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle, this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta, this.psi, DOY);
             else
                 this.Idiff[HOY] = new double[4] { 0, 0, 0, 0 };
  

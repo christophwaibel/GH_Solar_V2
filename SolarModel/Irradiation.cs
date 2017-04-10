@@ -45,7 +45,7 @@ namespace SolarModel
         /// <param name="DOY">Day of year (DOY).</param>
         ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.
         ///[0] is total diffuse, [1]: horizon, [2]: dome, [3]: circumsolar.</returns>
-        public static double [] Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY)
+        public static double [] Diffuse_old(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY)
         {
             //relative optical air mass
             double m = 1.0 / Math.Cos(rad * θZ);
@@ -119,15 +119,100 @@ namespace SolarModel
         /// <param name="domeshdw">0-1 fraction of the obstructed skydome. (1 = fully obstructed; 0 = no obstruction)</param>
         /// <param name="circumsolshdw">Boolean, indicating if solar vector of that moment is obstructed. (true = obstructed; false = no obstruction)</param>
         ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.</returns>
-        public static double [] Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, bool circumsolshdw)
+        public static double [] Diffuse_old(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, bool circumsolshdw)
         {
-            double[] D4 = Diffuse(DHI, DNI, θZ, θA, θβ, θAsrf, DOY);
+            double[] D4 = Diffuse_old(DHI, DNI, θZ, θA, θβ, θAsrf, DOY);
             double Dhorizon = D4[1] * (1 - horizonshdw);
             double Ddome = D4[2] * (1 - domeshdw);
             double Dcircumsolar = D4[3] * (1 - Convert.ToInt32(circumsolshdw));
 
             return new double[4] { Dhorizon + Ddome + Dcircumsolar, Dhorizon, Ddome, Dcircumsolar };
         }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Diffuse radiation, considering anisotropic sky. See Perez 1990, or EnergyPlus Engineering Documentation.
+        /// </summary>
+        /// <param name="DHI">Diffuse Horizontal Irradiation (DHI). From a weatherfile, e.g. *.epw.</param>
+        /// <param name="DOY">Direct Normal Irradiation (DNI). From a weatherfile, e.g. *.epw.</param>
+        /// <param name="θZ">Solar Zenith, in degree.</param>
+        /// <param name="θA">Solar Azimuth, in degree.</param>
+        /// <param name="θβ">Analysis surface tilt angle.</param>
+        /// <param name="θAsrf">Analysis surface azimuth.</param>
+        /// <param name="DNI">Day of year (DOY).</param>
+        /// <param name="horizonshdw">0-1 fraction of obstructed horizon. (1 = fully obstructed; 0 = no obstruction)</param>
+        /// <param name="domeshdw">0-1 fraction of the obstructed skydome. (1 = fully obstructed; 0 = no obstruction)</param>
+        /// <param name="circumsolshdw">Boolean, indicating if solar vector of that moment is obstructed. (true = obstructed; false = no obstruction)</param>
+        ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.</returns>
+        public static double Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, bool circumsolshdw)
+        {
+            //relative optical air mass
+            double m = 1.0 / Math.Cos(rad * θZ);
+            if (m > 40) m = 40; //because the simple model is too simple. value could become too high with high zenith angles
+
+            //extraterrestrial irradiance
+            //double I0 = 1353.0;           //constant assumed by energyplus
+            double b = 2 * pi * (Convert.ToDouble(DOY) / 365.0);// *rad;
+            double I0 = Isc * (1.00011 + 0.034221 * Math.Cos(b) + 0.00128 * Math.Sin(b) + 0.000719 * Math.Cos(2 * b) + 0.000077 * Math.Sin(2 * b));
+
+            //Sky Brightness factor
+            double Δ = DHI * m / I0;
+
+            //Sky clearness factor (ε)
+            double ε = ((DHI + DNI) / DHI + 1.041 * Math.Pow((θZ * rad), 3)) / (1 + 1.041 * Math.Pow((θZ * rad), 3));
+
+            Func<int, double, double> Fij = (ij, εcheck) =>
+            {
+                //Perez coefficients, from EnergyPlus 6.5 Engineering Documentation p.185. More precise than in Perez 1990.
+                double[,] Fijmatrix = new double[,] 
+                { 
+                { -0.0083117, 0.1299457, 0.3296958, 0.5682053, 0.8730280, 1.1326077, 1.0601591, 0.6777470},             //F11
+                { 0.5877285, 0.6825954, 0.4868735, 0.1874525, -0.3920403, -1.2367284, -1.5999137, -0.3272588},          //F12
+                { -0.0620636, -0.1513752, -0.2210958, -0.2951290, -0.3616149, -0.4118494, -0.3589221, -0.2504286},      //F13
+                { -0.0596012, -0.0189325, 0.0554140, 0.1088631, 0.2255647, 0.2877813, 0.2642124, 0.1561313},            //F21
+                { 0.0721249, 0.0659650, -0.0639588, -0.1519229, -0.4620442, -0.8230357, -1.1272340, -1.3765031},        //F22
+                { -0.0220216, -0.0288748, -0.0260542, -0.0139754, 0.0012448, 0.0558651, 0.1310694, 0.2506212}           //F23
+                };
+                double Fijvalue = 0.0;
+                if (εcheck < 1.065) Fijvalue = Fijmatrix[ij, 0];
+                else if (εcheck >= 1.065 && εcheck < 1.230) Fijvalue = Fijmatrix[ij, 1];
+                else if (εcheck >= 1.230 && εcheck < 1.500) Fijvalue = Fijmatrix[ij, 2];
+                else if (εcheck >= 1.500 && εcheck < 1.950) Fijvalue = Fijmatrix[ij, 3];
+                else if (εcheck >= 1.950 && εcheck < 2.800) Fijvalue = Fijmatrix[ij, 4];
+                else if (εcheck >= 2.800 && εcheck < 4.500) Fijvalue = Fijmatrix[ij, 5];
+                else if (εcheck >= 4.500 && εcheck < 6.200) Fijvalue = Fijmatrix[ij, 6];
+                else Fijvalue = Fijmatrix[ij, 7];//(ε >= 6.200)
+                return Fijvalue;
+            };
+
+            double F1 = Math.Max(0, Fij(0, ε) + Fij(1, ε) * Δ + Fij(2, ε) * (θZ * rad));
+            double F2 = Fij(3, ε) + Fij(4, ε) * Δ + Fij(5, ε) * (θZ * rad);
+
+            //angle of incidence
+            double AOI = Math.Acos(Math.Cos(θZ * rad) * Math.Cos(θβ * rad) + Math.Sin(θZ * rad) * Math.Sin(θβ * rad) * Math.Cos((θA - θAsrf) * rad));
+            double a = Math.Max(0, Math.Cos(AOI));
+            b = Math.Max(Math.Cos(85 * rad), Math.Cos(θZ * rad));
+
+            // Dhorizon + Ddome + Dcircumsolar
+            //double D = DHI * ((1 - F1) *((1 + Math.Cos(θβ * rad)) / 2) + F1 * (a / b) + F2 * Math.Sin(θβ * rad));
+            double Dhorizon = (DHI * F2 * Math.Sin(θβ * rad)) * (1 - horizonshdw);
+            double Ddome = (DHI * (1 - F1) * (1 + Math.Cos(θβ * rad)) / 2)*(1 - domeshdw);
+            double Dcircum = (DHI * F1 * (a / b)) * (1 - Convert.ToInt32(circumsolshdw));
+            double D = Dhorizon + Ddome + Dcircum;
+            return D;
+        }
+
+
+
+
+
+
 
 
 
