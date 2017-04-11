@@ -127,22 +127,18 @@ namespace SolarModel
         /// <param name="HOY">Hour of the year, ∈ [0, 8759].</param>
         private void CalcIdiff(int DOY, int HOY)
         {
-            if (this.sunvectors[HOY].Sunshine == true)
-                for (int i = 0; i < this.Idiff.Length; i++)
-                {
-                    if (this.snowcovered[i][HOY])
-                        this.Idiff[i][HOY] = 0.0;
-                    else
-                    {
-                        this.Idiff[i][HOY] = Irradiation.Diffuse(
-                            this.weather.DHI[HOY], this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle,
-                            this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], DOY,
-                            sky[i].ShdwHorizon, sky[i].ShdwDome, sky[i].ShdwBeam[HOY]);
-                    }
-                }
-            else
-                for (int i = 0; i < this.Idiff.Length; i++)
+            for (int i = 0; i < this.Idiff.Length; i++)
+            {
+                if (this.snowcovered[i][HOY])
                     this.Idiff[i][HOY] = 0.0;
+                else
+                {
+                    this.Idiff[i][HOY] = Irradiation.Diffuse(
+                        this.weather.DHI[HOY], this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle,
+                        this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], DOY,
+                        sky[i].ShdwHorizon, sky[i].ShdwDome, sky[i].ShdwBeam[HOY]);
+                }
+            }
         }
 
         /// <summary>
@@ -153,28 +149,18 @@ namespace SolarModel
         /// <param name="HOY">Hour of the year, ∈ [0, 8759].</param>
         private void CalcIdiff_MT(int DOY, int HOY)
         {
-            if (this.sunvectors[HOY].Sunshine == true)
+            Parallel.For(0, this.Idiff.Length, i =>
             {
-                Parallel.For(0, this.Idiff.Length, i =>
-                {
-                    if (snowcovered[i][HOY])
-                        this.Idiff[i][HOY] = 0.0;
-                    else
-                    {
-                        this.Idiff[i][HOY] = Irradiation.Diffuse(
-                            this.weather.DHI[HOY], this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle,
-                            this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], DOY,
-                            sky[i].ShdwHorizon, sky[i].ShdwDome, sky[i].ShdwBeam[HOY]);
-                    }
-                });
-            }
-            else
-            {
-                Parallel.For(0, this.Idiff.Length, i =>
-                {
+                if (snowcovered[i][HOY])
                     this.Idiff[i][HOY] = 0.0;
-                });
-            }
+                else
+                {
+                    this.Idiff[i][HOY] = Irradiation.Diffuse(
+                        this.weather.DHI[HOY], this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle,
+                        this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], DOY,
+                        sky[i].ShdwHorizon, sky[i].ShdwDome, sky[i].ShdwBeam[HOY]);
+                }
+            });
         }
 
         /// <summary>
@@ -702,62 +688,26 @@ namespace SolarModel
             }
 
 
-
-            // list... -> for each mesh vertex... <bool[each day][24]> ShdwBeam
-            // int[start day for each day of ShdwBeam] StartDays
-            // int[end day for each day of ShdwBeam] EndDays
-
-
-            //         'interpolating between 4 days in this case. shadow days 1, 92, 183 and 274
-            //' for 3 days, summer, winter solstice and equinox, see GHpvmodule.vb
-            //Private Function interpolateShadowDays2(_dayStart As Integer(), _dayEnd As Integer(), _
-            //                                        Radiation As List(Of Double), shadowDays As List(Of ShadowFactor)) As List(Of Double)
-            //    'dayStart   {1,     92,     183,    274}
-            //    'dayEnd     {92,    183,    274,    365}
-            //    'shadowDays {1,     92,     183,    274}
-            //    Dim dayStart As Integer
-            //    Dim dayEnd As Integer
-            //    Dim dayIntervalls As Integer = _dayEnd(0) - _dayStart(0)
-
-            //    Dim maxPi As Double = 2 * Math.PI / shadowDays.Count
             int dayStart, dayEnd;
             int dayIntervals = EndDays[0] - StartDays[0];
             double maxPi = 2 * Math.PI / Convert.ToDouble(ShdwBeam[0].Length);
 
-            int daysUsed = StartDays.Length;//ShdwBeam[0].Length;
+            int daysUsed = StartDays.Length;
 
             for (int i = 0; i < this.sky.Length; i++)    //foreach sensor point
             {
-                //    Dim ii As Integer
                 int dd;
-                //    For i As Integer = 0 To shadowDays.Count - 1
                 for (int d = 0; d < daysUsed; d++)
                 {
-                    //        If i = shadowDays.Count - 1 Then ii = 0 Else ii = i + 1
                     if (d == daysUsed - 1)
                         dd = 0;
                     else
                         dd = d + 1;
-                    //        dayStart = _dayStart(i) - 1
-                    //        dayEnd = _dayEnd(i) - 1
-                    dayStart = StartDays[d] - 1;
-                    dayEnd = EndDays[d] - 1;
-                    //        For n As Integer = dayStart To dayEnd
-                    for (int n = dayStart; n < dayEnd + 1; n++)
+                    dayStart = StartDays[d];
+                    dayEnd = EndDays[d];
+                    for (int n = dayStart; n < dayEnd; n++)
                     {
-                        //            Dim dist1 As Double = (dayIntervalls - Math.Abs(dayStart - n)) / dayIntervalls
                         double dist1 = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - n)) / Convert.ToDouble(dayIntervals);
-                        //            If i < (shadowDays.Count / 4) Then
-                        //                dist1 = 1 - dist1
-                        //                dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
-                        //            ElseIf i < ((shadowDays.Count / 4) * 2) And i >= ((shadowDays.Count / 4) * 1) Then
-                        //                dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
-                        //            ElseIf i < ((shadowDays.Count / 4) * 3) And i >= ((shadowDays.Count / 4) * 2) Then
-                        //                dist1 = 1 - dist1
-                        //                dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
-                        //            ElseIf i < ((shadowDays.Count / 4) * 4) And i >= ((shadowDays.Count / 4) * 3) Then
-                        //                dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
-                        //            End If
                         if (d < (daysUsed / 4))
                         {
                             dist1 = 1 - dist1;
@@ -776,31 +726,19 @@ namespace SolarModel
                         {
                             dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
                         }
-                        //            'Dim dist2 As Double = (dayIntervalls - Math.Abs(dayEnd - n)) / dayIntervalls
-                        //            Dim dist2 As Double = 1 - dist1
+
                         double dist2 = 1 - dist1;
-                        //            For u As Integer = 0 To 23
-                        //                Dim factor As Double
-                        //                factor = ((1 - Math.Round(shadowDays(i).ShadowFactors(u), 4)) * dist1) * shadowDays(i).sunshine(u) + _
-                        //               ((1 - Math.Round(shadowDays(ii).ShadowFactors(u), 4)) * dist2) * shadowDays(ii).sunshine(u)
-                        //                Radiation(n * 24 + u) = Radiation(n * 24 + u) * factor
-                        //            Next
                         for (int u = 0; u < 24; u++)
                         {
                             double factor = ((1 - Convert.ToDouble(ShdwBeam[i][d][u])) * dist1) +
                                 ((1 - Convert.ToDouble(ShdwBeam[i][dd][u])) * dist2);
                             bool shdw = (factor >= 0.5) ? false : true;
-                            int HOY = d * 24 + u;
+                            int HOY = (n - 1) * 24 + u;
                             this.sky[i].SetShadow_Beam(HOY, shdw);
                         }
-                        //        Next
                     }
-
-                    //    Next
                 }
             }
-            //    interpolateShadowDays2 = Radiation
-            //End Function
         }
 
         /// <summary>
@@ -998,9 +936,9 @@ namespace SolarModel
                         dd = 0;
                     else
                         dd = d + 1;
-                    dayStart = StartDays[d] - 1;
-                    dayEnd = EndDays[d] - 1;
-                    for (int n = dayStart; n < dayEnd + 1; n++)
+                    dayStart = StartDays[d];
+                    dayEnd = EndDays[d];
+                    for (int n = dayStart; n < dayEnd; n++)
                     {
                         double dist1 = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - n)) / Convert.ToDouble(dayIntervals);
                         if (d < (daysUsed / 4))
@@ -1027,7 +965,7 @@ namespace SolarModel
                             double factor = ((1 - Convert.ToDouble(ShdwBeam[i][d][u])) * dist1) +
                                 ((1 - Convert.ToDouble(ShdwBeam[i][dd][u])) * dist2);
                             bool shdw = (factor >= 0.5) ? false : true;
-                            int HOY = d * 24 + u;
+                            int HOY = (n - 1) * 24 + u;
                             this.sky[i].SetShadow_Beam(HOY, shdw);
                         }
                     }

@@ -16,7 +16,7 @@ namespace SolarModel
                 int daysInMonth = System.DateTime.DaysInMonth(year, m);
                 for (int d = 1; d <= daysInMonth; d++)
                 {
-                    for (int i = 1; i <= 24; i++)
+                    for (int i = 0; i <= 23; i++)
                     {
                         SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
                         sunvectors.Add(sunvec);
