@@ -55,6 +55,13 @@ namespace GHSolar
                         break;
                     }
                 }
+                //if (shdw[t] == false)
+                //{
+                //    Line ln = new Line(origOffset, Vector3d.Multiply(1000, vec[t]));
+                //    var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
+                //    attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
+                //    Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
+                //}
             }
         }
 
@@ -116,6 +123,15 @@ namespace GHSolar
                             break;
                         }
                     }
+
+                    //if (shdw[t] == false)
+                    //{
+                    //    Line ln = new Line(origOffset, Vector3d.Multiply(1000, vec[t]));
+                    //    var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
+                    //    attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
+                    //    Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
+                    //}
+
                 }
                 else
                 {
@@ -163,19 +179,14 @@ namespace GHSolar
         }
 
 
-
+        /*
         internal static void CalcShadowMeshMT(int year, List<SunVector> sunvectors, Mesh msh, Mesh[] obst, int interpmode,
             Context.cWeatherdata weather, Context.cLocation location, int rec,
-            ref List<double> I, ref List<double> Ih, ref List <double> Ib,
+            ref List<double> I, ref List<double> Ih, ref List<double> Ib,
             ref Matrix I_hourly, ref Matrix Ih_hourly, ref Matrix Ib_hourly)
         {
-            //            List<double> I = new List<double>();
-            //List<double> Ih = new List<double>();
-            //List<double> Ib = new List<double>();
-
             double snow_threshold = 10;
             double tilt_treshold = 30;
-
 
             double rad = Math.PI / 180;
 
@@ -250,8 +261,6 @@ namespace GHSolar
             }
             else
             {
-
-
                 Parallel.For(0, mshvrt.Length, i =>
                 {
                     mshvrtnorm[i] = msh.Normals[i];
@@ -299,17 +308,17 @@ namespace GHSolar
 
 
 
-           if (interpmode == 0)
-              p.SetShadowsInterpolatedMT(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
-           else
-              p.SetShadowsInterpolatedMT(startDays, endDays, ShdwBeam, ShdwSky);
+            if (interpmode == 0)
+                p.SetShadowsInterpolatedMT(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
+            else
+                p.SetShadowsInterpolatedMT(startDays, endDays, ShdwBeam, ShdwSky);
 
 
-           p.SetSnowcover(snow_threshold, tilt_treshold);
+            p.SetSnowcover(snow_threshold, tilt_treshold);
             //p.SetInterreflection();
-           
-            
-           p.CalcIrradiationMT();
+
+
+            p.CalcIrradiationMT();
 
 
 
@@ -337,7 +346,7 @@ namespace GHSolar
             }
         }
 
-
+        */
 
 
 

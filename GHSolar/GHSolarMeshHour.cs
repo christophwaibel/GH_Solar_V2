@@ -66,9 +66,11 @@ namespace GHSolar
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddNumberParameter("Total I", "I", "I", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ib", "Ib", "Ib", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ih", "Ih", "Ih", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Total I", "I", "Total irradiation", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Ib", "Ib", "Beam (direct) irradiation.", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Ih", "Ih", "Diffuse irradiation.", GH_ParamAccess.list);
+
+            pManager.AddLineParameter("Vec", "Vec", "Solar vector", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -187,8 +189,8 @@ namespace GHSolar
 
             List<bool> ShdwBeam_hour = new List<bool>();
             List<bool[]> ShdwSky = new List<bool[]>();
-
-            for(int i=0; i<mshvrt.Length; i++)
+            Line ln = new Line();
+            for (int i = 0; i < mshvrt.Length; i++)
             {
                 Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
 
@@ -204,13 +206,19 @@ namespace GHSolar
                 bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
                 cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
                 ShdwSky.Add(shdw_sky);
-    
+
                 //beam for one hour only.
                 Vector3d[] vec_beam = new Vector3d[1];
                 vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
                 bool[] shdw_beam = new bool[1];
                 cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam, obst, ref shdw_beam);
                 ShdwBeam_hour.Add(shdw_beam[0]);
+
+                ln = new Line(orig, Vector3d.Multiply(1000, vec_beam[0]));
+                //var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
+                //attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
+                //Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
+
             }
             
             p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
@@ -240,6 +248,8 @@ namespace GHSolar
             DA.SetDataList(0, I);
             DA.SetDataList(1, Ib);
             DA.SetDataList(2, Ih);
+
+            DA.SetData(3, ln);
         }
 
         protected override System.Drawing.Bitmap Icon

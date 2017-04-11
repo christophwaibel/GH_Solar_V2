@@ -288,16 +288,6 @@ namespace GHSolar
                 }
             }
 
-            //Matrix I_hourly = new Matrix(msh.Vertices.Count, 8760); //= new Matrix(mshvrt.Length, 8760);
-            //Matrix Ib_hourly = new Matrix(msh.Vertices.Count, 8760);//= new Matrix(mshvrt.Length, 8760);
-            //Matrix Ih_hourly=new Matrix(msh.Vertices.Count, 8760);// = new Matrix(mshvrt.Length, 8760);
-            //if (mt)
-            //    cShadow.CalcShadowMeshMT(year, sunvectors, msh, obst, interpmode, weather, location, rec,
-            //        ref I, ref Ih, ref Ib, ref I_hourly, ref Ih_hourly, ref Ib_hourly);
-            //else
-            //    cShadow.CalcShadowMeshMT(year, sunvectors, msh, obst, interpmode, weather, location, rec,
-            //        ref I, ref Ih, ref Ib, ref I_hourly, ref Ih_hourly, ref Ib_hourly);
-
 
             Rhino.RhinoApp.WriteLine("SOLAR_V2: (2/6) Setting interpolated shadows...");
             if (mt)
