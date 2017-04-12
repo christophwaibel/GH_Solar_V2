@@ -128,7 +128,7 @@ namespace GHSolar
             double rad = Math.PI / 180;
 
             List<SunVector> sunvectors = new List<SunVector>();
-            Context.Create8760SunVectors(ref sunvectors, longitude, latitude, year);
+            SunVector.Create8760SunVectors(ref sunvectors, longitude, latitude, year);
             Context.cWeatherdata weather;
             weather.DHI = new List<double>(DHI);
             weather.DNI = new List<double>(DNI);
