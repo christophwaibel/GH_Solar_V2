@@ -4,28 +4,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/*
+ * Context.cs
+ * Copyright 2017 Christoph Waibel <chwaibel@student.ethz.ch>
+ * Modified after: http://blog.andreaskahler.com/search/label/c%23
+ * 
+ * This work is licensed under the GNU GPL license version 3.
+*/
+
 namespace SolarModel
 {
+    /// <summary>
+    /// Class to define the geographic, climatological and time context.
+    /// </summary>
     public static class Context
     {
-
-        public static void Create8760SunVectors(ref List<SunVector> sunvectors, double longitude, double latitude, int year)
-        {
-            for (int m = 1; m <= 12; m++)
-            {
-                int daysInMonth = System.DateTime.DaysInMonth(year, m);
-                for (int d = 1; d <= daysInMonth; d++)
-                {
-                    for (int i = 0; i <= 23; i++)
-                    {
-                        SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
-                        sunvectors.Add(sunvec);
-                    }
-                }
-            }
-        }
-
-
+        /// <summary>
+        /// Time context.
+        /// </summary>
         public struct cTime
         {
             public int iYear;
@@ -36,22 +32,45 @@ namespace SolarModel
             public double dSeconds;
         }
        
+        /// <summary>
+        /// Geographic context.
+        /// </summary>
         public struct cLocation
         {
+            /// <summary>
+            /// Longitude in degree.
+            /// </summary>
             public double dLongitude;
+            /// <summary>
+            /// Latitude in degree.
+            /// </summary>
             public double dLatitude;
+            /// <summary>
+            /// Time difference to GMT (Greenwich Mean Time), in hours.
+            /// </summary>
             public int dTgmt;
         }
 
+        /// <summary>
+        /// Climatological context, i.e. weather information.
+        /// </summary>
         public struct cWeatherdata
         {
-            public List<double> DHI;            // W/m2. ∀ hours of the year
-            public List<double> DNI;            // W/m2. ∀ hours of the year
-            public List<double> Snow;           // mm. ∀ hours of the year
+            /// <summary>
+            /// Diffuse horizontal irradiation, in W/m2, ∀ hours of the year.
+            /// </summary>
+            public List<double> DHI;
+            /// <summary>
+            /// Direct normal irradiation, in W/m2, ∀ hours of the year.
+            /// </summary>
+            public List<double> DNI;
+            /// <summary>
+            /// Snow cover, in cm, ∀ hours of the year.
+            /// </summary>
+            public List<double> Snow;
             //public List<double> Rain;           // mm. ∀ hours of the year
             //public List<double> Windspeed;      // m/s. ∀ hours of the year
             //public List<double> Winddirection;  // degree. ∀ hours of the year
         }
-
     }
 }
