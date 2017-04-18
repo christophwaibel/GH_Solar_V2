@@ -121,7 +121,7 @@ namespace GHSolar
 
 
             //these two should be inputs
-            double snow_threshold = 10;
+            double snow_threshold = 1;
             double tilt_treshold = 30;
 
 
@@ -167,7 +167,7 @@ namespace GHSolar
             double[] arrpsi = new double[mshvrt.Length];
             
             Vector3d betaangle = new Vector3d(0, 0, 1);
-            Vector3d psiangle = new Vector3d(0, -1, 0);
+            Vector3d psiangle = new Vector3d(0, 1, 0);
             Plane psiplane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
             for (int i = 0; i < mshvrt.Length; i++)
             {

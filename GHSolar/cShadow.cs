@@ -45,14 +45,21 @@ namespace GHSolar
             Point3d origOffset = new Point3d(Point3d.Add(origin, Vector3d.Multiply(Vector3d.Divide(origNormal, origNormal.Length), tolerance)));
             for (int t = 0; t < vec.Length; t++)
             {
-                for (int u = 0; u < obstacles.Length; u++)
+                if (Vector3d.VectorAngle(origNormal, vec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                 {
-                    Ray3d ray = new Ray3d(origOffset, vec[t]);
-                    double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
-                    if (inters >= 0)
+                    shdw[t] = true;
+                }
+                else
+                {
+                    for (int u = 0; u < obstacles.Length; u++)
                     {
-                        shdw[t] = true;
-                        break;
+                        Ray3d ray = new Ray3d(origOffset, vec[t]);
+                        double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
+                        if (inters >= 0)
+                        {
+                            shdw[t] = true;
+                            break;
+                        }
                     }
                 }
                 //if (shdw[t] == false)
@@ -81,14 +88,21 @@ namespace GHSolar
             Point3d origOffset = new Point3d(Point3d.Add(origin, Vector3d.Multiply(Vector3d.Divide(origNormal, origNormal.Length), tolerance)));
             Parallel.For(0, vec.Length, t =>
             {
-                for (int u = 0; u < obstacles.Length; u++)
+                if (Vector3d.VectorAngle(origNormal, vec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                 {
-                    Ray3d ray = new Ray3d(origOffset, vec[t]);
-                    double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
-                    if (inters >= 0)
+                    shdw_mt[t] = true;
+                }
+                else
+                {
+                    for (int u = 0; u < obstacles.Length; u++)
                     {
-                        shdw_mt[t] = true;
-                        break;
+                        Ray3d ray = new Ray3d(origOffset, vec[t]);
+                        double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
+                        if (inters >= 0)
+                        {
+                            shdw_mt[t] = true;
+                            break;
+                        }
                     }
                 }
             });
@@ -113,17 +127,23 @@ namespace GHSolar
             {
                 if (sunshine[t])
                 {
-                    for (int u = 0; u < obstacles.Length; u++)
+                    if (Vector3d.VectorAngle(origNormal, vec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                     {
-                        Ray3d ray = new Ray3d(origOffset, vec[t]);
-                        double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
-                        if (inters >= 0)
+                        shdw[t] = true;
+                    }
+                    else
+                    {
+                        for (int u = 0; u < obstacles.Length; u++)
                         {
-                            shdw[t] = true;
-                            break;
+                            Ray3d ray = new Ray3d(origOffset, vec[t]);
+                            double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
+                            if (inters >= 0)
+                            {
+                                shdw[t] = true;
+                                break;
+                            }
                         }
                     }
-
                     //if (shdw[t] == false)
                     //{
                     //    Line ln = new Line(origOffset, Vector3d.Multiply(1000, vec[t]));
@@ -131,7 +151,6 @@ namespace GHSolar
                     //    attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
                     //    Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
                     //}
-
                 }
                 else
                 {
@@ -158,14 +177,21 @@ namespace GHSolar
             {
                 if (sunshine[t])
                 {
-                    for (int u = 0; u < obstacles.Length; u++)
+                    if (Vector3d.VectorAngle(origNormal, vec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                     {
-                        Ray3d ray = new Ray3d(origOffset, vec[t]);
-                        double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
-                        if (inters >= 0)
+                        shdw_mt[t] = true;
+                    }
+                    else
+                    {
+                        for (int u = 0; u < obstacles.Length; u++)
                         {
-                            shdw_mt[t] = true;
-                            break;
+                            Ray3d ray = new Ray3d(origOffset, vec[t]);
+                            double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
+                            if (inters >= 0)
+                            {
+                                shdw_mt[t] = true;
+                                break;
+                            }
                         }
                     }
                 }
