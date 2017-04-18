@@ -147,21 +147,21 @@ namespace SolarModel
         ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.</returns>
         public static double Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, bool circumsolshdw)
         {
-            double D = 0;
-            if (θZ > 90)
+            double D = 0.0;
+            if (θZ > 90.0)    //after sunset, could still be an hour of diffuse light. assume isotropic sky
             {
-                D = DHI * (1 - domeshdw);
+                D = DHI * (1.0 - domeshdw);
             }
             else
             {
                 //relative optical air mass
                 double m = 1.0 / Math.Cos(rad * θZ);
-                if (m > 40) m = 40; //because the simple model is too simple. value could become too high with high zenith angles
+                if (m > 40.0) m = 40.0; //because the simple model is too simple. value could become too high with high zenith angles
 
                 //extraterrestrial irradiance
                 //double I0 = 1353.0;           //constant assumed by energyplus
-                double b = 2 * pi * (Convert.ToDouble(DOY) / 365.0);// *rad;
-                double I0 = Isc * (1.00011 + 0.034221 * Math.Cos(b) + 0.00128 * Math.Sin(b) + 0.000719 * Math.Cos(2 * b) + 0.000077 * Math.Sin(2 * b));
+                double b = 2.0 * pi * (Convert.ToDouble(DOY) / 365.0);// *rad;
+                double I0 = Isc * (1.00011 + 0.034221 * Math.Cos(b) + 0.00128 * Math.Sin(b) + 0.000719 * Math.Cos(2.0 * b) + 0.000077 * Math.Sin(2.0 * b));
 
                 //Sky Brightness factor
                 double Δ = DHI * m / I0;
@@ -203,12 +203,12 @@ namespace SolarModel
 
                 // Dhorizon + Ddome + Dcircumsolar
                 //double D = DHI * ((1 - F1) * ((1 + Math.Cos(θβ * rad)) / 2) + F1 * (a / b) + F2 * Math.Sin(θβ * rad));
-                double Dhorizon = (DHI * F2 * Math.Sin(θβ * rad)) * (1 - horizonshdw);
-                double Ddome = (DHI * (1 - F1) * (1 + Math.Cos(θβ * rad)) / 2) * (1 - domeshdw);
-                double Dcircum = (DHI * F1 * (a / b)) * (1 - Convert.ToInt32(circumsolshdw));
+                double Dhorizon = (DHI * F2 * Math.Sin(θβ * rad)) * (1.0 - horizonshdw);
+                double Ddome = (DHI * (1 - F1) * (1 + Math.Cos(θβ * rad)) / 2.0) * (1.0 - domeshdw);
+                double Dcircum = (DHI * F1 * (a / b)) * (1.0 - Convert.ToDouble(circumsolshdw));
                 D = Dhorizon + Ddome + Dcircum;
             }
-            return D;
+            return Math.Max(0.0, D);
         }
 
 
@@ -257,10 +257,28 @@ namespace SolarModel
                                      Math.Cos(rad * δ) * Math.Cos(rad * φ) * Math.Cos(rad * β) * Math.Cos(rad * HRA) +
                                      Math.Cos(rad * δ) * Math.Sin(rad * φ) * Math.Sin(rad * β) * Math.Cos(rad * ψ) * Math.Cos(rad * HRA) +
                                      Math.Cos(rad * δ) * Math.Sin(rad * ψ) * Math.Sin(rad * HRA) * Math.Sin(rad * β));
-            if (B < 0) B = 0; //don't know why it can have minus values...
-
-            return B;
+            return Math.Max(0, B);
         }
+
+
+
+        /// <summary>
+        /// Unobstructed Beam (or direct) radiation, depending on day of year, surface tilt angle, local time, and direct normal irradiation from a weather file.
+        /// </summary>
+        /// <param name="DNI">Direct Normal Irradiance (DNI). From a weatherfile, e.g. *.epw.</param>
+        /// <param name="θZ">Solar Zenith, in degree.</param>
+        /// <param name="θA">Solar Azimuth, in degree.</param>
+        /// <param name="θβ">Analysis surface tilt angle.</param>
+        /// <param name="θAsrf">Analysis surface azimuth.</param>
+        /// <returns></returns>
+        public static double Beam(double DNI, double θZ, double θA, double θβ, double θAsrf)
+        {
+            double B = DNI * (Math.Cos(θZ * rad) * Math.Cos(θβ * rad) + Math.Sin(θZ * rad) * Math.Sin(θβ * rad) * Math.Cos((θA - θAsrf) * rad));
+            return Math.Max(0, B); 
+        }
+
+
+
 
 
     }

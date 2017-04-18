@@ -214,9 +214,14 @@ namespace SolarModel
                     if (Convert.ToInt32(sky[i].ShdwBeam[HOY]) + Convert.ToInt32(snowcovered[i][HOY]) > 0)
                         this.Ibeam[i][HOY] = 0.0;
                     else
+                    {
+                        //this.Ibeam[i][HOY] = Irradiation.Beam(
+                        //    this.weather.DNI[HOY], this.beta[i], this.location.dLatitude,
+                        //    this.location.dLongitude, this.psi[i], DOY, LT, this.location.dTgmt);
                         this.Ibeam[i][HOY] = Irradiation.Beam(
-                            this.weather.DNI[HOY], this.beta[i], this.location.dLatitude,
-                            this.location.dLongitude, this.psi[i], DOY, LT, this.location.dTgmt);
+                            this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle,
+                            this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i]);
+                    }
                 }
             }
             else
@@ -242,9 +247,14 @@ namespace SolarModel
                     if (Convert.ToInt32(sky[i].ShdwBeam[HOY]) + Convert.ToInt32(snowcovered[i][HOY]) > 0)
                         this.Ibeam[i][HOY] = 0.0;
                     else
+                    {
+                        //this.Ibeam[i][HOY] = Irradiation.Beam(
+                        //    this.weather.DNI[HOY], this.beta[i], this.location.dLatitude,
+                        //    this.location.dLongitude, this.psi[i], DOY, LT, this.location.dTgmt);
                         this.Ibeam[i][HOY] = Irradiation.Beam(
-                            this.weather.DNI[HOY], this.beta[i], this.location.dLatitude,
-                            this.location.dLongitude, this.psi[i], DOY, LT, this.location.dTgmt);
+                                this.weather.DNI[HOY], this.sunvectors[HOY].udtCoordinates.dZenithAngle,
+                                this.sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i]);
+                    }
                 });
             }
             else
