@@ -8,3 +8,4 @@ To Do:
 - [ ] trees
 - [ ] inter-reflections
 - [x] multi-threading
+- [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
