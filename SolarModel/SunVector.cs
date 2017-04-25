@@ -72,7 +72,8 @@ namespace SolarModel
 
         /// <summary>
         /// Identify the equinox and solstice days of a year.
-        /// <para>TO DO: Algorithm, calculating precise equinox and solstice days.</para>
+        /// <para>TO DO: Algorithm, calculating precise equinox and solstice days.
+        /// e.g.: http://farside.ph.utexas.edu/Books/Syntaxis/Almagest/node36.html </para>
         /// </summary>
         /// <param name="year"></param>
         /// <returns>[0]: spring equinox, [1]: summer solstice, [2]: autumn equinox, [3]: winter solstice. ∈ [1, 365]</returns>
