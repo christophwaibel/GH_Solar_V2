@@ -61,7 +61,7 @@ namespace GHSolar
             {
                 //You can add image files to your project resources and access them like this:
                 // return Resources.IconForThisComponent;
-                return GHSolar.Properties.Resources.pic_obstacle;
+                return GHSolar.Properties.Resources.pic_obstacle3;
             }
         }
 

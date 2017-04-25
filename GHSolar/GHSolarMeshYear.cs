@@ -65,13 +65,15 @@ namespace GHSolar
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddNumberParameter("I annual", "I annual", "Annual total irradiation in [kWh/a]", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ib annual", "Ib annual", "Annual beam irradiation in [kWh/a]", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ih annual", "Ih annual", "Annual diffuse irradiation in [kWh/h]", GH_ParamAccess.list);
+            //pManager.AddNumberParameter("I annual", "I annual", "Annual total irradiation in [kWh/a]", GH_ParamAccess.list);
+            //pManager.AddNumberParameter("Ib annual", "Ib annual", "Annual beam irradiation in [kWh/a]", GH_ParamAccess.list);
+            //pManager.AddNumberParameter("Ih annual", "Ih annual", "Annual diffuse irradiation in [kWh/h]", GH_ParamAccess.list);
 
-            pManager.AddGenericParameter("I hourly", "I hourly", "Hourly total irradiation in [Wh]", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Ib hourly", "Ib hourly", "Hourly beam irradiation in [Wh]", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Ih hourly", "Ih hourly", "Hourly diffuse irradiation in [Wh]", GH_ParamAccess.item);
+            //pManager.AddGenericParameter("I hourly", "I hourly", "Hourly total irradiation in [Wh]", GH_ParamAccess.item);
+            //pManager.AddGenericParameter("Ib hourly", "Ib hourly", "Hourly beam irradiation in [Wh]", GH_ParamAccess.item);
+            //pManager.AddGenericParameter("Ih hourly", "Ih hourly", "Hourly diffuse irradiation in [Wh]", GH_ParamAccess.item);
+
+            pManager.AddGenericParameter("Results", "Results", "Results data of solar irradiation calculation", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -188,13 +190,14 @@ namespace GHSolar
             int HOYsum = (equsol[1] - 1) * 24;
             int HOYwin = (equsol[3] - 1) * 24;
 
-
+            List<Point3d> coords = new List<Point3d>();
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 double status = (100 / Convert.ToDouble(mshvrt.Length)) * Convert.ToDouble(i + 1);
                 Rhino.RhinoApp.WriteLine("SOLAR_V2: (1/6) Shadow calculation... " + Convert.ToString(Math.Round(status,2) + "%"));
 
                 Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
+                coords.Add(orig);
                 //Rhino.RhinoDoc.ActiveDoc.Objects.AddPoint(orig);
 
                 //sky dome diffuse
@@ -344,13 +347,16 @@ namespace GHSolar
 
 
 
-            DA.SetDataList(0, I);
-            DA.SetDataList(1, Ib);
-            DA.SetDataList(2, Ih);
+            //DA.SetDataList(0, I);
+            //DA.SetDataList(1, Ib);
+            //DA.SetDataList(2, Ih);
 
-            DA.SetData(3, I_hourly);
-            DA.SetData(4, Ib_hourly);
-            DA.SetData(5, Ih_hourly);
+            //DA.SetData(3, I_hourly);
+            //DA.SetData(4, Ib_hourly);
+            //DA.SetData(5, Ih_hourly);
+
+            cResults results = new cResults(I, Ib, Ih, I_hourly,Ib_hourly,Ih_hourly,coords);
+            DA.SetData(0, results);
 
             Rhino.RhinoApp.WriteLine("SOLAR_V2... Done");
         }

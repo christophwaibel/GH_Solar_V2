@@ -68,15 +68,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="cInterreflections.cs" />
+    <Compile Include="cResults.cs" />
     <Compile Include="cShadow.cs" />
     <Compile Include="GHReadTxt.cs" />
+    <Compile Include="GHResultsRead.cs" />
     <Compile Include="GHSolarInfo.cs" />
     <Compile Include="GHSolarMeshHour.cs" />
     <Compile Include="GHSolarMeshYear.cs" />
     <Compile Include="GHSolarObstacle.cs" />
     <Compile Include="GHSolarTree.cs" />
     <Compile Include="GHTester.cs" />
-    <Compile Include="GHVisualize.cs" />
+    <Compile Include="GHResultsVisualize.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -116,6 +118,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\pic_obstacle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\pic_graph.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\pic_obstacle2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\pic_obstacle3.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

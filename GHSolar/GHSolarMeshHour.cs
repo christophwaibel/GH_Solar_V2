@@ -66,11 +66,13 @@ namespace GHSolar
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddNumberParameter("Total I", "I", "Total irradiation", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ib", "Ib", "Beam (direct) irradiation.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Ih", "Ih", "Diffuse irradiation.", GH_ParamAccess.list);
+            //pManager.AddNumberParameter("Total I", "I", "Total irradiation", GH_ParamAccess.list);
+            //pManager.AddNumberParameter("Ib", "Ib", "Beam (direct) irradiation.", GH_ParamAccess.list);
+            //pManager.AddNumberParameter("Ih", "Ih", "Diffuse irradiation.", GH_ParamAccess.list);
 
-            pManager.AddLineParameter("Vec", "Vec", "Solar vector", GH_ParamAccess.item);
+            pManager.AddLineParameter("Vec", "Vec", "Solar vector of current hour.", GH_ParamAccess.item);
+
+            pManager.AddGenericParameter("Results", "Results", "Results data of solar irradiation calculation", GH_ParamAccess.item);
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -190,10 +192,11 @@ namespace GHSolar
             List<bool> ShdwBeam_hour = new List<bool>();
             List<bool[]> ShdwSky = new List<bool[]>();
             Line ln = new Line();
+            List<Point3d> coords = new List<Point3d>();
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
-
+                coords.Add(orig);
                 //sky dome diffuse
                 Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
                 for (int u = 0; u < vec_sky.Length; u++)
@@ -245,11 +248,25 @@ namespace GHSolar
 
 
 
-            DA.SetDataList(0, I);
-            DA.SetDataList(1, Ib);
-            DA.SetDataList(2, Ih);
+            //DA.SetDataList(0, I);
+            //DA.SetDataList(1, Ib);
+            //DA.SetDataList(2, Ih);
 
-            DA.SetData(3, ln);
+            DA.SetData(0, ln);
+
+            Matrix I_hourly = new Matrix(mshvrt.Length, 1);
+            Matrix Ib_hourly = new Matrix(mshvrt.Length, 1);
+            Matrix Id_hourly = new Matrix(mshvrt.Length, 1);
+            for (int i = 0; i < mshvrt.Length; i++)
+            {
+                I_hourly[i,0] = I[i];
+                Ib_hourly[i, 0] = Ib[i];
+                Id_hourly[i, 0] = Ih[i];
+            }
+
+
+            cResults results = new cResults(I, Ib, Ih, I_hourly, Ib_hourly, Id_hourly, coords);
+            DA.SetData(1, results);
         }
 
         protected override System.Drawing.Bitmap Icon
