@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="cInterreflections.cs" />
+    <Compile Include="cMisc.cs" />
     <Compile Include="cResults.cs" />
     <Compile Include="cShadow.cs" />
     <Compile Include="GHReadTxt.cs" />

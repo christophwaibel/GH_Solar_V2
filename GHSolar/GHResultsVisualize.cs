@@ -7,7 +7,7 @@ using System.Drawing;
 using System.Linq;
 
 /*
- * GHVisualize.cs
+ * GHResultsVisualize.cs
  * Copyright 2017 Christoph Waibel <chwaibel@student.ethz.ch>
  * 
  * This work is licensed under the GNU GPL license version 3.
@@ -35,10 +35,10 @@ namespace GHSolar
             pManager.AddMeshParameter("Mesh", "Mesh", "Analysis mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("I", "I", "Results data from solar irradiation calculation.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Value", "Value",
-                "Select the value to output: [0] = Total annual irradiation [kWh/a], [1] = Beam annual [kWh/a], [2] = Diffuse annual [kWh/a], [3] = Total hourly [W], [4] = Beam hourly [W], [5] = Diffuse hourly [W].",
+                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], [3] = Total annual irradiation per mesh [kWh/a], [4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], [7] = Total hourly per mesh [Wh].",
                 GH_ParamAccess.item);
             pManager[2].Optional = true;
-            pManager.AddIntegerParameter("hour", "hour", "Select hour of the year (integer between 0 and 8759) for visualization (only if Value type 3, 4 or 5).", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("hour", "hour", "Select hour of the year (integer between 0 and 8759) for visualization (only if Value type 4, 5, 6 or 7).", GH_ParamAccess.item);
             pManager[3].Optional = true;
             pManager.AddNumberParameter("min", "min", "Minimum value for color gradient", GH_ParamAccess.item);
             pManager[4].Optional = true;
@@ -80,6 +80,7 @@ namespace GHSolar
             switch (outputType)
             {
                 case 0:
+                case 3:
                     valin = results.I_total;
                     break;
                 case 1:
@@ -88,15 +89,16 @@ namespace GHSolar
                 case 2:
                     valin = results.Id_total;
                     break;
-                case 3:
+                case 4:
+                case 7:
                     for (int i = 0; i < results.I_hourly.RowCount; i++)
                         valin.Add(results.I_hourly[i, t]);
                     break;
-                case 4:
+                case 5:
                     for (int i = 0; i < results.Ib_hourly.RowCount; i++)
                         valin.Add(results.Ib_hourly[i, t]);
                     break;
-                case 5:
+                case 6:
                     for (int i = 0; i < results.Id_hourly.RowCount; i++)
                         valin.Add(results.Id_hourly[i, t]);
                     break;
@@ -118,36 +120,89 @@ namespace GHSolar
             Color c = new Color();
             Mesh mshcol = new Mesh();
             int count = 0;
-            for (int i = 0; i < mshin.Faces.Count; i++)
+
+            if (outputType != 3 && outputType != 7)
             {
-                c = Utilities.GetRGB(clr, valin[mshin.Faces[i].A], max, min);
-                mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].A]);
-                mshcol.VertexColors.SetColor(count, c);
-
-                c = Utilities.GetRGB(clr, valin[mshin.Faces[i].B], max, min);
-                mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].B]);
-                mshcol.VertexColors.SetColor(count + 1, c);
-
-                c = Utilities.GetRGB(clr, valin[mshin.Faces[i].C], max, min);
-                mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].C]);
-                mshcol.VertexColors.SetColor(count + 2, c);
-
-                if (mshin.Faces[i].IsQuad)
+                for (int i = 0; i < mshin.Faces.Count; i++)
                 {
-                    c = Utilities.GetRGB(clr, valin[mshin.Faces[i].D], max, min);
-                    mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].D]);
-                    mshcol.VertexColors.SetColor(count + 3, c);
-                    mshcol.Faces.AddFace(count, count + 1, count + 2, count + 3);
-                    count += 4;
-                }
-                else
-                {
-                    mshcol.Faces.AddFace(count, count + 1, count + 2);
-                    count += 3;
-                }
+                    c = cMisc.GetRGB(clr, valin[mshin.Faces[i].A], max, min);
+                    mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].A]);
+                    mshcol.VertexColors.SetColor(count, c);
 
+                    c = cMisc.GetRGB(clr, valin[mshin.Faces[i].B], max, min);
+                    mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].B]);
+                    mshcol.VertexColors.SetColor(count + 1, c);
+
+                    c = cMisc.GetRGB(clr, valin[mshin.Faces[i].C], max, min);
+                    mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].C]);
+                    mshcol.VertexColors.SetColor(count + 2, c);
+
+                    if (mshin.Faces[i].IsQuad)
+                    {
+                        c = cMisc.GetRGB(clr, valin[mshin.Faces[i].D], max, min);
+                        mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].D]);
+                        mshcol.VertexColors.SetColor(count + 3, c);
+                        mshcol.Faces.AddFace(count, count + 1, count + 2, count + 3);
+                        count += 4;
+                    }
+                    else
+                    {
+                        mshcol.Faces.AddFace(count, count + 1, count + 2);
+                        count += 3;
+                    }
+                }
+            }
+            else
+            {
+                double[] mshFaceAreas = new double[mshin.Faces.Count];
+
+                double totVal = 0;
+                for (int i = 0; i < mshin.Faces.Count; i++)
+                {
+                    mshFaceAreas[i] = cMisc.getMeshFaceArea(i, mshin);
+
+                    double FaceVal;
+                    double valVertex1 = valin[mshin.Faces[i].A];
+                    double valVertex2 = valin[mshin.Faces[i].B];
+                    double valVertex3 = valin[mshin.Faces[i].C];
+                    if (mshin.Faces[i].IsQuad)
+                    {
+                        double valVertex4 = valin[mshin.Faces[i].D];
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * cMisc.getMeshFaceArea(i, mshin);
+                    }
+                    else
+                    {
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * cMisc.getMeshFaceArea(i, mshin);
+                    }
+                    totVal += FaceVal;
+                }
+                count = 0;
+                for (int i = 0; i < mshin.Faces.Count; i++)
+                {
+                    c = cMisc.GetRGB(clr, totVal, max, min);
+                    mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].A]);
+                    mshcol.VertexColors.SetColor(count, c);
+                    mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].B]);
+                    mshcol.VertexColors.SetColor(count + 1, c);
+                    mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].C]);
+                    mshcol.VertexColors.SetColor(count + 2, c);
+
+                    if (mshin.Faces[i].IsQuad)
+                    {
+                        mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].D]);
+                        mshcol.VertexColors.SetColor(count + 3, c);
+                        mshcol.Faces.AddFace(count, count + 1, count + 2, count + 3);
+                        count += 4;
+                    }
+                    else
+                    {
+                        mshcol.Faces.AddFace(count, count + 1, count + 2);
+                        count += 3;
+                    }
+                }
 
             }
+
 
 
             DA.SetData(0, mshcol);
@@ -176,79 +231,4 @@ namespace GHSolar
         }
     }
 
-
-
-
-    public static class Utilities
-    {
-        public static Color GetRGB(int colourSheme, double quantity, double top, double low)
-        {
-            double RR = 0.0;
-            double GG = 0.0;
-            double BB = 0.0;
-
-
-            quantity = (quantity - low) / (top - low);
-            double third = 1.0 / 5.0;
-
-            switch (colourSheme)
-            {
-                case 0:
-                    if (quantity > third && quantity <= 2.0 * third)
-                    {
-                        RR = (quantity - third) * (255.0 / third);
-                        GG = 0.0;
-                        BB = 255 - ((quantity - third) * (255.0 / third));
-                    }
-                    else if (quantity > 2.0 * third)
-                    {
-                        RR = 255.0;
-                        GG = (quantity - 2.0 * third) * (255.0 / third);
-                        BB = 0.0;
-                    }
-                    else
-                    {
-                        RR = 0.0;
-                        GG = 0.0;
-                        BB = 255.0;
-                    }
-                    break;
-                case 1:
-                    third = 1.0 / 3.0;
-                    if (quantity > third && quantity <= 2.0 * third)
-                    {
-                        RR = (quantity - third) * (255.0 / third);
-                        GG = 255.0;
-                        BB = 255.0 - ((quantity - third) * (255.0 / third));
-                    }
-                    else if (quantity > 2.0 * third)
-                    {
-                        RR = 255.0;
-                        GG = 255.0 - ((quantity - 2.0 * third) * (255.0 / third));
-                        BB = 0.0;
-                    }
-                    else
-                    {
-                        RR = 0.0;
-                        GG = quantity * (255.0 / third);
-                        BB = 255.0;
-                    }
-                    break;
-                case 2:
-                    RR = quantity * (255.0 / 1);
-                    GG = quantity * (255.0 / 1);
-                    BB = quantity * (255.0 / 1);
-                    break;
-            }
-
-            if (RR > 255) RR = 255;
-            else if (RR < 0) RR = 0;
-            if (GG > 255) GG = 255;
-            else if (GG < 0) GG = 0;
-            if (BB > 255) BB = 255;
-            else if (BB < 0) BB = 0;
-            return Color.FromArgb((int)RR, (int)GG, (int)BB);
-
-        }
-    }
 }

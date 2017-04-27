@@ -4,6 +4,13 @@ using System.Collections.Generic;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
 
+/*
+ * GHResultsRead.cs
+ * Copyright 2017 Christoph Waibel <chwaibel@student.ethz.ch>
+ * 
+ * This work is licensed under the GNU GPL license version 3.
+*/
+
 namespace GHSolar
 {
     public class GHResultsRead : GH_Component
@@ -23,13 +30,14 @@ namespace GHSolar
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
+            pManager.AddMeshParameter("Mesh", "Mesh", "Analysis mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("I", "I", "Results data from solar irradiation calculation.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Value", "Value",
-                "Select the value to output: [0] = Total annual irradiation [kWh/a], [1] = Beam annual [kWh/a], [2] = Diffuse annual [kWh/a], [3] = Total hourly [W], [4] = Beam hourly [W], [5] = Diffuse hourly [W].",
+                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], [3] = Total annual irradiation per mesh [kWh/a], [4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], [7] = Total hourly per mesh [Wh].",
                 GH_ParamAccess.item);
-            pManager[1].Optional = true;
-            pManager.AddIntegerParameter("SP", "SP", "Select sensor point to read values from.", GH_ParamAccess.item);
             pManager[2].Optional = true;
+            pManager.AddIntegerParameter("SP", "SP", "Select sensor point to read values from (not for Value type 3 or 7).", GH_ParamAccess.item);
+            pManager[3].Optional = true;
         }
 
         /// <summary>
@@ -48,15 +56,20 @@ namespace GHSolar
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             List<double> valin = new List<double>();
+            List<double[]> valin2 = new List<double[]>();
+
+            Mesh mshin = new Mesh();
+            if (!DA.GetData(0, ref mshin)) { return; }
 
             cResults results = null;
-            if (!DA.GetData(0, ref results)) { return; }
+            if (!DA.GetData(1, ref results)) { return; }
 
             int outputType = 0;
-            if (!DA.GetData(1, ref outputType)) { outputType = 0; }
+            if (!DA.GetData(2, ref outputType)) { outputType = 0; }
 
             int sp = 0; //sensor point, or mesh vertex
-            if (!DA.GetData(2, ref sp)) { sp = 0; }
+            if (!DA.GetData(3, ref sp)) { sp = 0; }
+            
 
             switch (outputType)
             {
@@ -70,20 +83,97 @@ namespace GHSolar
                     valin.Add(results.Id_total[sp]);
                     break;
                 case 3:
+                    valin = results.I_total;
+                    break;
+                case 4:
                     for (int t = 0; t < results.I_hourly.ColumnCount; t++)
                         valin.Add(results.I_hourly[sp, t]);
                     break;
-                case 4:
+                case 5:
                     for (int t = 0; t < results.Ib_hourly.ColumnCount; t++)
                         valin.Add(results.Ib_hourly[sp, t]);
                     break;
-                case 5:
+                case 6:
                     for (int t = 0; t < results.Id_hourly.ColumnCount; t++)
                         valin.Add(results.Id_hourly[sp, t]);
                     break;
+                case 7:
+                    for (int i = 0; i < results.I_hourly.RowCount; i++)
+                    {
+                        double[] val_t = new double[results.I_hourly.ColumnCount];
+                        for (int t = 0; t < results.I_hourly.ColumnCount; t++)
+                        {
+                            val_t[t] = results.I_hourly[i, t];
+                        }
+                        valin2.Add(val_t);
+                    }
+                    break;
             }
 
-            
+            if (outputType == 3)
+            {
+                double[] mshFaceAreas = new double[mshin.Faces.Count];
+
+                double totVal = 0;
+                for (int i = 0; i < mshin.Faces.Count; i++)
+                {
+                    mshFaceAreas[i] = cMisc.getMeshFaceArea(i, mshin);
+
+                    double FaceVal;
+                    double valVertex1 = valin[mshin.Faces[i].A];
+                    double valVertex2 = valin[mshin.Faces[i].B];
+                    double valVertex3 = valin[mshin.Faces[i].C];
+                    if (mshin.Faces[i].IsQuad)
+                    {
+                        double valVertex4 = valin[mshin.Faces[i].D];
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * cMisc.getMeshFaceArea(i, mshin);
+                    }
+                    else
+                    {
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * cMisc.getMeshFaceArea(i, mshin);
+                    }
+                    totVal += FaceVal;
+                }
+                valin = new List<double>();
+                valin.Add(totVal);
+            }
+            else if (outputType == 7)
+            {
+                List<double> valout = new List<double>();
+
+                double[] mshFaceAreas = new double[mshin.Faces.Count];
+
+                for (int t = 0; t < results.I_hourly.ColumnCount; t++)
+                {
+                    double totVal = 0;
+                    for (int i = 0; i < mshin.Faces.Count; i++)
+                    {
+                        mshFaceAreas[i] = cMisc.getMeshFaceArea(i, mshin);
+
+                        double FaceVal;
+                        double valVertex1 = valin2[mshin.Faces[i].A][t];
+                        double valVertex2 = valin2[mshin.Faces[i].B][t];
+                        double valVertex3 = valin2[mshin.Faces[i].C][t];
+                        if (mshin.Faces[i].IsQuad)
+                        {
+                            double valVertex4 = valin2[mshin.Faces[i].D][t];
+                            FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * cMisc.getMeshFaceArea(i, mshin);
+                        }
+                        else
+                        {
+                            FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * cMisc.getMeshFaceArea(i, mshin);
+                        }
+                        totVal += FaceVal;
+                    }
+                    valout.Add(totVal);
+                }
+
+                valin = new List<double>();
+                valin = valout;
+            }
+
+
+
             DA.SetDataList(0, valin);
             DA.SetData(1, results.coords[sp]);
 
