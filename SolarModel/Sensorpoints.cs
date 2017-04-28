@@ -1008,14 +1008,85 @@ namespace SolarModel
 
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        /// <summary>
-        /// 
-        /// </summary>
         public void SetInterreflection()
+        {
+
+            // decomposed between SPECULAR and DIFFUSE interreflections
+            // limit to bounce = 1
+
+
+
+            //  rhino obstructions forall t. use INTERPOLATION 
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////     S P E C U L A R   /////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //SPECULAR
+            // double total_Specular_Budget = 0;
+            // forall specular objects:
+
+            // 01:
+            //  from sensorpoint (SP), shoot rays ONLY to specular objects. 
+            //      - check, if vectorangle(ray, sensorpoint normal) <= 90°. if not, break. else:
+            //          - check, if ray unobstructed. if not, break. else, go to 02.
+
+            // 02:
+            // if ray <= 90° and unobstructed:
+            //      - for all t in [0,8759]
+            //          - check, if daytime. if not, break. else:
+            //              - from specular obstacle object, make ray to sunvector. calc vectorangle(sunvector, obstacle normal). if not <= 90°, break. else:
+            //                  - make reflection of sunvector on obstacle. if this reflecting vector *-1 is not coincident with connecting ray to SP (tolerance of +- 1°?), break. else:
+            //                      - check if the sunvector (not the reflected) is obstructed. if yes, break. else, go to 03.
+            
+            // 03:
+            // calc Specular_interreflection = I_direct incident on obstacle object. Multiply with its specular coefficient (albedo?). 
+            //      and account for incidence angle on sensorpoint: I_sensorpoint = I_incident sin(90°-vectorangle(sp_normal, incident_ray))
+            // total_Specular_Budget += Specular_interreflection;
+
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+            // rhino obstructions only once.
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////     D I F F U S E     /////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //DIFFUSE
+            // double average_Diffuse_Budget = 0;
+            // set diffuse hedgehog ray count. using icosahedron vertices, but not those at the "horizon"/perimeter. too flat anyway.
+            // the more rays, the more precise the average value will be.
+
+            // 01:
+            // for all hedgehog rays:
+            //      - check, if it hits a diffuse obstacle object. if not, break. else, go to 02:
+
+            // 02:
+            //      - calc I_obstacle = total irradiation on this obstacle. multiply with its diffuse reflection (albedo?) coefficient.
+            //      - average_Diffuse_Budget += I_obstacle
+
+            // 03:
+            // average_Diffuse_Budget /= hedgehog_ray_Count
+
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        }
+
+
+        public void SetSpecularInterreflections()
         {
 
         }
 
+
+        public void SetDiffuseInterreflections()
+        {
+
+        }
 
 
         ///// <summary>

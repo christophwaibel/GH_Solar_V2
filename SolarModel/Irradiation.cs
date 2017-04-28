@@ -263,7 +263,7 @@ namespace SolarModel
 
 
         /// <summary>
-        /// Unobstructed Beam (or direct) radiation, depending on day of year, surface tilt angle, local time, and direct normal irradiation from a weather file.
+        /// Unobstructed Beam (or direct) radiation, depending on angle of incidence (solar zenith and azimuth, surface tilt and azimuth), and direct normal irradiation from a weather file.
         /// </summary>
         /// <param name="DNI">Direct Normal Irradiance (DNI). From a weatherfile, e.g. *.epw.</param>
         /// <param name="θZ">Solar Zenith, in degree.</param>
