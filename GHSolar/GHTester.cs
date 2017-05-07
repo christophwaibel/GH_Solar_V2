@@ -73,7 +73,7 @@ namespace GHSolar
             SkyDome dome = new SkyDome(reclvl);           //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //List<Point3d> points = new List<Point3d>();
             Mesh mesh = new Mesh();
-            foreach (double[] p in dome.VertexCoordinatesSphere)
+            foreach (double[] p in dome.VertexVectorsSphere)
             {
                 mesh.Vertices.Add(p[0], p[1], p[2]);
                 points.Add(new Point3d(p[0], p[1], p[2]));

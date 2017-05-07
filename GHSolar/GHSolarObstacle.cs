@@ -39,7 +39,7 @@ namespace GHSolar
             //each obstacle consists of: 
             //  (i) a mesh obstacle, 
             //  (ii) a 8760-timeseries of 0-1 fraction indicating albedo, 
-            //  (iii) a boolean 0-1 for either specular (0) or diffuse (1) reflection.
+            //  (iii) a boolean 0-1 for either diffuse (0) or specular (1) reflection.
 
             Mesh mesh = new Mesh();
             if (!DA.GetData(0, ref mesh)) { return; }
@@ -74,7 +74,7 @@ namespace GHSolar
     internal class ObstacleObject
     {
         internal Mesh mesh;
-        internal List<double> albedos;
+        internal List<double> albedos;  //8760 values
         internal int reflType;
 
         internal ObstacleObject(Mesh _mesh, List<double> _albedos, int _reflType)

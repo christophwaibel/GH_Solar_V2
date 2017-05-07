@@ -171,7 +171,7 @@ namespace GHSolar
                 arrpsi[i] = psi;
 
             }
-            Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
+            Sensorpoints p = new Sensorpoints(weather, location, sunvectors, arrbeta, arrpsi, rec);
 
 
             List<bool[]> ShdwBeam_equinox = new List<bool[]>();
@@ -205,15 +205,15 @@ namespace GHSolar
                 for (int u = 0; u < vec_sky.Length; u++)
                 {
                     vec_sky[u] = new Vector3d(
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
+                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][0],
+                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][1],
+                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][2]);
                 }
                 bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
                 if (mt)
-                    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
+                    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
                 else 
-                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
+                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
 
                 ShdwSky.Add(shdw_sky);
 
@@ -247,15 +247,15 @@ namespace GHSolar
                     bool[] shdw_beam_win = new bool[24];
                     if (mt)
                     {
-                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
-                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
-                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                        cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
                     }
                     else
                     {
-                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
-                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
-                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                        cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
                     }
                     ShdwBeam_equinox.Add(shdw_beam_equ);
                     ShdwBeam_summer.Add(shdw_beam_sum);
@@ -283,9 +283,9 @@ namespace GHSolar
                         }
                         shdw_beam[d] = new bool[24];
                         if (mt)
-                            cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.1, vec_beam, sunshine, obst, ref shdw_beam[d]);
+                            cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam, sunshine, obst, ref shdw_beam[d]);
                         else
-                            cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam, sunshine, obst, ref shdw_beam[d]);
+                            cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_beam, sunshine, obst, ref shdw_beam[d]);
                     }
                     ShdwBeam.Add(shdw_beam);
                 }

@@ -80,15 +80,6 @@ namespace GHSolar
             Mesh msh = new Mesh();
             if (!DA.GetData(0, ref msh)) { return; }
 
-            //should containt analysis surface itself
-            List<ObstacleObject> objObst = new List<ObstacleObject>();
-            if (!DA.GetDataList(1, objObst)) { return; }
-            Mesh[] obst = new Mesh[objObst.Count];
-            for (int i = 0; i < objObst.Count; i++)
-            {
-                obst[i] = objObst[i].mesh;
-            }
-
             double latitude = 0.0;
             if (!DA.GetData(3, ref latitude)) { return; }
             double longitude = 0.0;
@@ -112,10 +103,14 @@ namespace GHSolar
             if (!DA.GetData(10, ref day)) { return; }
             int hour = 0;
             if (!DA.GetData(11, ref hour)) { return; }
+            int bounces = 1;
+            if (!DA.GetData(12, ref bounces)) { bounces = 1; }
+            bounces = (bounces < 1) ? 1 : bounces;  
 
             int rec = 0;
             if (!DA.GetData(13, ref rec)) { rec = 1; }
-
+            int diffRes = 0;
+            if (!DA.GetData(14, ref diffRes)) { diffRes = 0; }
 
 
             bool mt = false;
@@ -142,23 +137,50 @@ namespace GHSolar
             location.dTgmt = 1;
 
             int[] daysInMonth = new int[12];
-            for (int i = 0; i < daysInMonth.Length; i++)
-            {
+            for (int i = 0; i < daysInMonth.Length; i++) 
                 daysInMonth[i] = System.DateTime.DaysInMonth(year, i+1);
-            }
             int DOY = 0;
-            for (int i = 0; i < month - 1; i++)
-            {
+            for (int i = 0; i < month - 1; i++) 
                 DOY += daysInMonth[i];
-            }
             DOY += day;
+            int HOY = (DOY - 1) * 24 + hour;
 
 
+            //should containt analysis surface itself
+            List<ObstacleObject> objObst = new List<ObstacleObject>();
+            if (!DA.GetDataList(1, objObst)) { return; }
+            Mesh[] obst = new Mesh[objObst.Count];
+            //List<double> alb_spec = new List<double>();
+            //List<double> alb_diff = new List<double>();
+            double[][] albedos = new double[objObst.Count][];
+            //List<Mesh> ob_spec = new List<Mesh>();
+            //List<Mesh> ob_diff = new List<Mesh>();
+            int[] reflType = new int[objObst.Count];
+            for (int i = 0; i < objObst.Count; i++)
+            {
+                reflType[i] = objObst[i].reflType;
+                albedos[i] = new double[1];
+                albedos[i][0] = objObst[i].albedos[HOY];
+                obst[i] = objObst[i].mesh;
+                //if (objObst[i].reflType == 0)   //diffuse
+                //{
+                //    alb_diff.Add(objObst[i].albedos[HOY]);
+                //    ob_diff.Add(objObst[i].mesh);
+                //}
+                //else
+                //{
+                //    alb_spec.Add(objObst[i].albedos[HOY]);
+                //    ob_spec.Add(objObst[i].mesh);
+                //}
+            }
+            //double[] albedo_spec = alb_spec.ToArray();
+            //double[] albedo_diff = alb_diff.ToArray();
+            //Mesh[] obst_spec = ob_spec.ToArray();
+            //Mesh[] obst_diff = ob_diff.ToArray();
 
             List<double> I = new List<double>();
             List<double> Ih = new List<double>();
             List<double> Ib = new List<double>();
-            int HOY = (DOY - 1) * 24 + hour;
 
             List<Sensorpoint> ps = new List<Sensorpoint>();
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
@@ -184,37 +206,52 @@ namespace GHSolar
 
                 arrbeta[i] = beta;
                 arrpsi[i] = psi;
-
             }
-            Sensorpoints p = new Sensorpoints(year, weather, location, sunvectors, arrbeta, arrpsi, rec);
+            Sensorpoints p = new Sensorpoints(weather, location, sunvectors, arrbeta, arrpsi, rec);
 
 
             List<bool> ShdwBeam_hour = new List<bool>();
             List<bool[]> ShdwSky = new List<bool[]>();
             Line ln = new Line();
             List<Point3d> coords = new List<Point3d>();
+
+            double[] _Idiffuse = new double[mshvrt.Length];
+            double[][][] _Ispecular = new double[mshvrt.Length][][];
+            Vector3d[][][] _IspecNormals = new Vector3d[mshvrt.Length][][];
+            double[] Ispec_onehour = new double[mshvrt.Length];
+
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
                 coords.Add(orig);
+
+                /////////////////////////////////////////////////////////////////////
                 //sky dome diffuse
                 Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
                 for (int u = 0; u < vec_sky.Length; u++)
                 {
                     vec_sky[u] = new Vector3d(
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][0],
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][1],
-                        p.sky[i].VertexCoordinatesSphere[p.sky[i].VerticesHemisphere[u]][2]);
+                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][0],
+                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][1],
+                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][2]);
                 }
                 bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_sky, obst, ref shdw_sky);
+                if (!mt)
+                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
+                else
+                    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
                 ShdwSky.Add(shdw_sky);
 
+
+                /////////////////////////////////////////////////////////////////////
                 //beam for one hour only.
                 Vector3d[] vec_beam = new Vector3d[1];
                 vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
                 bool[] shdw_beam = new bool[1];
-                cShadow.CalcShadow(orig, mshvrtnorm[i], 0.1, vec_beam, obst, ref shdw_beam);
+                if(!mt)
+                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
+                else
+                    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
                 ShdwBeam_hour.Add(shdw_beam[0]);
 
                 ln = new Line(orig, Vector3d.Multiply(1000, vec_beam[0]));
@@ -222,11 +259,33 @@ namespace GHSolar
                 //attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
                 //Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
 
+
+                /////////////////////////////////////////////////////////////////////
+                //interreflections beam
+                _Ispecular[i] = new double[1][];
+                _IspecNormals[i] = new Vector3d[1][];
+
+                //run this only once later: (make separate GH component)
+                cShadow.CalcSpecularNormal(orig, mshvrtnorm[i], 0.01, vec_beam, new bool[] { true }, obst, albedos, reflType, bounces,
+                    ref _Ispecular[i], ref _IspecNormals[i]);
+                double[] Ispec_inc = new double[1];
+
+                //run this every time panel angles change:
+                cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], ref Ispec_inc);
+                Ispec_onehour[i] = Ispec_inc[0];
+
+                /////////////////////////////////////////////////////////////////////
+                //interreflections diffuse
+                cShadow.CalcDiffuse(orig, mshvrtnorm[i], 0.01, obst, albedos, diffRes, ref _Idiffuse[i]);
+
             }
             
+            
             p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
+            //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
             p.SetSnowcover(snow_threshold, tilt_treshold);
-            //p.SetInterreflection();
+            p.SetInterreflection(HOY, Ispec_onehour, _Idiffuse);
+
 
 
             if (!mt)

@@ -205,6 +205,7 @@ namespace GHSolar
         }
 
 
+        //mesh operations are not multi-threading safe?
         /*
         internal static void CalcShadowMeshMT(int year, List<SunVector> sunvectors, Mesh msh, Mesh[] obst, int interpmode,
             Context.cWeatherdata weather, Context.cLocation location, int rec,
@@ -374,6 +375,169 @@ namespace GHSolar
 
         */
 
+
+
+        /// <summary>
+        /// Calculates specular interreflections on one sensor point for an array of solar vectors. Irradiation values given normal to reflected ray.
+        /// </summary>
+        /// <param name="origin">3D coordinate of sensor point.</param>
+        /// <param name="origNormal">Normal of sensor point.</param>
+        /// <param name="tolerance">Offset from origin in normal direction, to avoid self-intersection.</param>
+        /// <param name="solarvec">Array of solar vectors to check interreflections for.</param>
+        /// <param name="sunshine">Array of booleans, indicating if sun shines (vector above ground plane).</param>
+        /// <param name="obstacles">Array of mesh obstacles.</param>
+        /// <param name="albedo">Double array [i][h] of reflection coefficients (albedos) for each obstacle i and for each time step h.</param>
+        /// <param name="reflType">Array indicating reflection type for each obstacle. 0: diffuse, 1: specular.</param>
+        /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
+        /// <param name="Ispecular">Normal irradiation values [t][m] for each solar vector t and each refleced ray m.</param>
+        /// <param name="Inormals">Normal vectors [t][m] for each solar vector t and each reflected ray m.</param>
+        internal static void CalcSpecularNormal(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
+            Mesh[] obstacles, double[][] albedo, int[] reflType, int bounces, 
+            ref double[][] Ispecular, ref Vector3d[][] Inormals)
+        {
+            //return: [0][n] double Irradiation; [1][n] vector3d normals of interreflections
+
+            //!!!!!!!!!! if bounces == 0, break void
+            //if (bounces < 1) break;   //break wrong command...
+
+            Point3d origOffset = new Point3d(Point3d.Add(origin, Vector3d.Multiply(Vector3d.Divide(origNormal, origNormal.Length), tolerance)));
+            List<List<double>> IspecNorm = new List<List<double>>();
+            //object [] IspecNorm = new object[solarvec.Length];
+
+            for (int t = 0; t < solarvec.Length; t++)
+            {
+                IspecNorm.Add(new List<double>());  //add element for each reflected ray
+
+                if (sunshine[t])
+                {
+                    for (int u = 0; u < obstacles.Length; u++)
+                    {
+                        if (reflType[u] == 1)
+                        {
+                            for (int k = 0; k < obstacles[u].Faces.Count; k++)
+                            {
+                                int currBounce = 0;
+
+                                Point3d cen = obstacles[u].Faces.GetFaceCenter(k);
+                                Vector3d obstnorm = obstacles[u].FaceNormals[k];
+                                Vector3d vSrfObst = new Vector3d(Point3d.Subtract(cen, origOffset));
+                                Ray3d rSrfObst = new Ray3d(origOffset, vSrfObst);
+                                //get all obstcles, also non specular ones....
+                                for (int m = 0; m < obstacles.Length; m++)
+                                {
+                                    if (m != u) //check for blockage
+                                    {
+                                        double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[m], rSrfObst);
+                                        if (inters >= 0)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                                //IspecNorm[t].Add(0.0);
+                            }
+
+                        }
+
+                        //Ray3d ray = new Ray3d(origOffset, vec[t]);
+                        //double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
+                        //if (inters >= 0)
+                        //{
+                        //    Ispecular[t] = 0.0;
+                        //    break;
+                        //}
+                    }
+                }
+                else
+                {
+                    //Ispecular[t] = 0.0;
+                }
+            }
+
+
+
+            //  rhino obstructions forall t. use INTERPOLATION 
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////     S P E C U L A R   /////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //SPECULAR
+            //double total_Specular_Budget = 0.0;
+            // forall specular objects:
+
+            // 01:
+            //  from sensorpoint (SP), shoot rays ONLY to specular objects. 
+            //      - check, if vectorangle(ray, sensorpoint normal) <= 90°. if not, break. else:
+            //          - check, if ray unobstructed. if not, break. else, go to 02.
+
+            // 02:
+            // if ray <= 90° (otherwise it hits the backside of the specular surface) and unobstructed:
+            //      - if bounce > 1 (else go to 03):
+            //          - for each bounce > 1, calc reflected ray on the specular obstacle and for new ray, go to 01:
+            //              - go to 03, if unobstructed:
+
+            // 03:
+            //      - for all t in [0,8759]
+            //          - check, if daytime. if not, break. else:
+            //              - from specular obstacle object, make ray to sunvector. calc vectorangle(sunvector, obstacle normal). if not <= 90°, break. else:
+            //                  - make reflection of sunvector on obstacle. if this reflecting vector *-1 is not coincident with connecting ray to SP (tolerance of +- 1°?), break. else:
+            //                      - check if the sunvector (not the reflected) is obstructed. if yes, break. else, go to 03.
+
+            // 03:
+            // calc Specular_interreflection = I_direct incident on obstacle object. Multiply with its specular coefficient (albedo?). 
+            //      and account for incidence angle on sensorpoint: I_sensorpoint = I_incident sin(90°-vectorangle(sp_normal, incident_ray))
+            // total_Specular_Budget += Specular_interreflection;
+
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        }
+
+        /// <summary>
+        /// Calculate beam irradiation incident on a sensor point, considering incidence angles.
+        /// </summary>
+        /// <param name="origNormal">Normal of sensor point.</param>
+        /// <param name="Ispecular">Specular irradiation values [t][i] for each time stept t and for each reflected ray.</param>
+        /// <param name="Inormals">Normals for each specular irradiation value [t][i].</param>
+        /// <param name="IspecularIncident">Effective specular reflected irradiation [t] incident on the sensor point, for each time step t.</param>
+        internal static void CalcSpecularIncident(Vector3d origNormal, double [][] Ispecular, Vector3d[][] Inormals, ref double[] IspecularIncident)
+        {
+            //if vectorangle >90, ray is behind and nothing hits SP
+        }
+
+
+
+        internal static void CalcDiffuse(Point3d origin, Vector3d origNormal, double tolerance,
+            Mesh[] obstacles, double[][] albedo, int difDomeRes, ref double Idiffuse)
+        {
+
+            //    // rhino obstructions only once.
+            //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //    /////////////////////////////////////////////////     D I F F U S E     /////////////////////////////////////////////////////////////
+            //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //    //DIFFUSE
+            //    // double average_Diffuse_Budget = 0;
+            //    // set diffuse hedgehog ray count. using icosahedron vertices, but not those at the "horizon"/perimeter. too flat anyway.
+            //    // the more rays, the more precise the average value will be.
+
+            //    // 01:
+            //    // for all hedgehog rays:
+            //    //      - check, if it hits a diffuse obstacle object. if not, break. else, go to 02:
+
+            //    // 02:
+            //    //      - calc I_obstacle = total irradiation on this obstacle. multiply with its diffuse reflection (albedo?) coefficient.
+            //    //      - average_Diffuse_Budget += I_obstacle
+
+            //    // 03:
+            //    // average_Diffuse_Budget /= hedgehog_ray_Count
+
+
+            //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        }
 
 
     }
