@@ -145,7 +145,6 @@ namespace GHSolar
             List<double> Ih = new List<double>();
             List<double> Ib = new List<double>();
 
-            List<Sensorpoint> ps = new List<Sensorpoint>();
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
             Vector3f[] mshvrtnorm = new Vector3f[mshvrt.Length];
             msh.FaceNormals.ComputeFaceNormals();
