@@ -17,66 +17,48 @@ namespace SolarModel
 {
     //skycumulative values?? do i need?
 
-    //shadow days for direct?
-
-    //shadow fraction for skydome (isotropic compnoetn)
-    //shadow fraction for horizon component
-    //shadow hours for circumsolar ..... (3 days interpolation`???)
 
 
 
 
     /// <summary>
-    /// Constructs a skydome with patches, each holding value for solar radiation.
-    /// Each sensor point will have one SkyDome.
+    /// Constructs a skydome (hemisphere). Used in Sensorpoints.cs.
+    /// <para>Each sensor point will have one skydome.</para>
     /// </summary>
     public class SkyDome
     {
-        //public sPatches patches; //maybe I don't need this.
-
         /// <summary>
         /// Icosphere, constructed using the IcoSphere class.
         /// </summary>
         private IcoSphere ico;
-
-
-        ///// <summary>
-        ///// A list of sun vectors for each hour of the year. 8760 in total. Using the SunVector class.
-        ///// </summary>
-        //public List<SunVector> SunVectors;
-        
-        ///// <summary>
-        ///// Boolean to indicate wether an hour of the year is day-time (true = there is sunshine) or night-time (false = no sunshine).
-        ///// </summary>
-        //public List<bool> Sunshine;
-
         /// <summary>
         /// Faces of the hemisphere. Indices, referencing to VertexCoordinatesSphere.
         /// </summary>
-        public List<int[]> Faces;
+        public List<int[]> Faces { get; private set; } 
         /// <summary>
         /// Surface area of each face. Most of them are identical, but since some had to be split when turning the sphere to a hemisphere, they are not all the same
         /// </summary>
-        public List<double> FaceAreas;    
+        public List<double> FaceAreas { get; private set; }    
         /// <summary>
-        /// All points (coordinates) of the complete sphere.
+        /// All vertex-vectors (points) of the complete sphere.
         /// </summary>
-        public List<double[]> VertexCoordinatesSphere;
-
-        public bool [] VertexShadowSphere;
-
+        public List<double[]> VertexVectorsSphere { get; private set; }
+        /// <summary>
+        /// Indicating for each vertex of the hemisphere, if it is obstructed (true).
+        /// </summary>
+        public bool[] VertexShadowSphere { get; internal set; }
         /// <summary>
         /// Vertices of the hemisphere. Referencing to VertexCoordinatesSphere.
         /// </summary>
-        public List<int> VerticesHemisphere;
+        public List<int> VerticesHemisphere { get; private set; }
         /// <summary>
         /// Vertices lying on z=0, i.e. the Horizon. Referencing to VertexCoordinatesSphere
         /// </summary>
-        public List<int> VerticesHorizon;
+        public List<int> VerticesHorizon { get; private set; }
         /// <summary>
         /// Unfortunately, the horizon vertices are not spaced equally. so this is the contribution of each vertex of the entire circle. In degree. Should sum up to 720 (2 circles).
         /// </summary>
-        public List<double> HorizonSegments;
+        public List<double> HorizonSegments { get; private set; }
 
         /// <summary>
         /// Weighted fraction of the horizon, which is obstructed. 1 = full obstruction.
@@ -102,7 +84,7 @@ namespace SolarModel
         {
             ico = new IcoSphere(resolution);
             Faces = ico.getFaces();
-            VertexCoordinatesSphere = ico.getVertexCoordinates();
+            VertexVectorsSphere = ico.getVertexCoordinates();
 
             VerticesHemisphere = new List<int>();
             VerticesHorizon = new List<int>();
@@ -111,36 +93,54 @@ namespace SolarModel
 
             ShdwBeam = new bool[8760];
 
-            CalcHalfSphere(ref Faces, ref VertexCoordinatesSphere, ref VerticesHemisphere, ref FaceAreas);
-            CalcHorizonSegmentWeights(ref HorizonSegments, ref VerticesHorizon, VerticesHemisphere, VertexCoordinatesSphere);
+            CalcHemisphere();
+            CalcHorizonSegmentWeights();
 
-            VertexShadowSphere = new bool[VertexCoordinatesSphere.Count];
+            VertexShadowSphere = new bool[VertexVectorsSphere.Count];
             //create a list of size of the facaes of the dome. use this list for shadow factors...
-
         }
 
+        /// <summary>
+        /// Copy object.
+        /// </summary>
+        /// <param name="copy"></param>
         public SkyDome(SkyDome copy)
         {
             ico = copy.ico;
             Faces = copy.Faces;
             FaceAreas = copy.FaceAreas;
             ShdwBeam = new bool[8760];
-            VertexCoordinatesSphere = copy.VertexCoordinatesSphere;
+            VertexVectorsSphere = copy.VertexVectorsSphere;
             VerticesHemisphere = copy.VerticesHemisphere;
             VerticesHorizon = copy.VerticesHorizon;
             HorizonSegments = copy.HorizonSegments;
-            VertexShadowSphere = new bool[VertexCoordinatesSphere.Count];
+            VertexShadowSphere = new bool[VertexVectorsSphere.Count];
             //ShdwHorizon, ShdwDome, ShdwSunVector must be re-evaluated for new sensor point
         }
 
-
+        /// <summary>
+        /// Replace the vertex vectors of the hemisphere.
+        /// <para>E.g. for externally rotating the hemisphere.</para>
+        /// </summary>
+        /// <param name="NewVectors">New vectors.</param>
+        public void ReplaceVertexVectors(double[][] NewVectors)
+        {
+            for (int i = 0; i < this.VertexVectorsSphere.Count; i++)
+            {
+                for (int u = 0; u < this.VertexVectorsSphere[i].Length; u++)
+                {
+                    double copy =  NewVectors[i][u];
+                    this.VertexVectorsSphere[i][u] = copy;
+                }
+            }
+        }
 
 
         /// <summary>
         /// Set the fraction of the dome, which is obstructed.
         /// <para>Needs some obstruction calculation, which you have to run in another program (e.g. Rhinoceros)</para>
         /// </summary>
-        public void SetShadow_Dome()
+        internal void SetShadow_Dome()
         {
             double totalArea = 0.0;
             double weights = 0.0;
@@ -163,8 +163,7 @@ namespace SolarModel
         /// Set the fraction of the horizon, which is obstructed.
         /// <para>Needs some obstruction calculation, which you have to run in another program (e.g. Rhinoceros)</para>
         /// </summary>
-        /// <param name="obstructedHorizonVectors">Indicates, which segment of the horizon is obstructed (true) and which is not (false).</param>
-        public void SetShadow_Horizon()
+        internal void SetShadow_Horizon()
         {
             double weights = 0.0;
             for (int i = 0; i < this.VerticesHorizon.Count; i++)
@@ -174,63 +173,29 @@ namespace SolarModel
             this.ShdwHorizon = Convert.ToDouble(weights) / 720.0;     //720 is 2 circles : the sum angle of all horizon segments
         }
 
-
-
-
-        public void SetShadow_Beam(int HOY, bool shadow)
+        /// <summary>
+        /// Indicate for a certain hour of the year, if the center of the skydome lies in shadow. I.e. has no beam radiation.
+        /// </summary>
+        /// <param name="HOY">Hour of year, HOY ∈ [0,8759].</param>
+        /// <param name="shadow">shadow = true.</param>
+        internal void SetShadow_Beam(int HOY, bool shadow)
         {
             this.ShdwBeam[HOY] = shadow;
         }
 
 
-        ///// <summary>
-        ///// Input has 8760 values. Just copy.
-        ///// </summary>
-        ///// <param name="obstructedSunVectors"></param>
-        //public void SetShadow_Beam(List<bool> obstructedSunVectors)
-        //{
-        //    //this.ShdwBeam = new List<bool>(obstructedSunVectors);
-        //}
-
-
-
-
-        ////////////////////////////////////////////////////////////////////
-        //// interpolation here!!!!!!!!!?????
-        ////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
-        ///// <summary>
-        ///// list of list of bools. each list is one day (24) of values. the provided days will be used to fill the entire year.
-        ///// </summary>
-        ///// <param name="obstructedsunvectors">keys: days of the year [1,365]. items: list of length 24, for each hour of the day, true=obstructed, false=no obstruction.</param>
-        //public void setshadow_beam(dictionary<int, list<bool>> obstructedsunvectors)
-        //{
-
-        //    // do some interpolation
-
-        //}
-
-
-
-
-
-
-
-
-
-
-
         /// <summary>
         /// Takes a sphere and halfs it, so we have a hemisphere.
+        /// Sets:
+        /// <para>Faces: Faces of the sphere. Each face has three vertex indices.</para>
+        /// <para>FaceAreas: Areas of each face of the hemisphere mesh.</para>
+        /// <para>VertexCoordinatesSphere: X,Y,Z -coordinates of all vertices.</para>
+        /// <para>VerticesHemisphere: Vertices of the hemisphere.</para>
         /// </summary>
-        /// <param name="_faces">Faces of the sphere. Each face has three vertex indices.</param>
-        /// <param name="_vertcoord">X,Y,Z -coordinates of all vertices.</param>
-        /// <param name="_faceAreas">Areas of each face of the hemisphere mesh.</param>
-        /// <param name="_vertHemi">Vertices of the hemisphere.</param>
-        private void CalcHalfSphere(ref List<int[]> _faces, ref List<double[]> _vertcoord, ref List<int> _vertHemi, ref List<double> _faceAreas)
+        private void CalcHemisphere()
         {
             Dictionary<int, bool> delVertex = new Dictionary<int, bool>();
-            for (int i = 0; i < _vertcoord.Count; i++) 
+            for (int i = 0; i < this.VertexVectorsSphere.Count; i++) 
                 delVertex.Add(i, true);
 
             Dictionary<int, bool> splitFace = new Dictionary<int, bool>();
@@ -240,24 +205,24 @@ namespace SolarModel
             List<double[]> newPoints = new List<double[]>();    //new projected points. check for duplicate
             List<int> newIndices = new List<int>();
             int newpointscreated = 0;
-            int StartIndOfNewPts = _vertcoord.Count;
-            for(int i=0; i<_faces.Count; i++)
+            int StartIndOfNewPts = this.VertexVectorsSphere.Count;
+            for (int i = 0; i < this.Faces.Count; i++)
             {
                 splitFace.Add(i, false);
                 bool deleteface = false;
                 int countMinusZ = 0;
                 int countZeroZ = 0;
                 int vminus = 0;
-                for (int u = 0; u < _faces[i].Length; u++)
+                for (int u = 0; u < this.Faces[i].Length; u++)
                 {
                     //conditions to delete face, and indicate which face to split
-                    if (_vertcoord[_faces[i][u]][2] < 0)
+                    if (this.VertexVectorsSphere[this.Faces[i][u]][2] < 0)
                     {
                         deleteface = true;
                         vminus = u;
                         countMinusZ++;
                     }
-                    else if (_vertcoord[_faces[i][u]][2] == 0)
+                    else if (this.VertexVectorsSphere[this.Faces[i][u]][2] == 0)
                     {
                         countZeroZ++;
                     }
@@ -271,7 +236,7 @@ namespace SolarModel
 
                     int[] v = new int[2];
                     int count = 0;
-                    for (int u = 0; u < _faces[i].Length; u++)
+                    for (int u = 0; u < this.Faces[i].Length; u++)
                     {
                         if (u != vminus)
                         {
@@ -282,8 +247,8 @@ namespace SolarModel
 
                     //this point will be twice...
                     double[] newP = new double[3];
-                    newP[0] = _vertcoord[_faces[i][vminus]][0];
-                    newP[1] = _vertcoord[_faces[i][vminus]][1];
+                    newP[0] = this.VertexVectorsSphere[this.Faces[i][vminus]][0];
+                    newP[1] = this.VertexVectorsSphere[this.Faces[i][vminus]][1];
                     newP[2] = 0;
 
                     int index = 0;
@@ -299,13 +264,13 @@ namespace SolarModel
                     {
                         //check for duplicate in newPoints list
                         bool exists = false;
-                        for (int j=0; j < newPoints.Count; j++)
+                        for (int j = 0; j < newPoints.Count; j++)
                         {
                             if (newP[0] == newPoints[j][0])
                             {
                                 if (newP[1] == newPoints[j][1])
                                 {
-                                    index = j + _vertcoord.Count;
+                                    index = j + this.VertexVectorsSphere.Count;
                                     exists = true;
                                     break;
                                 }
@@ -320,39 +285,39 @@ namespace SolarModel
                             newIndices.Add(index);
                         }
                     }
-            
+
                     //delVertex.Add(_vertcoord.Count-1, true);        // i still need to delete the vertex point, but the order is wrong.
-                    newFaces.Add(new int[] { _faces[i][v[0]], _faces[i][v[1]], index });
+                    newFaces.Add(new int[] { this.Faces[i][v[0]], this.Faces[i][v[1]], index });
 
                 }
 
                 // just a flag to delete. but actually deletes later
-                if (deleteface) 
+                if (deleteface)
                     removeFace.Add(i);
             }
 
 
-            _faces.AddRange(newFaces);
+            this.Faces.AddRange(newFaces);
 
             //remove Faces
             foreach (int index in removeFace.OrderByDescending(i => i)) 
-                _faces.RemoveAt(index);
+                this.Faces.RemoveAt(index);
 
             //indicating unused vertices
-            foreach (int[] face in _faces)
+            foreach (int[] face in this.Faces)
                 foreach (int f in face)
                     delVertex[f] = false;
 
             //put only used vertices into the Vertex list
-            for (int i = 0; i < _vertcoord.Count; i++)
-                if (delVertex[i] == false) _vertHemi.Add(i);
-            _vertcoord.AddRange(newPoints);
-            _vertHemi.AddRange(newIndices);
+            for (int i = 0; i < this.VertexVectorsSphere.Count; i++)
+                if (delVertex[i] == false) this.VerticesHemisphere.Add(i);
+            this.VertexVectorsSphere.AddRange(newPoints);
+            this.VerticesHemisphere.AddRange(newIndices);
 
             //calculating face areas
-            foreach(int[]face in _faces)
+            foreach(int[]face in this.Faces)
             {
-                _faceAreas.Add(Misc.getTriangleArea(_vertcoord[face[0]], _vertcoord[face[1]], _vertcoord[face[2]]));
+                this.FaceAreas.Add(Misc.getTriangleArea(this.VertexVectorsSphere[face[0]], this.VertexVectorsSphere[face[1]], this.VertexVectorsSphere[face[2]]));
             }
 
         }
@@ -360,40 +325,41 @@ namespace SolarModel
         /// <summary>
         /// Calculate the segment weights of the horizon vertices. 
         /// <para>We need this, because unfortunately the vertices on the horizon are not equally distributed.</para>
+        /// <para>Sets:</para>
+        /// <para>HorizonSegments: Weight for each vector. It is the angle between its two surrounding vectors.</para>
+        /// <para>VerticesHorizon: Vertices of the horizon. Index reference to the hemisphere vertex coordinates list.</para>
+        /// <para>VerticesHemisphere: All vertices of the hemisphere.</para>
+        /// <para>VertexCoordinatesSphere: All coordinates of the vertices of the entire sphere.</para>
         /// </summary>
-        /// <param name="_weights">Weight for each vector. It is the angle between its two surrounding vectors.</param>
-        /// <param name="_verthorizon">Vertices of the horizon. Index reference to the hemisphere vertex coordinates list.</param>
-        /// <param name="_vertHemisphere">All vertices of the hemisphere.</param>
-        /// <param name="_allcoords">All coordinates of the vertices of the entire sphere.</param>
-        private void CalcHorizonSegmentWeights(ref List<double> _weights, ref List<int> _verthorizon, List<int> _vertHemisphere, List<double[]> _allcoords)
+        private void CalcHorizonSegmentWeights()
         {
             List<double> anglescenter = new List<double>();
 
-            for (int i = 0; i < _vertHemisphere.Count; i++)
+            for (int i = 0; i < this.VerticesHemisphere.Count; i++)
             {
-                if (_allcoords[_vertHemisphere[i]][2] == 0)
+                if (this.VertexVectorsSphere[this.VerticesHemisphere[i]][2] == 0)
                 {
-                    _verthorizon.Add(_vertHemisphere[i]); //needs to be sorted according to anglescenter
-                    anglescenter.Add(Vector.AngleBetween(new Vector(0, 1), new Vector(_allcoords[_vertHemisphere[i]][0], _allcoords[_vertHemisphere[i]][1])));
-                    _weights.Add(0);
+                    this.VerticesHorizon.Add(this.VerticesHemisphere[i]); //needs to be sorted according to anglescenter
+                    anglescenter.Add(Vector.AngleBetween(new Vector(0, 1), new Vector(this.VertexVectorsSphere[this.VerticesHemisphere[i]][0], this.VertexVectorsSphere[this.VerticesHemisphere[i]][1])));
+                    this.HorizonSegments.Add(0);
                 }
             }
 
-            int[] items = _verthorizon.ToArray();
+            int[] items = this.VerticesHorizon.ToArray();
             double[] order = anglescenter.ToArray();
             Array.Sort(order, items);
-            _verthorizon = new List<int>(items.ToList()); 
+            this.VerticesHorizon = new List<int>(items.ToList()); 
 
-            for (int i = 0; i < _verthorizon.Count; i++)
+            for (int i = 0; i < this.VerticesHorizon.Count; i++)
             {
                 int a;
                 int b;
                 if (i == 0)
                 {
-                    a = _verthorizon.Count - 1;
+                    a = this.VerticesHorizon.Count - 1;
                     b = i + 1;
                 }
-                else if (i == _verthorizon.Count - 1)
+                else if (i == this.VerticesHorizon.Count - 1)
                 {
                     a = i - 1;
                     b = 0;
@@ -404,34 +370,12 @@ namespace SolarModel
                     b = i + 1;
                 }
 
-                Vector v1 = new Vector(_allcoords[_verthorizon[a]][0], _allcoords[_verthorizon[a]][1]);
-                Vector v2 = new Vector(_allcoords[_verthorizon[b]][0], _allcoords[_verthorizon[b]][1]);
+                Vector v1 = new Vector(this.VertexVectorsSphere[this.VerticesHorizon[a]][0], this.VertexVectorsSphere[this.VerticesHorizon[a]][1]);
+                Vector v2 = new Vector(this.VertexVectorsSphere[this.VerticesHorizon[b]][0], this.VertexVectorsSphere[this.VerticesHorizon[b]][1]);
                 double angle = Vector.AngleBetween(v1, v2);
-                _weights[i] = angle;
+                this.HorizonSegments[i] = angle;
             }
         }
-
-
-
-
-
-        //public struct sPatches
-        //{
-        //    public int count { get; private set; }                       //number of patches
-        //    public List<sVector> vertices { get; private set; }
-        //    public List<double> obstructed { get; private set; }         //overshadowed 0-1 , 1 = no sun
-
-        //}
-
-
-        //public struct sVector
-        //{
-        //    public double x { get; private set; }
-        //    public double y { get; private set; }
-        //    public double z { get; private set; }  
-        //}
-
-
 
     }
 }
