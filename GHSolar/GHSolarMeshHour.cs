@@ -252,7 +252,7 @@ namespace GHSolar
                 double[] Ispec_inc = new double[1];
 
                 //run this every time panel angles change:
-                cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], new int[1] { HOY }, new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
+                cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
                 Ispec_onehour[i] = Ispec_inc[0];
 
 

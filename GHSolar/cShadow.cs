@@ -553,7 +553,7 @@ namespace GHSolar
         /// <param name="DNI">Direct normal irradiation values for each time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [t] incident on the sensor point, for each time step t.</param>
         internal static void CalcSpecularIncident(Vector3d origNormal, double[][] Ispecular, Vector3d[][] Inormals, 
-            int [] HOY, double [] DNI, ref double[] IspecularIncident)
+            double [] DNI, ref double[] IspecularIncident)
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
             //DNI = DNI * Ispecular (here are my albedos)
