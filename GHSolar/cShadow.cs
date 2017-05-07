@@ -20,16 +20,6 @@ namespace GHSolar
 
     internal static class cShadow
     {
-        //Direct shadow list
-
-        //diffuse shadow list
-
-
-        //inter-reflections? n
-
-
-        //MT versions !! is it possible with rhino?
-
         /// <summary>
         /// 
         /// </summary>
@@ -386,74 +376,133 @@ namespace GHSolar
         /// <param name="solarvec">Array of solar vectors to check interreflections for.</param>
         /// <param name="sunshine">Array of booleans, indicating if sun shines (vector above ground plane).</param>
         /// <param name="obstacles">Array of mesh obstacles.</param>
-        /// <param name="albedo">Double array [i][h] of reflection coefficients (albedos) for each obstacle i and for each time step h.</param>
+        /// <param name="albedo">Double array [u][t] of reflection coefficients (albedos) for each obstacle u and for each vector t.</param>
         /// <param name="reflType">Array indicating reflection type for each obstacle. 0: diffuse, 1: specular.</param>
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [t][m] for each solar vector t and each refleced ray m.</param>
         /// <param name="Inormals">Normal vectors [t][m] for each solar vector t and each reflected ray m.</param>
         internal static void CalcSpecularNormal(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
-            Mesh[] obstacles, double[][] albedo, int[] reflType, int bounces, 
+            Mesh[] obstacles, double[][] albedo, int[] reflType, int bounces,
             ref double[][] Ispecular, ref Vector3d[][] Inormals)
         {
             //return: [0][n] double Irradiation; [1][n] vector3d normals of interreflections
+            if (bounces < 1) return;
 
-            //!!!!!!!!!! if bounces == 0, break void
-            //if (bounces < 1) break;   //break wrong command...
+            //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
 
             Point3d origOffset = new Point3d(Point3d.Add(origin, Vector3d.Multiply(Vector3d.Divide(origNormal, origNormal.Length), tolerance)));
-            List<List<double>> IspecNorm = new List<List<double>>();
-            //object [] IspecNorm = new object[solarvec.Length];
+            List<List<double>> IspecNorm = new List<List<double>>();    //for each solarvec, add a list with elements for each reflected ray hitting the SP
+            List<List<Vector3d>> IspecVec = new List<List<Vector3d>>(); //same, just vector of bounce. thats vSrfObst
+
+            //List<Line> ln = new List<Line>();
+            //List<TextDot> dot = new List<TextDot>();
+
+
+
+            Vector3d[][] obstNorms = new Vector3d[obstacles.Length][];
+            Vector3d[][] obstNormsRev = new Vector3d[obstacles.Length][];
+            Point3d[][] obstCen = new Point3d[obstacles.Length][];
+            for (int u = 0; u < obstacles.Length; u++)
+            {
+                obstacles[u].FaceNormals.ComputeFaceNormals();
+                obstNorms[u] = new Vector3d[obstacles[u].Faces.Count];
+                obstNormsRev[u] = new Vector3d[obstacles[u].Faces.Count];
+                obstCen[u] = new Point3d[obstacles[u].Faces.Count];
+                for (int k = 0; k < obstacles[u].Faces.Count; k++)
+                {
+                    obstNorms[u][k] = obstacles[u].FaceNormals[k];
+                    obstNormsRev[u][k] = Vector3d.Negate(obstNorms[u][k]);
+                    Point3d cen0 = obstacles[u].Faces.GetFaceCenter(k);
+                    obstCen[u][k] = new Point3d(Point3d.Add(cen0, Vector3d.Multiply(Vector3d.Divide(obstNorms[u][k], obstNorms[u][k].Length), tolerance)));
+                }
+            }
+
 
             for (int t = 0; t < solarvec.Length; t++)
             {
                 IspecNorm.Add(new List<double>());  //add element for each reflected ray
-
+                IspecVec.Add(new List<Vector3d>());
                 if (sunshine[t])
                 {
                     for (int u = 0; u < obstacles.Length; u++)
                     {
-                        if (reflType[u] == 1)
+                        if (reflType[u] == 1 && albedo[u][t] > 0.0)   //specular, and it must be able to reflect ( > 0)
                         {
-                            for (int k = 0; k < obstacles[u].Faces.Count; k++)
+                            for (int k = 0; k < obstacles[u].Faces.Count; k++)      //specular obstacles are advised to be clean mesh geometries...
                             {
-                                int currBounce = 0;
+                                bool obstSun;
+                                double vanglesun = Vector3d.VectorAngle(obstNorms[u][k], solarvec[t]) * (180.0 / Math.PI);
+                                if (vanglesun >= 90)
+                                {
+                                    obstSun = false;
+                                }
+                                else
+                                {
+                                    obstSun = true;
+                                }
+                                if (bounces == 1)   //sun doesn't reach reflector. 
+                                {
+                                    if (!obstSun)
+                                    {
+                                        continue;
+                                    }
+                                }
 
-                                Point3d cen = obstacles[u].Faces.GetFaceCenter(k);
-                                Vector3d obstnorm = obstacles[u].FaceNormals[k];
-                                Vector3d vSrfObst = new Vector3d(Point3d.Subtract(cen, origOffset));
+                                Vector3d vSrfObst = new Vector3d(Point3d.Subtract(obstCen[u][k], origOffset));
+                                double vangle = Vector3d.VectorAngle(obstNormsRev[u][k], vSrfObst) * (180.0 / Math.PI);
+                                if (vangle >= 90)
+                                {
+                                    continue;
+                                }
                                 Ray3d rSrfObst = new Ray3d(origOffset, vSrfObst);
+
                                 //get all obstcles, also non specular ones....
+                                bool blnX = false;
                                 for (int m = 0; m < obstacles.Length; m++)
                                 {
-                                    if (m != u) //check for blockage
+                                    if (m != u)
                                     {
                                         double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[m], rSrfObst);
                                         if (inters >= 0)
                                         {
+                                            blnX = true;
                                             break;
                                         }
                                     }
                                 }
-                                //IspecNorm[t].Add(0.0);
+                                if (!blnX)
+                                {
+                                    if (bounces == 1)    //support only 1 bounce for now.
+                                    {
+                                        Vector3d refl = Vector3d.Subtract(vSrfObst, Vector3d.Multiply(Vector3d.Multiply(vSrfObst, obstNorms[u][k]) * 2.0, obstNorms[u][k]));
+                                        double tol = 360.0 * tolerance * ( Math.PI / 180.0);
+                                        int par = refl.IsParallelTo(solarvec[t], tol);
+                                        if (par == 1)
+                                        {
+                                            IspecNorm[t].Add(albedo[u][t]);  //add beam irriadiation normal to reflected ray. as a factor (albedos). don't work with DHI yet.
+                                            IspecVec[t].Add(vSrfObst);
+                                            //ln.Add(new Line(obstCen[u][k], refl, 100));
+                                            //ln.Add(new Line(origOffset, obstCen[u][k]));
+                                        }
+                                    }
+                                }
                             }
-
                         }
-
-                        //Ray3d ray = new Ray3d(origOffset, vec[t]);
-                        //double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u], ray);
-                        //if (inters >= 0)
-                        //{
-                        //    Ispecular[t] = 0.0;
-                        //    break;
-                        //}
                     }
                 }
-                else
-                {
-                    //Ispecular[t] = 0.0;
-                }
+                Ispecular[t] = IspecNorm[t].ToArray();
+                Inormals[t] = IspecVec[t].ToArray();
             }
 
+            //foreach (TextDot d in dot)
+            //{
+            //    doc.Objects.AddTextDot(d);
+            //}
+            //foreach (Line l in ln)
+            //{
+            //    doc.Objects.AddLine(l);
+            //}
+            //doc.Views.Redraw();
 
 
             //  rhino obstructions forall t. use INTERPOLATION 
@@ -500,10 +549,27 @@ namespace GHSolar
         /// <param name="origNormal">Normal of sensor point.</param>
         /// <param name="Ispecular">Specular irradiation values [t][i] for each time stept t and for each reflected ray.</param>
         /// <param name="Inormals">Normals for each specular irradiation value [t][i].</param>
+        /// <param name="HOY">Hours of the year ∈ [0, 8759] corresponding to each time step t.</param>
+        /// <param name="DNI">Direct normal irradiation values for each time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [t] incident on the sensor point, for each time step t.</param>
-        internal static void CalcSpecularIncident(Vector3d origNormal, double [][] Ispecular, Vector3d[][] Inormals, ref double[] IspecularIncident)
+        internal static void CalcSpecularIncident(Vector3d origNormal, double[][] Ispecular, Vector3d[][] Inormals, 
+            int [] HOY, double [] DNI, ref double[] IspecularIncident)
         {
-            //if vectorangle >90, ray is behind and nothing hits SP
+            //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
+            //DNI = DNI * Ispecular (here are my albedos)
+
+            for(int t=0; t<IspecularIncident.Length;t++)
+            {
+                IspecularIncident[t] = 0.0;
+                if (Ispecular[t] != null)
+                {
+                    for (int m = 0; m < Ispecular[t].Length; m++)
+                    {
+                        double DNI_t = DNI[t] * Ispecular[t][m];
+                        IspecularIncident[t] += DNI_t * Math.Sin((90 * Math.PI / 180.0) - Vector3d.VectorAngle(origNormal, Inormals[t][m]));
+                    }
+                }
+            }
         }
 
 

@@ -105,7 +105,7 @@ namespace GHSolar
             if (!DA.GetData(11, ref hour)) { return; }
             int bounces = 1;
             if (!DA.GetData(12, ref bounces)) { bounces = 1; }
-            bounces = (bounces < 1) ? 1 : bounces;  
+            bounces = (bounces < 0) ? 0 : bounces;  
 
             int rec = 0;
             if (!DA.GetData(13, ref rec)) { rec = 1; }
@@ -150,11 +150,7 @@ namespace GHSolar
             List<ObstacleObject> objObst = new List<ObstacleObject>();
             if (!DA.GetDataList(1, objObst)) { return; }
             Mesh[] obst = new Mesh[objObst.Count];
-            //List<double> alb_spec = new List<double>();
-            //List<double> alb_diff = new List<double>();
             double[][] albedos = new double[objObst.Count][];
-            //List<Mesh> ob_spec = new List<Mesh>();
-            //List<Mesh> ob_diff = new List<Mesh>();
             int[] reflType = new int[objObst.Count];
             for (int i = 0; i < objObst.Count; i++)
             {
@@ -162,27 +158,13 @@ namespace GHSolar
                 albedos[i] = new double[1];
                 albedos[i][0] = objObst[i].albedos[HOY];
                 obst[i] = objObst[i].mesh;
-                //if (objObst[i].reflType == 0)   //diffuse
-                //{
-                //    alb_diff.Add(objObst[i].albedos[HOY]);
-                //    ob_diff.Add(objObst[i].mesh);
-                //}
-                //else
-                //{
-                //    alb_spec.Add(objObst[i].albedos[HOY]);
-                //    ob_spec.Add(objObst[i].mesh);
-                //}
             }
-            //double[] albedo_spec = alb_spec.ToArray();
-            //double[] albedo_diff = alb_diff.ToArray();
-            //Mesh[] obst_spec = ob_spec.ToArray();
-            //Mesh[] obst_diff = ob_diff.ToArray();
+
 
             List<double> I = new List<double>();
             List<double> Ih = new List<double>();
             List<double> Ib = new List<double>();
 
-            List<Sensorpoint> ps = new List<Sensorpoint>();
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
             Vector3f[] mshvrtnorm = new Vector3f[mshvrt.Length];
             msh.FaceNormals.ComputeFaceNormals();
@@ -203,7 +185,6 @@ namespace GHSolar
                 {
                     psi = 0;
                 }
-
                 arrbeta[i] = beta;
                 arrpsi[i] = psi;
             }
@@ -271,8 +252,9 @@ namespace GHSolar
                 double[] Ispec_inc = new double[1];
 
                 //run this every time panel angles change:
-                cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], ref Ispec_inc);
+                cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], new int[1] { HOY }, new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
                 Ispec_onehour[i] = Ispec_inc[0];
+
 
                 /////////////////////////////////////////////////////////////////////
                 //interreflections diffuse
