@@ -27,7 +27,7 @@ namespace GHSolar
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddMeshParameter("AnalysisMesh", "AnalysisMsh", "Input analysis meshes for solar irradiation calculation.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("AnalysisMesh", "AnalysisMsh", "Input analysis meshes for solar irradiation calculation.", GH_ParamAccess.item);
             pManager.AddGenericParameter("ObstacleObjects", "ObstclObjs", "Input obstacle objects (generic).", GH_ParamAccess.list); //each obstacle consists of: (i) a mesh obstacle, (ii) a 8760-timeseries of 0-1 fraction indicating albedo, (iii) a boolean 0-1 for either specular (0) or diffuse (1) reflection.
             pManager[1].Optional = true;
             pManager.AddGenericParameter("TreeObject", "TreeObj", "Input tree objects (generic).", GH_ParamAccess.list);    //each tree object is : (i) a mesh obstacle, (ii) a 8760-timeseries of 0-1 fractions, indicating leave-coverage 1 is full of leaves=full obstruction.
@@ -78,7 +78,9 @@ namespace GHSolar
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             Mesh msh = new Mesh();
-            if (!DA.GetData(0, ref msh)) { return; }
+            ObstacleObject mshobj = null;
+            if (!DA.GetData(0, ref mshobj)) { return; }
+            msh = mshobj.mesh;
 
             double latitude = 0.0;
             if (!DA.GetData(3, ref latitude)) { return; }
@@ -166,7 +168,7 @@ namespace GHSolar
             List<double> Ib = new List<double>();
 
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
-            Vector3f[] mshvrtnorm = new Vector3f[mshvrt.Length];
+            Vector3d[] mshvrtnorm = new Vector3d[mshvrt.Length];
             msh.FaceNormals.ComputeFaceNormals();
 
             double[] arrbeta = new double[mshvrt.Length];
@@ -241,19 +243,20 @@ namespace GHSolar
                 //Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
 
 
-                /////////////////////////////////////////////////////////////////////
-                //interreflections beam
-                _Ispecular[i] = new double[1][];
-                _IspecNormals[i] = new Vector3d[1][];
+                ///////////////////////////////////////////////////////////////////////
+                ////interreflections beam
+                //_Ispecular[i] = new double[1][];
+                //_IspecNormals[i] = new Vector3d[1][];
 
-                //run this only once later: (make separate GH component)
-                cShadow.CalcSpecularNormal(orig, mshvrtnorm[i], 0.01, vec_beam, new bool[] { true }, obst, albedos, reflType, bounces,
-                    ref _Ispecular[i], ref _IspecNormals[i]);
-                double[] Ispec_inc = new double[1];
+                ////run this only once later: (make separate GH component)
+                //cShadow.CalcSpecularNormal(orig, mshvrtnorm[i], 0.01, vec_beam, new bool[] { true }, objObst, albedos, reflType, bounces,
+                //    ref _Ispecular[i], ref _IspecNormals[i]);
+                //double[] Ispec_inc = new double[1];
 
-                //run this every time panel angles change:
-                cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
-                Ispec_onehour[i] = Ispec_inc[0];
+
+                ////run this every time panel angles change:
+                //cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
+                //Ispec_onehour[i] = Ispec_inc[0];
 
 
                 /////////////////////////////////////////////////////////////////////
@@ -261,8 +264,20 @@ namespace GHSolar
                 cShadow.CalcDiffuse(orig, mshvrtnorm[i], 0.01, obst, albedos, diffRes, ref _Idiffuse[i]);
 
             }
+            Vector3d[] vec_beam2 = new Vector3d[1];
+            vec_beam2[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
+            double[][][] Ispecular2 = new double[mshvrt.Length][][];
+            Vector3d[][][] Inormals2 = new Vector3d[mshvrt.Length][][];
             
+            cShadow.CalcSpecularNormal2(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, albedos, reflType, 2, ref Ispecular2, ref Inormals2);
+            for (int i = 0; i < mshvrt.Length; i++)
+            {
+                double[] Ispec_inc = new double[1];
+                cShadow.CalcSpecularIncident(mshvrtnorm[i], Ispecular2[i], Inormals2[i], new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
+                Ispec_onehour[i] = Ispec_inc[0];
+            }
             
+
             p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
             //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
             p.SetSnowcover(snow_threshold, tilt_treshold);
