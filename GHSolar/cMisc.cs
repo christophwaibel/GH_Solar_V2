@@ -139,6 +139,29 @@ namespace GHSolar
             return Color.FromArgb((int)RR, (int)GG, (int)BB);
 
         }
-    
+
+
+        /// <summary>
+        /// Reflect an incident vector relative to a normal vector at incidence. \. | /^
+        /// </summary>
+        /// <param name="srf_normal">Normal vector (must be a unit vector).</param>
+        /// <param name="incident_vector">Incident vector.</param>
+        /// <returns>Reflected vector.</returns>
+        internal static Vector3d ReflectVec(Vector3d srf_normal, Vector3d incident_vector)
+        {
+            return Vector3d.Subtract(incident_vector, Vector3d.Multiply(Vector3d.Multiply(incident_vector, srf_normal) * 2.0, srf_normal));
+        }
+
+        /// <summary>
+        /// Offset a point into the direction of a vector.
+        /// </summary>
+        /// <param name="pt">Point to offset.</param>
+        /// <param name="vec">Direction of offset.</param>
+        /// <param name="offset">Distance of offset.</param>
+        /// <returns>Offset point.</returns>
+        internal static Point3d OffsetPt(Point3d pt, Vector3d vec, double offset)
+        {
+            return Point3d.Add(pt, Vector3d.Multiply(Vector3d.Divide(vec, vec.Length), offset));
+        }
     }
 }

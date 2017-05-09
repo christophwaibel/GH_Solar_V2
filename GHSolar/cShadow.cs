@@ -384,7 +384,7 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Currently only max 1.</param>
         /// <param name="Ispecular">Normal irradiation values [t][m] for each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [t][m] for each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
+        internal static void CalcSpecularNormal1(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
             List<ObstacleObject> obstacles, double[][] albedo, int[] reflType, int bounces,
             ref double[][] Ispecular, ref Vector3d[][] Inormals)
         {
@@ -470,7 +470,7 @@ namespace GHSolar
                                         if (par == 1)
                                         {
                                             IspecNorm[t].Add(albedo[u][t]);  //add beam irriadiation normal to reflected ray. as a factor (albedos). don't work with DHI yet.
-                                            IspecVec[t].Add(vSrfObst);
+                                            IspecVec[t].Add(Vector3d.Negate(vSrfObst));
                                             //ln.Add(new Line(obstacles[u].faceCen[k], refl, 100));
                                             //ln.Add(new Line(origOffset, obstacles[u].faceCen[k]));
                                         }
@@ -493,43 +493,6 @@ namespace GHSolar
             //    doc.Objects.AddLine(l);
             //}
             //doc.Views.Redraw();
-
-
-            //  rhino obstructions forall t. use INTERPOLATION 
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            /////////////////////////////////////////////////     S P E C U L A R   /////////////////////////////////////////////////////////////
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //SPECULAR
-            //double total_Specular_Budget = 0.0;
-            // forall specular objects:
-
-            // 01:
-            //  from sensorpoint (SP), shoot rays ONLY to specular objects. 
-            //      - check, if vectorangle(ray, sensorpoint normal) <= 90°. if not, break. else:
-            //          - check, if ray unobstructed. if not, break. else, go to 02.
-
-            // 02:
-            // if ray <= 90° (otherwise it hits the backside of the specular surface) and unobstructed:
-            //      - if bounce > 1 (else go to 03):
-            //          - for each bounce > 1, calc reflected ray on the specular obstacle and for new ray, go to 01:
-            //              - go to 03, if unobstructed:
-
-            // 03:
-            //      - for all t in [0,8759]
-            //          - check, if daytime. if not, break. else:
-            //              - from specular obstacle object, make ray to sunvector. calc vectorangle(sunvector, obstacle normal). if not <= 90°, break. else:
-            //                  - make reflection of sunvector on obstacle. if this reflecting vector *-1 is not coincident with connecting ray to SP (tolerance of +- 1°?), break. else:
-            //                      - check if the sunvector (not the reflected) is obstructed. if yes, break. else, go to 03.
-
-            // 03:
-            // calc Specular_interreflection = I_direct incident on obstacle object. Multiply with its specular coefficient (albedo?). 
-            //      and account for incidence angle on sensorpoint: I_sensorpoint = I_incident sin(90°-vectorangle(sp_normal, incident_ray))
-            // total_Specular_Budget += Specular_interreflection;
-
-
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         }
 
@@ -556,7 +519,9 @@ namespace GHSolar
             List<ObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
-            Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
+            //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
+
+            if (bounces < 1) return;
 
 
             List<List<List<double>>> IspecList = new List<List<List<double>>>();
@@ -652,15 +617,15 @@ namespace GHSolar
                                             }
                                             IspecList[i_index][t].Add(albedo[u][t]);
                                             InormList[i_index][t].Add(refl);
-                                            doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 1000));
-                                            doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], p));
-                                            doc.Views.ActiveView.Redraw();
+                                            //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 1000));
+                                            //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], p));
+                                            //doc.Views.ActiveView.Redraw();
                                         }
                                     }
                                     else
                                     {
                                         //if it hits another specular object, and bounce = 2, reflect again and trace that.
-                                        if (bounces > 1 || refltype[intersP_index] == 1)
+                                        if (bounces > 1 && refltype[intersP_index] == 1)
                                         {
                                             Point3d px = rObstRefl.PointAt(inters);
                                             MeshPoint mshp = obstacles[intersP_index].mesh.ClosestMeshPoint(px, 0.0);
@@ -708,10 +673,10 @@ namespace GHSolar
                                                     IspecList[i_index][t].Add(albedo[u][t]);
                                                     InormList[i_index][t].Add(refl2);
 
-                                                    doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 1000));
-                                                    doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], pxoffset));
-                                                    doc.Objects.AddLine(new Line(pxoffset, p));
-                                                    doc.Views.ActiveView.Redraw();
+                                                    //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 1000));
+                                                    //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], pxoffset));
+                                                    //doc.Objects.AddLine(new Line(pxoffset, p));
+                                                    //doc.Views.ActiveView.Redraw();
                                                 }
                                             }
                                         }
@@ -737,6 +702,358 @@ namespace GHSolar
 
 
         /// <summary>
+        /// Calculates specular interreflections on all sensor points for an array of solar vectors. Irradiation values given normal to reflected ray.
+        /// </summary>
+        /// <remarks>
+        /// Approach 3: Compute rays and reflected rays for each obstacle. Translate them to each sensor point. Check if translated rays reach obstacle and are unobstructed. 1st and 2nd order (1 or 2 bounces).
+        /// </remarks>
+        /// <param name="SPmesh">Analysis mesh, on which the sensor points are placed.</param>
+        /// <param name="SP">Sensor points [i] of the analysis mesh.</param>
+        /// <param name="SPnormal">Normal vectors [i] of the i sensor points.</param>
+        /// <param name="solarvec">Solar vectors for each time step t.</param>
+        /// <param name="sunshine">Indicating sunshine for each respective solar vector.</param>
+        /// <param name="obstacles">Obstacle objects.</param>
+        /// <param name="albedo">Reflection coefficients [u][t] for each obstacle u and at each time step t.</param>
+        /// <param name="refltype">Reflection type for each obstacle. 0: diffuse, 1: specular.</param>
+        /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
+        /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
+        /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
+        internal static void CalcSpecularNormal3(ObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            Vector3d[] solarvec, bool[] sunshine,
+            List<ObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
+            ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
+        {
+            Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
+
+            // Approach 3: Compute rays and reflected rays for each obstacle. Translate them to each sensor point. Check if translated rays reach obstacle and are unobstructed. 1st and 2nd order (1 or 2 bounces).
+            if (bounces < 1) return;
+
+            List<List<List<double>>> IspecList = new List<List<List<double>>>();
+            List<List<List<Vector3d>>> InormList = new List<List<List<Vector3d>>>();
+            Point3d[] SPoffset = new Point3d[SP.Length];
+            for (int i = 0; i < SP.Length; i++)
+            {
+                SPoffset[i] = new Point3d(Point3d.Add(SP[i], Vector3d.Multiply(Vector3d.Divide(SPnormal[i], SPnormal[i].Length), obstacles[0].tolerance)));
+
+                Ispecular[i] = new double[solarvec.Length][];
+                Inormals[i] = new Vector3d[solarvec.Length][];
+
+                IspecList.Add(new List<List<double>>());
+                InormList.Add(new List<List<Vector3d>>());
+                for (int t = 0; t < solarvec.Length; t++)
+                {
+                    IspecList[i].Add(new List<double>());
+                    InormList[i].Add(new List<Vector3d>());
+                }
+            }
+
+            //foreach solar vector t
+            for (int t = 0; t < solarvec.Length; t++)
+            {
+                if (!sunshine[t]) continue;
+
+                //foreach specular object                 
+                for (int u = 0; u < obstacles.Count; u++)
+                {
+                    if (refltype[u] != 1) continue;
+
+                    //foreach face
+                    for (int k = 0; k < obstacles[u].faceCen.Length; k++)
+                    {
+                        //check, if solar vec hits front of reflector
+                        //if yes, make reflected ray and trace it. if not, go to next iteration.
+                        double vAngle = Vector3d.VectorAngle(obstacles[u].normals[k], solarvec[t]) * (180.0 / Math.PI);
+                        if (vAngle >= 90) continue;
+
+                        //compute reflected ray
+                        Vector3d solarvec_ref = cMisc.ReflectVec(obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
+                        //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 1000));
+                        //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec_ref, 1000));
+
+                        if (bounces == 1)
+                        {
+                            //translate two rays onto each SP and check for obstructions
+                            for (int i = 0; i < SP.Length; i++)
+                            {
+                                vAngle = Vector3d.VectorAngle(SPnormal[i], Vector3d.Negate(solarvec_ref)) * (180.0 / Math.PI);
+                                if (vAngle >= 90) continue;
+
+                                //check, if translated ray hits initial obstacle face
+                                Ray3d rObstSun_refl = new Ray3d(SP[i], Vector3d.Negate(solarvec_ref));
+                                Mesh mshface = new Mesh();
+                                mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).A]);
+                                mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).B]);
+                                mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).C]);
+                                if (obstacles[u].mesh.Faces.GetFace(k).IsQuad)
+                                {
+                                    mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).D]);
+                                    mshface.Faces.AddFace(0, 1, 2, 3);
+                                }
+                                else
+                                {
+                                    mshface.Faces.AddFace(0, 1, 2);
+                                }
+                                double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(mshface, rObstSun_refl);
+                                if (inters < 0) continue;
+
+                                Point3d pX = rObstSun_refl.PointAt(inters);
+                                MeshPoint mshpX = obstacles[u].mesh.ClosestMeshPoint(pX, 0.0);
+                                Vector3d pnormal = obstacles[u].mesh.NormalAt(mshpX);
+                                Point3d pXoff = new Point3d(Point3d.Add(pX, Vector3d.Multiply(Vector3d.Divide(pnormal, pnormal.Length), obstacles[u].tolerance)));
+                                Ray3d rObstSun = new Ray3d(pXoff, solarvec[t]);
+                                //doc.Objects.AddLine(new Line(pX, SP[i]));
+
+                                //check obstacle to sun and obstacle to SP
+                                double inters_a;
+                                bool bln_inters = false;
+                                for (int n = 0; n < obstacles.Count; n++)
+                                {
+                                    inters_a = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[n].mesh, rObstSun);
+                                    if (inters_a >= 0)
+                                    {
+                                        bln_inters = true;
+                                        break;
+                                    }
+                                    int[] f;
+                                    Point3d[] inters_b = Rhino.Geometry.Intersect.Intersection.MeshLine(obstacles[n].mesh, new Line(pXoff, SPoffset[i]), out f);
+                                    //doc.Objects.AddLine(new Line(pXoff, SP[i]));
+
+                                    if (inters_b != null && inters_b.Length > 0)
+                                    {
+                                        bln_inters = true;
+                                        break;
+                                    }
+                                }
+                                if (bln_inters) continue;  //obstructed
+
+                                //no obstruction. add vector and albedo
+                                IspecList[i][t].Add(albedo[u][t]);
+                                InormList[i][t].Add(solarvec_ref);
+                                //doc.Objects.AddLine(new Line(pXoff, solarvec[t], 1000));
+                                //doc.Objects.AddLine(new Line(pX, SP[i]));
+                                //doc.Views.ActiveView.Redraw();
+                            }
+                        }
+                        else if (bounces > 1)
+                        {
+                            //for 2 bounces, check first, if reflected ray hits another obstacle and if so, bounce off from that
+                            Ray3d rObstSun_refl = new Ray3d(obstacles[u].faceCen[k], solarvec_ref);
+                            Ray3d rObstSun = new Ray3d(obstacles[u].faceCen[k], solarvec[t]);
+
+                            //check, if it reaches sun from face center
+                            double inters = 0.0;
+                            bool bln_inters = false;
+                            for (int n = 0; n < obstacles.Count; n++)
+                            {
+                                inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[n].mesh, rObstSun);
+                                if (inters >= 0)
+                                {
+                                    bln_inters = true;
+                                    break;
+                                }
+                            }
+                            if (bln_inters) continue;
+
+                            // check, if it reaches 2nd obstacle from face center.... !!actually should do other way round and loop through all vertices 
+                            int refl_index = 0;
+                            bln_inters = false;
+                            for (int n = 0; n < obstacles.Count; n++)
+                            {
+                                inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[n].mesh, rObstSun_refl);
+                                if (inters >= 0)
+                                {
+                                    bln_inters = true;
+                                    refl_index = n;
+                                    break;
+                                }
+                            }
+                            //its blocked and obstacle is also not reflector and its also not the analysis surface. so stop.
+                            if (bln_inters && refltype[refl_index] == 0 && !String.Equals(SPmesh.name, obstacles[refl_index].name)) continue;  
+
+                            //its blocked and obstacle is reflector. 2nd bounce
+                            if (bln_inters && refltype[refl_index] == 1 && !String.Equals(SPmesh.name, obstacles[refl_index].name))        
+                            {
+                                Point3d pX = rObstSun_refl.PointAt(inters);
+                                MeshPoint mshp = obstacles[refl_index].mesh.ClosestMeshPoint(pX, 0.0);
+                                Vector3d pXnormal = obstacles[refl_index].mesh.NormalAt(mshp);
+                                vAngle = Vector3d.VectorAngle(pXnormal, Vector3d.Negate(solarvec_ref)) * (180.0 / Math.PI);
+                                if (vAngle >= 90.0) continue;
+
+                                Vector3d solarvec_refl2nd = cMisc.ReflectVec(pXnormal, solarvec_ref);
+                                Point3d pXoffset = cMisc.OffsetPt(pX, pXnormal, obstacles[refl_index].tolerance);
+                                Ray3d rObstSun_refl2nd = new Ray3d(pXoffset, solarvec_refl2nd);
+
+                                //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 100));
+                                //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], pX));
+                                //doc.Objects.AddLine(new Line(pXoffset, solarvec_refl2nd, 100));
+
+                                for (int i = 0; i < SP.Length; i++)
+                                {
+                                    vAngle = Vector3d.VectorAngle(SPnormal[i], Vector3d.Negate(solarvec_refl2nd)) * (180.0 / Math.PI);
+                                    if (vAngle >= 90.0) continue;
+
+                                    //check, if translated ray hits 2nd reflected obstacle
+                                    Ray3d r2ndReflSP = new Ray3d(SP[i], Vector3d.Negate(solarvec_refl2nd));
+                                    double inters2nd = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[refl_index].mesh, r2ndReflSP);
+                                    if (inters2nd < 0) continue;
+                                    //doc.Objects.AddLine(new Line(SP[i], Vector3d.Negate(solarvec_refl2nd), 1000));
+
+                                    //check, if from there, it hits initial obstacle face
+                                    Mesh mshface = new Mesh();
+                                    mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).A]);
+                                    mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).B]);
+                                    mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).C]);
+                                    if (obstacles[u].mesh.Faces.GetFace(k).IsQuad)
+                                    {
+                                        mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).D]);
+                                        mshface.Faces.AddFace(0, 1, 2, 3);
+                                    }
+                                    else
+                                    {
+                                        mshface.Faces.AddFace(0, 1, 2);
+                                    }
+
+                                    Point3d pX2nd = r2ndReflSP.PointAt(inters2nd);
+                                    MeshPoint mshpX2nd = obstacles[refl_index].mesh.ClosestMeshPoint(pX2nd, 0.0);
+                                    Vector3d pX2ndnormal = obstacles[refl_index].mesh.NormalAt(mshpX2nd);
+                                    Point3d pX2ndOffset = cMisc.OffsetPt(pX2nd, pX2ndnormal, obstacles[refl_index].tolerance);
+                                    Ray3d r1stRefl2ndRefl = new Ray3d(pX2ndOffset, Vector3d.Negate(solarvec_ref));
+                                    double inters1st = Rhino.Geometry.Intersect.Intersection.MeshRay(mshface, r1stRefl2ndRefl);
+                                    if (inters1st < 0) continue;
+                                    //doc.Objects.AddLine(new Line(pX2ndOffset, Vector3d.Negate(solarvec_ref),100));
+
+                                    //yes, it hits the initial face. from there, does it reach the sky?
+                                    Point3d pX1st = r1stRefl2ndRefl.PointAt(inters1st);
+                                    MeshPoint mshpX1st = mshface.ClosestMeshPoint(pX1st, 0.0);
+                                    mshface.Normals.ComputeNormals();
+                                    Vector3d pXnormal1st = mshface.NormalAt(mshpX1st);
+                                    //MeshPoint mshpX1st = obstacles[u].mesh.ClosestMeshPoint(pX1st, 0.0);
+                                    //Vector3d pXnormal1st = obstacles[u].mesh.NormalAt(mshpX1st);
+                                    Point3d pXoff1st = cMisc.OffsetPt(pX1st,pXnormal1st, obstacles[u].tolerance);
+                                    Ray3d rObstSun1st = new Ray3d(pXoff1st, solarvec[t]);
+                                    //doc.Objects.AddLine(new Line(pX2ndOffset, pX1st));
+                                    //doc.Objects.AddLine(new Line(pX2ndOffset, solarvec[t]));
+
+                                    //check obstacle to sun and obstacle to SP
+                                    double inters_a;
+                                    bool bln_inters_1st = false;
+                                    for (int n = 0; n < obstacles.Count; n++)
+                                    {
+                                        inters_a = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[n].mesh, rObstSun1st);
+                                        if (inters_a >= 0)
+                                        {
+                                            bln_inters_1st = true;
+                                            break;
+                                        }
+                                        int[] f;
+                                        Point3d[] inters_b = Rhino.Geometry.Intersect.Intersection.MeshLine(obstacles[n].mesh, new Line(pXoff1st, pX2ndOffset), out f);
+                                        //doc.Objects.AddLine(new Line(pXoff, SP[i]));
+
+                                        if (inters_b != null && inters_b.Length > 0)
+                                        {
+                                            bln_inters_1st = true;
+                                            break;
+                                        }
+                                    }
+                                    if (bln_inters_1st) continue;  //obstructed
+
+                                    //no obstruction. add vector and albedo
+                                    IspecList[i][t].Add(albedo[u][t] * albedo[refl_index][t]);
+                                    InormList[i][t].Add(solarvec_refl2nd);
+                                    //doc.Objects.AddLine(new Line(pXoff1st, solarvec[t], 1000));
+                                    //doc.Objects.AddLine(new Line(pX2ndOffset, pXoff1st));
+                                    //doc.Objects.AddLine(new Line(pX2ndOffset, SP[i]));
+                                    //doc.Views.ActiveView.Redraw();
+                                }
+                            }
+                                //reflected ray either reaches analysis surface, or nothing. either way, translate refletec ray to each SP
+                            else
+                            {
+                                //translate two rays onto each SP and check for obstructions
+                                for (int i = 0; i < SP.Length; i++)
+                                {
+                                    vAngle = Vector3d.VectorAngle(SPnormal[i], Vector3d.Negate(solarvec_ref)) * (180.0 / Math.PI);
+                                    if (vAngle >= 90) continue;
+
+                                    //check, if translated ray hits initial obstacle face
+                                    Ray3d rObstSun_refl_1b = new Ray3d(SP[i], Vector3d.Negate(solarvec_ref));
+                                    Mesh mshface = new Mesh();
+                                    mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).A]);
+                                    mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).B]);
+                                    mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).C]);
+                                    if (obstacles[u].mesh.Faces.GetFace(k).IsQuad)
+                                    {
+                                        mshface.Vertices.Add(obstacles[u].mesh.Vertices[obstacles[u].mesh.Faces.GetFace(k).D]);
+                                        mshface.Faces.AddFace(0, 1, 2, 3);
+                                    }
+                                    else
+                                    {
+                                        mshface.Faces.AddFace(0, 1, 2);
+                                    }
+                                    double inters_1b = Rhino.Geometry.Intersect.Intersection.MeshRay(mshface, rObstSun_refl_1b);
+                                    if (inters_1b < 0) continue;
+
+                                    Point3d pX = rObstSun_refl_1b.PointAt(inters_1b);
+                                    MeshPoint mshpX = obstacles[u].mesh.ClosestMeshPoint(pX, 0.0);
+                                    Vector3d pnormal = obstacles[u].mesh.NormalAt(mshpX);
+                                    Point3d pXoff = new Point3d(Point3d.Add(pX, Vector3d.Multiply(Vector3d.Divide(pnormal, pnormal.Length), obstacles[u].tolerance)));
+                                    Ray3d rObstSun_1b = new Ray3d(pXoff, solarvec[t]);
+                                    //doc.Objects.AddLine(new Line(pX, SP[i]));
+
+                                    //check obstacle to sun and obstacle to SP
+                                    double inters_a;
+                                    bool bln_inters_1b = false;
+                                    for (int n = 0; n < obstacles.Count; n++)
+                                    {
+                                        inters_a = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[n].mesh, rObstSun_1b);
+                                        if (inters_a >= 0)
+                                        {
+                                            bln_inters_1b = true;
+                                            break;
+                                        }
+                                        int[] f;
+                                        Point3d[] inters_b = Rhino.Geometry.Intersect.Intersection.MeshLine(obstacles[n].mesh, new Line(pXoff, SPoffset[i]), out f);
+                                        //doc.Objects.AddLine(new Line(pXoff, SP[i]));
+
+                                        if (inters_b != null && inters_b.Length > 0)
+                                        {
+                                            bln_inters_1b = true;
+                                            break;
+                                        }
+                                    }
+                                    if (bln_inters_1b) continue;  //obstructed
+
+                                    //no obstruction. add vector and albedo
+                                    IspecList[i][t].Add(albedo[u][t]);
+                                    InormList[i][t].Add(solarvec_ref);
+                                    //doc.Objects.AddLine(new Line(pXoff, solarvec[t], 1000));
+                                    //doc.Objects.AddLine(new Line(pX, SP[i]));
+                                    //doc.Views.ActiveView.Redraw();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+
+            for (int i = 0; i < SP.Length; i++)
+            {
+                for (int t = 0; t < solarvec.Length; t++)
+                {
+                    Ispecular[i][t] = IspecList[i][t].ToArray();
+                    Inormals[i][t] = InormList[i][t].ToArray();
+                }
+            }
+
+        }
+
+
+
+
+
+        /// <summary>
         /// Calculate beam irradiation incident on a sensor point, considering incidence angles.
         /// </summary>
         /// <param name="origNormal">Normal of sensor point.</param>
@@ -750,11 +1067,13 @@ namespace GHSolar
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
             //DNI = DNI * Ispecular (here are my albedos)
+            if (Misc.IsNullOrEmpty(Ispecular)) return;
 
             for (int t = 0; t < IspecularIncident.Length; t++)
             {
                 IspecularIncident[t] = 0.0;
-                if (Ispecular[t] != null)
+
+                if (Misc.IsNullOrEmpty(Ispecular[t]) == false)
                 {
                     for (int m = 0; m < Ispecular[t].Length; m++)
                     {

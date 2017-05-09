@@ -243,13 +243,19 @@ namespace GHSolar
                 //Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
 
 
-                ///////////////////////////////////////////////////////////////////////
+
+
+
+
+                /////////////////////////////////////////////////////////////////////////
+                //// SPECULAR APPROACH 1
+                /////////////////////////////////////////////////////////////////////////
                 ////interreflections beam
                 //_Ispecular[i] = new double[1][];
                 //_IspecNormals[i] = new Vector3d[1][];
 
                 ////run this only once later: (make separate GH component)
-                //cShadow.CalcSpecularNormal(orig, mshvrtnorm[i], 0.01, vec_beam, new bool[] { true }, objObst, albedos, reflType, bounces,
+                //cShadow.CalcSpecularNormal1(orig, mshvrtnorm[i], 0.01, vec_beam, new bool[] { true }, objObst, albedos, reflType, bounces,
                 //    ref _Ispecular[i], ref _IspecNormals[i]);
                 //double[] Ispec_inc = new double[1];
 
@@ -257,6 +263,16 @@ namespace GHSolar
                 ////run this every time panel angles change:
                 //cShadow.CalcSpecularIncident(mshvrtnorm[i], _Ispecular[i], _IspecNormals[i], new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
                 //Ispec_onehour[i] = Ispec_inc[0];
+                /////////////////////////////////////////////////////////////////////////
+                //// SPECULAR APPROACH 1
+                /////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
 
 
                 /////////////////////////////////////////////////////////////////////
@@ -264,19 +280,56 @@ namespace GHSolar
                 cShadow.CalcDiffuse(orig, mshvrtnorm[i], 0.01, obst, albedos, diffRes, ref _Idiffuse[i]);
 
             }
+
+
+
+
+            /////////////////////////////////////////////////////////////////////////
+            //// SPECULAR APPROACH 2
+            /////////////////////////////////////////////////////////////////////////
+            //Vector3d[] vec_beam2 = new Vector3d[1];
+            //vec_beam2[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
+            //double[][][] Ispecular2 = new double[mshvrt.Length][][];
+            //Vector3d[][][] Inormals2 = new Vector3d[mshvrt.Length][][];
+
+            //cShadow.CalcSpecularNormal2(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, albedos, reflType, bounces, ref Ispecular2, ref Inormals2);
+            //for (int i = 0; i < mshvrt.Length; i++)
+            //{
+            //    double[] Ispec_inc = new double[1];
+            //    cShadow.CalcSpecularIncident(mshvrtnorm[i], Ispecular2[i], Inormals2[i], new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
+            //    Ispec_onehour[i] = Ispec_inc[0];
+            //}
+            /////////////////////////////////////////////////////////////////////////
+            //// SPECULAR APPROACH 2
+            /////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+            ///////////////////////////////////////////////////////////////////////
+            // SPECULAR APPROACH 3
+            ///////////////////////////////////////////////////////////////////////
             Vector3d[] vec_beam2 = new Vector3d[1];
             vec_beam2[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
             double[][][] Ispecular2 = new double[mshvrt.Length][][];
             Vector3d[][][] Inormals2 = new Vector3d[mshvrt.Length][][];
-            
-            cShadow.CalcSpecularNormal2(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, albedos, reflType, 2, ref Ispecular2, ref Inormals2);
+
+            cShadow.CalcSpecularNormal3(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, albedos, reflType, bounces, ref Ispecular2, ref Inormals2);
             for (int i = 0; i < mshvrt.Length; i++)
             {
                 double[] Ispec_inc = new double[1];
                 cShadow.CalcSpecularIncident(mshvrtnorm[i], Ispecular2[i], Inormals2[i], new double[1] { weather.DNI[HOY] }, ref Ispec_inc);
                 Ispec_onehour[i] = Ispec_inc[0];
             }
-            
+            ///////////////////////////////////////////////////////////////////////
+            // SPECULAR APPROACH 3
+            ///////////////////////////////////////////////////////////////////////
+
+
+
 
             p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
             //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
