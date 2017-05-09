@@ -15,7 +15,10 @@ namespace SolarModel
 {
     public static class Misc
     {
-
+        public static bool IsNullOrEmpty<T>(this ICollection<T> collection)
+        {
+            return collection == null || collection.Count == 0;
+        }
 
         /// <summary>
         /// Calculates the area of a 3D triangle.
