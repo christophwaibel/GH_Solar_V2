@@ -390,6 +390,28 @@ namespace SolarModel
         }
 
         /// <summary>
+        /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points. Multi-threading version.
+        /// </summary>
+        /// <param name="ShdwBeam_hour">Indicate for one hour of the year, if a sensor point is obstructed from beam radiation (true), or not (false). The list must have booleans for each sensor point.</param>
+        /// <param name="ShdwSky">Indicate for each vertex of a sensor point's skydome, if the view between sensor point and vertex is obstructed (true), or not (false). The list has boolean arrays for each sensor point; an array is of length of the sky dome vertex count (this.sky[i].VerticesHemisphere.Count).</param>
+        /// <param name="HOY"></param>
+        public void SetShadowsMT(List<bool> ShdwBeam_hour, List<bool[]> ShdwSky, int HOY)
+        {
+            Parallel.For(0, sky.Length, i =>
+            {
+                for (int u = 0; u < ShdwSky[i].Length; u++)
+                {
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
+                }
+
+                this.sky[i].SetShadow_Dome();
+                this.sky[i].SetShadow_Horizon();
+                this.sky[i].SetShadow_Beam(HOY, ShdwBeam_hour[i]);
+            });
+        }
+
+
+        /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
         /// </summary>
         /// <param name="ShdwBeam_hour">Indicate for all 8760 hours of the year, if a sensor point is obstructed from beam radiation (true), or not (false). The list must have booleans for each sensor point.</param>
@@ -1005,7 +1027,24 @@ namespace SolarModel
 
         }
 
-
+        /// <summary>
+        /// Goes through each hour of the year and applys snow cover, if surface angle is flat enough and if the weather data indicates snow on that hour. Multi-threading version.
+        /// </summary>
+        /// <param name="snow_threshold">Snow threshold, after which no radiation is assumed to reach the sensor point.</param>
+        /// <param name="tilt_treshold">Sensor point tilt threshold (degree). More flat angles will not allow irradiation. Steeper angles are assumed to let the snow slide down the sensor point.</param>
+        public void SetSnowcoverMT(double snow_threshold, double tilt_treshold)
+        {
+            Parallel.For(0, this.I.Length, i =>
+            {
+                for (int t = 0; t < 8760; t++)
+                {
+                    if (this.weather.Snow[t] > snow_threshold && beta[i] < tilt_treshold)
+                    {
+                        this.snowcovered[i][t] = true;
+                    }
+                }
+            });
+        }
 
 
 
@@ -1031,6 +1070,30 @@ namespace SolarModel
                     this.Irefl_diff[i][HOY] = _Idiffuse[i];
                 }
             }
+        }
+
+        /// <summary>
+        /// Set irradiation by inter-reflections for one hour of the year. Multi-threading version.
+        /// Actual irradiation calculation needs to be done externally.
+        /// </summary>
+        /// <param name="HOY">Hour of the year, HOY ∈ [0, 8759]</param>
+        /// <param name="_Ispecular">Irradiation values by specular reflection for one hour of the year and for each sensor point.</param>
+        /// <param name="_Idiffuse">Irradiation values by diffuse reflection for each sensor point.</param>
+        public void SetInterreflectionMT(int HOY, double[] _Ispecular, double[] _Idiffuse)
+        {
+            Parallel.For(0, this.SPCount, i =>
+            {
+                if (this.snowcovered[i][HOY])
+                {
+                    this.Irefl_spec[i][HOY] = 0.0;
+                    this.Irefl_diff[i][HOY] = 0.0;
+                }
+                else
+                {
+                    this.Irefl_spec[i][HOY] = _Ispecular[i];
+                    this.Irefl_diff[i][HOY] = _Idiffuse[i];
+                }
+            });
         }
 
         /// <summary>
