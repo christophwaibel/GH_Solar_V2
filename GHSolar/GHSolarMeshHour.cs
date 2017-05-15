@@ -125,8 +125,9 @@ namespace GHSolar
 
             double rad = Math.PI / 180;
 
-            List<SunVector> sunvectors = new List<SunVector>();
-            SunVector.Create8760SunVectors(ref sunvectors, longitude, latitude, year);
+            List<SunVector> sunvectors_list = new List<SunVector>();
+            SunVector.Create8760SunVectors(ref sunvectors_list, longitude, latitude, year);
+            SunVector[] sunvectors = sunvectors_list.ToArray();
             Context.cWeatherdata weather;
             weather.DHI = new List<double>(DHI);
             weather.DNI = new List<double>(DNI);
@@ -168,6 +169,8 @@ namespace GHSolar
 
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
             Vector3d[] mshvrtnorm = new Vector3d[mshvrt.Length];
+            Sensorpoints.v3d[] v3dnormals = new Sensorpoints.v3d[mshvrtnorm.Length];
+            Sensorpoints.p3d[] p3dcoords = new Sensorpoints.p3d[mshvrt.Length];
             msh.FaceNormals.ComputeFaceNormals();
 
             double[] arrbeta = new double[mshvrt.Length];
@@ -188,8 +191,14 @@ namespace GHSolar
                 }
                 arrbeta[i] = beta;
                 arrpsi[i] = psi;
+                v3dnormals[i].X = mshvrtnorm[i].X;
+                v3dnormals[i].Y = mshvrtnorm[i].Y;
+                v3dnormals[i].Z = mshvrtnorm[i].Z;
+                p3dcoords[i].X = mshvrt[i].X;
+                p3dcoords[i].Y = mshvrt[i].Y;
+                p3dcoords[i].Z = mshvrt[i].Z;
             }
-            Sensorpoints p = new Sensorpoints(weather, location, sunvectors, arrbeta, arrpsi, rec);
+            Sensorpoints p = new Sensorpoints(arrbeta, arrpsi, p3dcoords, v3dnormals, rec);
 
 
             List<bool> ShdwBeam_hour = new List<bool>();
@@ -197,7 +206,7 @@ namespace GHSolar
             Line ln = new Line();
             List<Point3d> coords = new List<Point3d>();
 
-            double[] _Idiffuse = new double[mshvrt.Length];
+            double[] _Idiffuse;// = new double[mshvrt.Length];
             double[][][] _Ispecular = new double[mshvrt.Length][][];
             Vector3d[][][] _IspecNormals = new Vector3d[mshvrt.Length][][];
             double[] Ispec_onehour = new double[mshvrt.Length];
@@ -231,7 +240,7 @@ namespace GHSolar
                 /////////////////////////////////////////////////////////////////////
                 //beam for one hour only.
                 Vector3d[] vec_beam = new Vector3d[1];
-                vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
+                vec_beam[0] = new Vector3d(sunvectors_list[HOY].udtCoordXYZ.x, sunvectors_list[HOY].udtCoordXYZ.y, sunvectors_list[HOY].udtCoordXYZ.z);
                 bool[] shdw_beam = new bool[1];
                 if(!mt)
                     cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
@@ -254,9 +263,31 @@ namespace GHSolar
 
                 /////////////////////////////////////////////////////////////////////
                 //interreflections diffuse
-                cShadow.CalcDiffuse(orig, mshvrtnorm[i], 0.01, obst, albedos, diffRes, ref _Idiffuse[i]);
+                //cShadow.CalcDiffuse(orig, mshvrtnorm[i], 0.01, obst, albedos, diffRes, ref _Idiffuse[i]);
                 /////////////////////////////////////////////////////////////////////
             }
+
+
+
+
+
+            /////////////////////////////////////////////////////////////////////
+            //interreflections diffuse
+            Sensorpoints[] Idiffuse_SPs;
+            int[][] Idiff_obstacles;
+            int[][] Idiff_domevertices;
+            SkyDome[] Idiff_domes;
+            cShadow.CalcDiffuse_GetSPs(mshobj, mshvrt, mshvrtnorm, objObst, 1, out Idiffuse_SPs, out Idiff_obstacles, out Idiff_domevertices, out Idiff_domes);
+            cShadow.CalcDiffuse(Idiffuse_SPs, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, 0.01, snow_threshold, tilt_treshold, out _Idiffuse);
+            /////////////////////////////////////////////////////////////////////
+            //_Idiffuse = new double[mshvrt.Length];
+
+
+
+
+
+
+
 
 
 
@@ -264,18 +295,18 @@ namespace GHSolar
             /////////////////////////////////////////////////////////////////////
             //interreflections specular
             Vector3d[] vec_beam2 = new Vector3d[1];
-            vec_beam2[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
+            vec_beam2[0] = new Vector3d(sunvectors_list[HOY].udtCoordXYZ.x, sunvectors_list[HOY].udtCoordXYZ.y, sunvectors_list[HOY].udtCoordXYZ.z);
             double[][][] Ispecular2 = new double[mshvrt.Length][][];
             Vector3d[][][] Inormals2 = new Vector3d[mshvrt.Length][][];
 
             if (!mt)
             {
-                cShadow.CalcSpecularNormal3(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, albedos, reflType, bounces, ref Ispecular2, ref Inormals2);
+                cShadow.CalcSpecularNormal3(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, bounces, ref Ispecular2, ref Inormals2);
                 cShadow.CalcSpecularIncident(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
             }
             else
             {
-                cShadow.CalcSpecularNormal3MT(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, albedos, reflType, bounces, ref Ispecular2, ref Inormals2);
+                cShadow.CalcSpecularNormal3MT(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, bounces, ref Ispecular2, ref Inormals2);
                 cShadow.CalcSpecularIncidentMT(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
             }
             /////////////////////////////////////////////////////////////////////
@@ -288,16 +319,16 @@ namespace GHSolar
             if (!mt)
             {
                 p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);           //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
-                p.SetSnowcover(snow_threshold, tilt_treshold);
+                p.SetSnowcover(snow_threshold, tilt_treshold, weather);
                 p.SetInterreflection(HOY, Ispec_onehour, _Idiffuse);
-                p.CalcIrradiation(DOY, hour);
+                p.CalcIrradiation(DOY, hour, weather, sunvectors);
             }
             else
             {
                 p.SetShadowsMT(ShdwBeam_hour, ShdwSky, HOY);           //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
-                p.SetSnowcoverMT(snow_threshold, tilt_treshold);
+                p.SetSnowcoverMT(snow_threshold, tilt_treshold, weather);
                 p.SetInterreflectionMT(HOY, Ispec_onehour, _Idiffuse);
-                p.CalcIrradiationMT(DOY, hour);
+                p.CalcIrradiationMT(DOY, hour, weather, sunvectors);
             }
             /////////////////////////////////////////////////////////////////////
 

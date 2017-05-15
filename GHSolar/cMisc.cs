@@ -153,6 +153,44 @@ namespace GHSolar
         }
 
         /// <summary>
+        /// 3x3 Rotation matrix to project vector a onto vector b.
+        /// </summary>
+        /// <param name="a">Vector a.</param>
+        /// <param name="b">Vector b.</param>
+        /// <returns></returns>
+        internal static double [,] RotationMatrix(Vector3d a, Vector3d b)
+        {
+            Vector3d v = Vector3d.CrossProduct(a, b);
+            double[,] ssc = new double[3, 3] { { 0, -v.Z, v.Y }, { v.Z, 0, -v.X }, { -v.Y, v.X, 0 } };
+            double[,] ssc_2 = new double[3, 3];
+            double s = v.Length;
+            double c = Vector3d.Multiply(a, b);
+            double[,] I = new double[3, 3] { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        ssc_2[i, j] += ssc[i, k] * ssc[k, j];
+                    }
+                }
+            }
+            double f = (1 - c) / Math.Pow(s, 2);
+
+            double[,] R = new double[3, 3];
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    R[i, j] = I[i, j] + ssc[i, j] + ssc_2[i, j] * f;
+                }
+            }
+            return R;
+        }
+
+
+        /// <summary>
         /// Offset a point into the direction of a vector.
         /// </summary>
         /// <param name="pt">Point to offset.</param>

@@ -129,8 +129,9 @@ namespace GHSolar
 
             double rad = Math.PI / 180;
 
-            List<SunVector> sunvectors = new List<SunVector>();
-            SunVector.Create8760SunVectors(ref sunvectors, longitude, latitude, year);
+            List<SunVector> sunvectors_list = new List<SunVector>();
+            SunVector.Create8760SunVectors(ref sunvectors_list, longitude, latitude, year);
+            SunVector [] sunvectors = sunvectors_list.ToArray();
             Context.cWeatherdata weather;
             weather.DHI = new List<double>(DHI);
             weather.DNI = new List<double>(DNI);
@@ -147,6 +148,8 @@ namespace GHSolar
 
             Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
             Vector3f[] mshvrtnorm = new Vector3f[mshvrt.Length];
+            Sensorpoints.v3d[] v3dnormals = new Sensorpoints.v3d[mshvrt.Length];
+            Sensorpoints.p3d[] p3dcoords = new Sensorpoints.p3d[mshvrt.Length];
             msh.FaceNormals.ComputeFaceNormals();
 
             double[] arrbeta = new double[mshvrt.Length];
@@ -168,9 +171,14 @@ namespace GHSolar
 
                 arrbeta[i] = beta;
                 arrpsi[i] = psi;
-
+                v3dnormals[i].X = mshvrtnorm[i].X;
+                v3dnormals[i].Y = mshvrtnorm[i].Y;
+                v3dnormals[i].Z = mshvrtnorm[i].Z;
+                p3dcoords[i].X = mshvrt[i].X;
+                p3dcoords[i].Y = mshvrt[i].Y;
+                p3dcoords[i].Z = mshvrt[i].Z;
             }
-            Sensorpoints p = new Sensorpoints(weather, location, sunvectors, arrbeta, arrpsi, rec);
+            Sensorpoints p = new Sensorpoints(arrbeta, arrpsi, p3dcoords, v3dnormals, rec);
 
 
             List<bool[]> ShdwBeam_equinox = new List<bool[]>();
@@ -230,15 +238,15 @@ namespace GHSolar
                     bool[] sunshine_win = new bool[24];
                     for (int t = 0; t < 24; t++)
                     {
-                        if (sunvectors[HOYequ + t].Sunshine)
+                        if (sunvectors_list[HOYequ + t].Sunshine)
                             sunshine_equ[t] = true;
-                        if (sunvectors[HOYsum + t].Sunshine)
+                        if (sunvectors_list[HOYsum + t].Sunshine)
                             sunshine_sum[t] = true;
-                        if (sunvectors[HOYwin + t].Sunshine)
+                        if (sunvectors_list[HOYwin + t].Sunshine)
                             sunshine_win[t] = true;
-                        vec_beam_equ[t] = new Vector3d(sunvectors[HOYequ + t].udtCoordXYZ.x, sunvectors[HOYequ + t].udtCoordXYZ.y, sunvectors[HOYequ + t].udtCoordXYZ.z);
-                        vec_beam_sum[t] = new Vector3d(sunvectors[HOYsum + t].udtCoordXYZ.x, sunvectors[HOYsum + t].udtCoordXYZ.y, sunvectors[HOYsum + t].udtCoordXYZ.z);
-                        vec_beam_win[t] = new Vector3d(sunvectors[HOYwin + t].udtCoordXYZ.x, sunvectors[HOYwin + t].udtCoordXYZ.y, sunvectors[HOYwin + t].udtCoordXYZ.z);
+                        vec_beam_equ[t] = new Vector3d(sunvectors_list[HOYequ + t].udtCoordXYZ.x, sunvectors_list[HOYequ + t].udtCoordXYZ.y, sunvectors_list[HOYequ + t].udtCoordXYZ.z);
+                        vec_beam_sum[t] = new Vector3d(sunvectors_list[HOYsum + t].udtCoordXYZ.x, sunvectors_list[HOYsum + t].udtCoordXYZ.y, sunvectors_list[HOYsum + t].udtCoordXYZ.z);
+                        vec_beam_win[t] = new Vector3d(sunvectors_list[HOYwin + t].udtCoordXYZ.x, sunvectors_list[HOYwin + t].udtCoordXYZ.y, sunvectors_list[HOYwin + t].udtCoordXYZ.z);
                     }
 
                     bool[] shdw_beam_equ = new bool[24];
@@ -276,9 +284,9 @@ namespace GHSolar
                         int HOY = (startDays[d] - 1) * 24;
                         for (int t = 0; t < 24; t++) 
                         {
-                            if (sunvectors[HOY + t].Sunshine)
+                            if (sunvectors_list[HOY + t].Sunshine)
                                 sunshine[t] = true;
-                            vec_beam[t] = new Vector3d(sunvectors[HOY + t].udtCoordXYZ.x, sunvectors[HOY + t].udtCoordXYZ.y, sunvectors[HOY + t].udtCoordXYZ.z);
+                            vec_beam[t] = new Vector3d(sunvectors_list[HOY + t].udtCoordXYZ.x, sunvectors_list[HOY + t].udtCoordXYZ.y, sunvectors_list[HOY + t].udtCoordXYZ.z);
                         }
                         shdw_beam[d] = new bool[24];
                         if (mt)
@@ -308,16 +316,16 @@ namespace GHSolar
             }
 
             Rhino.RhinoApp.WriteLine("SOLAR_V2: (3/6) Setting snow cover...");
-            p.SetSnowcover(snow_threshold, tilt_treshold);
+            p.SetSnowcover(snow_threshold, tilt_treshold, weather);
 
             Rhino.RhinoApp.WriteLine("SOLAR_V2: (4/6) Calculating inter-reflections...");
             //p.SetInterreflection();
 
             Rhino.RhinoApp.WriteLine("SOLAR_V2: (5/6) Calculating irradiation...");
             if (mt)
-                p.CalcIrradiationMT();
+                p.CalcIrradiationMT(weather,sunvectors);
             else
-                p.CalcIrradiation();
+                p.CalcIrradiation(weather, sunvectors);
 
 
             Rhino.RhinoApp.WriteLine("SOLAR_V2: (6/6) Writing data to Rhino...");
