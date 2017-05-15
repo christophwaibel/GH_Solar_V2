@@ -135,6 +135,28 @@ namespace SolarModel
             }
         }
 
+        /// <summary>
+        /// Rotate vertex vectors of the hemisphere with a rotation matrix.
+        /// </summary>
+        /// <param name="rotMatrix">Symmetric rotation matrix.</param>
+        public void RotateVertexVectors(double[,] R)
+        {
+            for (int i = 0; i < this.VertexVectorsSphere.Count; i++)
+            {
+                double[] rotated = new double[this.VertexVectorsSphere[i].Length];
+                for (int j = 0; j < this.VertexVectorsSphere[i].Length; j++)
+                {
+                    rotated[j] = R[j, 0] * this.VertexVectorsSphere[i][0] + R[j, 1] * this.VertexVectorsSphere[i][1] + R[j, 2] * this.VertexVectorsSphere[i][2];
+                }
+                for (int j = 0; j < this.VertexVectorsSphere[i].Length; j++)
+                {
+                    this.VertexVectorsSphere[i][j] = rotated[j];
+                }
+               
+
+            }
+        }
+
 
         /// <summary>
         /// Set the fraction of the dome, which is obstructed.
