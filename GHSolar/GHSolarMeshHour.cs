@@ -253,17 +253,10 @@ namespace GHSolar
 
                 /////////////////////////////////////////////////////////////////////
                 //one vector for visualization
-                if (i == mshvrt.Length) ln = new Line(orig, Vector3d.Multiply(1000, vec_beam[0]));
+                if (i == mshvrt.Length - 1) ln = new Line(orig, Vector3d.Multiply(1000, vec_beam[0]));
                 //var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
                 //attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
                 //Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
-                /////////////////////////////////////////////////////////////////////
-
-
-
-                /////////////////////////////////////////////////////////////////////
-                //interreflections diffuse
-                //cShadow.CalcDiffuse(orig, mshvrtnorm[i], 0.01, obst, albedos, diffRes, ref _Idiffuse[i]);
                 /////////////////////////////////////////////////////////////////////
             }
 
@@ -316,7 +309,7 @@ namespace GHSolar
 
             /////////////////////////////////////////////////////////////////////
             //set shadows, snow, tree and interreflections and calculate irradiation
-            if (!mt)
+             if (!mt)
             {
                 p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);           //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
                 p.SetSnowcover(snow_threshold, tilt_treshold, weather);

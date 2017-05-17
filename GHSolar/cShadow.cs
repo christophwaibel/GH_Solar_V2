@@ -1096,7 +1096,7 @@ namespace GHSolar
             List<ObstacleObject> obstacles, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
-            //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
+            Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
 
             // Approach 3: Compute rays and reflected rays for each obstacle. Translate them to each sensor point. Check if translated rays reach obstacle and are unobstructed. 1st and 2nd order (1 or 2 bounces).
             if (bounces < 1) return;
@@ -1246,6 +1246,10 @@ namespace GHSolar
                 };
 
 
+
+            List<Line> ln = new List<Line>();
+
+
             //foreach solar vector t
             for (int t = 0; t < solarvec.Length; t++)
             {
@@ -1281,6 +1285,10 @@ namespace GHSolar
 
                                 for (int q = 0; q < obstacles[n].faceCen.Length; q++)
                                 {
+                                    if (n == u && k == q)
+                                    {
+                                        continue;
+                                    }
                                     double vAngle_2 = Vector3d.VectorAngle(obstacles[n].normals[q], Vector3d.Negate(refl_1)) * (180.0 / Math.PI);
                                     if (vAngle_2 >= 90) continue;
 
@@ -1288,6 +1296,11 @@ namespace GHSolar
                                     Vector3d refl_2 = cMisc.ReflectVec(obstacles[n].normals[q], refl_1);
                                     for (int i = 0; i < SP.Length; i++)
                                     {
+                                        ln.Add(new Line(SPoffset[i], Vector3d.Negate(refl_2), 100));
+                                        ln.Add(new Line(SPoffset[i], SPnormal[i], 50));
+                                        //doc.Objects.AddLine(new Line(SPoffset[i], refl_2, 1000));
+                                        //doc.Views.ActiveView.Redraw();
+
                                         if (ObstructionCheck_Pt2Face2Face2Sun(refl_1, refl_2, SPoffset[i], SPnormal[i], u, k, n, q, solarvec[t])) continue;
 
                                         IspecList[i][t].Add(obstacles[u].albedos[t] * obstacles[n].albedos[t]);
@@ -1300,6 +1313,10 @@ namespace GHSolar
                 });
             }
 
+            foreach (Line l in ln)
+            {
+                doc.Objects.AddLine(l);
+            }
 
             for (int i = 0; i < SP.Length; i++)
             {
@@ -1584,37 +1601,6 @@ namespace GHSolar
 
 
 
-
-        //    // rhino obstructions only once.
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////     D I F F U S E     /////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    //DIFFUSE
-        //    // double average_Diffuse_Budget = 0;
-        //    // set diffuse hedgehog ray count. using icosahedron vertices, but not those at the "horizon"/perimeter. too flat anyway.
-        //    // the more rays, the more precise the average value will be.
-
-        //    // 01:
-        //    // for all hedgehog rays:
-        //    //      - check, if it hits a diffuse obstacle object. if not, break. else, go to 02:
-
-        //    // 02:
-        //    //      - identify all obstructions which hit the ray -> get array of intersection parameters on the ray
-        //    //        - for each intersection parameter, from the closest, check if the face normal where it hits has vectorangle < 90, if no, go to next intersection 
-        //    //        - once, the closest intersection face is found (vec angle <90)
-        //    //            - calc I_obstacle = total irradiation on this obstacle. multiply with its diffuse reflection (albedo?) coefficient.
-        //    //            - average_Diffuse_Budget += I_obstacle * area of the respective hedgehog dome patch
-
-        //    // 03:
-        //    // average_Diffuse_Budget /= hedgehog_ray_Count
-
-
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
         /// <summary>
         /// Calc diffuse irradiation on a list of sensor points
         /// </summary>
@@ -1724,16 +1710,6 @@ namespace GHSolar
                 totI /= totarea;
                 Idiffuse[i] = totI;
             }
-
-
-            //!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!! do this later in separate routine:
-            //after we have irradiation for each vertex of the rotated hemisphere...
-            // - for each face of the hemisphere: multiply Irradiation of the respective vertices, divide by 3 (or 4 if is quad) and multiply by face area
-
-            //finally add all weighted values together and divide by total hemisphere area. voila. we have diffuse irradiation for that SP.
-            //!!!!!!!!!!!!!!
-            //!!!!!!!!!!!!!!
 
         }
 
