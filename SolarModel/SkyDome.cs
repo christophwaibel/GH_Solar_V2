@@ -141,6 +141,7 @@ namespace SolarModel
         /// <param name="rotMatrix">Symmetric rotation matrix.</param>
         public void RotateVertexVectors(double[,] R)
         {
+            if (R == null) return;
             for (int i = 0; i < this.VertexVectorsSphere.Count; i++)
             {
                 double[] rotated = new double[this.VertexVectorsSphere[i].Length];
@@ -152,8 +153,6 @@ namespace SolarModel
                 {
                     this.VertexVectorsSphere[i][j] = rotated[j];
                 }
-               
-
             }
         }
 
