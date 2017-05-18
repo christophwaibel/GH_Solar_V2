@@ -1044,13 +1044,18 @@ namespace GHSolar
 
                                 for (int q = 0; q < obstacles[n].faceCen.Length; q++)
                                 {
+                                    if (n == u && k == q) continue;
+
                                     double vAngle_2 = Vector3d.VectorAngle(obstacles[n].normals[q], Vector3d.Negate(refl_1)) * (180.0 / Math.PI);
                                     if (vAngle_2 >= 90) continue;
 
                                     //2nd order reflection
                                     Vector3d refl_2 = cMisc.ReflectVec(obstacles[n].normals[q], refl_1);
+
                                     for (int i = 0; i < SP.Length; i++)
                                     {
+                                        if (Vector3d.Equals(SPnormal[i], obstacles[n].normals[q])) continue;
+
                                         if (ObstructionCheck_Pt2Face2Face2Sun(refl_1, refl_2, SPoffset[i], SPnormal[i], u, k, n, q, solarvec[t])) continue;
 
                                         IspecList[i][t].Add(obstacles[u].albedos[t] * obstacles[n].albedos[t]);
@@ -1285,21 +1290,17 @@ namespace GHSolar
 
                                 for (int q = 0; q < obstacles[n].faceCen.Length; q++)
                                 {
-                                    if (n == u && k == q)
-                                    {
-                                        continue;
-                                    }
+                                    if (n == u && k == q) continue;
+
                                     double vAngle_2 = Vector3d.VectorAngle(obstacles[n].normals[q], Vector3d.Negate(refl_1)) * (180.0 / Math.PI);
                                     if (vAngle_2 >= 90) continue;
 
                                     //2nd order reflection
                                     Vector3d refl_2 = cMisc.ReflectVec(obstacles[n].normals[q], refl_1);
+
                                     for (int i = 0; i < SP.Length; i++)
                                     {
-                                        ln.Add(new Line(SPoffset[i], Vector3d.Negate(refl_2), 100));
-                                        ln.Add(new Line(SPoffset[i], SPnormal[i], 50));
-                                        //doc.Objects.AddLine(new Line(SPoffset[i], refl_2, 1000));
-                                        //doc.Views.ActiveView.Redraw();
+                                        if (Vector3d.Equals(SPnormal[i], obstacles[n].normals[q])) continue;
 
                                         if (ObstructionCheck_Pt2Face2Face2Sun(refl_1, refl_2, SPoffset[i], SPnormal[i], u, k, n, q, solarvec[t])) continue;
 
@@ -1329,12 +1330,39 @@ namespace GHSolar
         }
 
         /// <summary>
-        /// Calculate beam irradiation incident on a sensor point for multiple time steps, considering incidence angles.
+        /// Calculates specular interreflections on all sensor points for an array of solar vectors. Irradiation values given normal to reflected ray. Multi-threading version.
+        /// </summary>
+        /// <remarks>
+        /// Approach 3: Compute rays and reflected rays for each obstacle. Translate them to each sensor point. Check if translated rays reach obstacle and are unobstructed. 1st and 2nd order (1 or 2 bounces).
+        /// </remarks>
+        /// <param name="SPmesh">Analysis mesh, on which the sensor points are placed.</param>
+        /// <param name="SP">Sensor points [i] of the analysis mesh.</param>
+        /// <param name="SPnormal">Normal vectors [i] of the i sensor points.</param>
+        /// <param name="solarvec">Solar vectors for each time step t.</param>
+        /// <param name="sunshine">Indicating sunshine for each respective solar vector.</param>
+        /// <param name="obstacles">Obstacle objects.</param>
+        /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
+        /// <param name="Ispecular">Normal irradiation values [t][m] for one sensor point, each solar vector t and each reflected ray m.</param>
+        /// <param name="Inormals">Normal vectors [t][m] for one sensor point, each solar vector t and each reflected ray m.</param>
+        internal static void CalcSpecularNormal4(ObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            Vector3d[] solarvec, bool[] sunshine,
+            List<ObstacleObject> obstacles, int bounces,
+            ref double[][] Ispecular, ref Vector3d[][] Inormals)
+        {
+
+            // !!!!!!! for one SP only
+        }
+
+
+
+
+
+        /// <summary>
+        /// Calculate beam irradiation incident on one sensor point for multiple time steps, considering incidence angles.
         /// </summary>
         /// <param name="origNormal">Normal of sensor point.</param>
         /// <param name="Ispecular">Specular irradiation values [t][i] for each time stept t and for each reflected ray.</param>
         /// <param name="Inormals">Normals for each specular irradiation value [t][i].</param>
-        /// <param name="HOY">Hours of the year ∈ [0, 8759] corresponding to each time step t.</param>
         /// <param name="DNI">Direct normal irradiation values for each time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [t] incident on the sensor point, for each time step t.</param>
         internal static void CalcSpecularIncident(Vector3d origNormal, double[][] Ispecular, Vector3d[][] Inormals,
@@ -1358,6 +1386,37 @@ namespace GHSolar
                 }
             }
         }
+
+        /// <summary>
+        /// Calculate beam irradiation incident on one sensor point for one time steps, considering incidence angle.
+        /// </summary>
+        /// <param name="SPNormal">Normal of sensor point.</param>
+        /// <param name="Ispecular">Specular irradiation values [m] for one time stept and for each reflected ray m.</param>
+        /// <param name="Inormals">Normals [m] for each specular irradiation value m.</param>
+        /// <param name="DNI">Direct normal irradiation value for one time step.</param>
+        /// <param name="IspecularIncident">Effective specular reflected irradiation incident on the sensor point, for one time step.</param>
+        internal static void CalcSpecularIncident(Vector3d SPNormal, double[] Ispecular, Vector3d[] Inormals,
+            double DNI, ref double IspecularIncident)
+        {
+            //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
+            //DNI = DNI * Ispecular (here are my albedos)
+            if (Misc.IsNullOrEmpty(Ispecular)) return;
+
+
+            IspecularIncident = 0.0;
+            if (Misc.IsNullOrEmpty(Ispecular) == false)
+            {
+                for (int m = 0; m < Ispecular.Length; m++)
+                {
+                    double DNI_t = DNI * Ispecular[m];
+                    IspecularIncident += DNI_t * Math.Sin((90 * Math.PI / 180.0) - Vector3d.VectorAngle(SPNormal, Vector3d.Negate(Inormals[m])));
+                }
+            }
+
+        }
+
+
+
 
         /// <summary>
         /// Calculate beam irradiation incident on all sensor points for multiple time steps, considering incidence angles.
@@ -1456,6 +1515,8 @@ namespace GHSolar
 
             Ispec_.CopyTo(IspecularIncident, 0);
         }
+
+
 
 
 
@@ -1559,33 +1620,35 @@ namespace GHSolar
                     var ordered = inters_dic.OrderBy(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
                     //from closest intersection, check if normal of that obstacle is < 90, if yes, take that obstacle for later calculating radiation on it.
                     //                                                                          (return SP: Idiffuse_SPs[i].add(new sensorpoint) )
-                    foreach (int uu in ordered.Keys)
+                    //foreach (int uu in ordered.Keys)
+                    //{
+                    int uu = ordered.Keys.ElementAt(0);
+                    //if (obstacles[uu].reflType == 1) continue;  
+                    Point3d pX = vertexray.PointAt(ordered[uu]);
+                    MeshPoint mshp = obstacles[uu].mesh.ClosestMeshPoint(pX, 0.0);
+                    Vector3d pNormal = obstacles[uu].mesh.NormalAt(mshp);
+                    double vAngle = Vector3d.VectorAngle(pNormal, Vector3d.Negate(vertexvec)) * (180.0 / Math.PI);
+                    if (vAngle < 90)
                     {
-                        Point3d pX = vertexray.PointAt(ordered[uu]);
-                        MeshPoint mshp = obstacles[uu].mesh.ClosestMeshPoint(pX, 0.0);
-                        Vector3d pNormal = obstacles[uu].mesh.NormalAt(mshp);
-                        double vAngle = Vector3d.VectorAngle(pNormal, Vector3d.Negate(vertexvec)) * (180.0 / Math.PI);
-                        if (vAngle < 90)
-                        {
-                            double beta = Vector3d.VectorAngle(pNormal, betaangle) * (180.0 / Math.PI);
-                            double psi = Vector3d.VectorAngle(pNormal, psiangle, psiplane) * (180.0 / Math.PI);
-                            diffSP_beta_list[i].Add(beta);
-                            diffSP_psi_list[i].Add(psi);
-                            Sensorpoints.v3d _v3d;
-                            _v3d.X = pNormal.X;
-                            _v3d.Y = pNormal.Y;
-                            _v3d.Z = pNormal.Z;
-                            diffSP_normal_list[i].Add(_v3d);
-                            Sensorpoints.p3d _p3d;
-                            _p3d.X = pNormal.X;
-                            _p3d.Y = pNormal.Y;
-                            _p3d.Z = pNormal.Z;
-                            diffSP_coord_list[i].Add(_p3d);
-                            diffobstacleindex_list[i].Add(uu);
-                            diffdomevertindex_list[i].Add(j);
-                            break;
-                        }
+                        double beta = Vector3d.VectorAngle(pNormal, betaangle) * (180.0 / Math.PI);
+                        double psi = Vector3d.VectorAngle(pNormal, psiangle, psiplane) * (180.0 / Math.PI);
+                        diffSP_beta_list[i].Add(beta);
+                        diffSP_psi_list[i].Add(psi);
+                        Sensorpoints.v3d _v3d;
+                        _v3d.X = pNormal.X;
+                        _v3d.Y = pNormal.Y;
+                        _v3d.Z = pNormal.Z;
+                        diffSP_normal_list[i].Add(_v3d);
+                        Sensorpoints.p3d _p3d;
+                        _p3d.X = pNormal.X;
+                        _p3d.Y = pNormal.Y;
+                        _p3d.Z = pNormal.Z;
+                        diffSP_coord_list[i].Add(_p3d);
+                        diffobstacleindex_list[i].Add(uu);
+                        diffdomevertindex_list[i].Add(j);
+                        //break;
                     }
+                    //}
                 }
             }
 
@@ -1688,10 +1751,10 @@ namespace GHSolar
                 {
                     domevertfilled[vi] = 0.0;
                 }
-                for (int ii = 0; ii< Idiff_SP[i].SPCount; ii++)
+                for (int ii = 0; ii < Idiff_SP[i].SPCount; ii++)
                 {
                     int v = Idiff_domevert[i][ii];
-                    domevertfilled[v] = Idiff_SP[i].I[ii][HOY] * obstacles[Idiff_obst[i][ii]].albedos[HOY]; 
+                    domevertfilled[v] = Idiff_SP[i].I[ii][HOY] * obstacles[Idiff_obst[i][ii]].albedos[HOY];
                 }
 
                 double totI = 0.0;

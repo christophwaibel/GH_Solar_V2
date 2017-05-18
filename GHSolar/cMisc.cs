@@ -160,6 +160,10 @@ namespace GHSolar
         /// <returns></returns>
         internal static double [,] RotationMatrix(Vector3d a, Vector3d b)
         {
+            if (Vector3d.Equals(a.Unitize(), b.Unitize()))
+            {
+                return null;
+            }
             Vector3d v = Vector3d.CrossProduct(a, b);
             double[,] ssc = new double[3, 3] { { 0, -v.Z, v.Y }, { v.Z, 0, -v.X }, { -v.Y, v.X, 0 } };
             double[,] ssc_2 = new double[3, 3];
