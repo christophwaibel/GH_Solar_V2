@@ -6,8 +6,8 @@ To Do:
 - [x] skydome with equal patches
 - [x] snow cover
 - [ ] trees
-- [ ] specular inter-reflections max 2 bounces
+- [x] specular inter-reflections max 2 bounces
 - [ ] specular inter-reflections refraction coefficients
-- [ ] diffuse inter-reflections max 1 bounce
+- [x] diffuse inter-reflections max 1 bounce
 - [x] multi-threading
 - [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
