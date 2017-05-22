@@ -362,12 +362,12 @@ namespace GHSolar
                 //interreflections specular
                  if (!mt)
                 {
-                    cShadow.CalcSpecularNormal3(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, bounces, ref Ispecular2, ref Inormals2);
+                    cShadow.CalcSpecularNormal3(mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, HOY, objObst, bounces, ref Ispecular2, ref Inormals2);
                     cShadow.CalcSpecularIncident(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
                 }
                 else
                 {
-                    cShadow.CalcSpecularNormal3MT(mshobj, mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, objObst, bounces, ref Ispecular2, ref Inormals2);
+                    cShadow.CalcSpecularNormal3MT(mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, HOY, objObst, bounces, ref Ispecular2, ref Inormals2);
                     cShadow.CalcSpecularIncidentMT(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
                 }
             }
