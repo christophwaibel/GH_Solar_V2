@@ -208,7 +208,7 @@ namespace GHSolar
         /// <param name="Ispecular">Normal irradiation values [t][m] for each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [t][m] for each solar vector t and each reflected ray m.</param>
         internal static void CalcSpecularNormal1(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
-            List<ObstacleObject> obstacles, double[][] albedo, int[] reflType, int bounces,
+            List<cObstacleObject> obstacles, double[][] albedo, int[] reflType, int bounces,
             ref double[][] Ispecular, ref Vector3d[][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -337,9 +337,9 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal2(ObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        internal static void CalcSpecularNormal2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
-            List<ObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
+            List<cObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -541,9 +541,9 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal3_old(ObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        internal static void CalcSpecularNormal3_old(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
-            List<ObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
+            List<cObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -850,7 +850,7 @@ namespace GHSolar
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         internal static void CalcSpecularNormal3(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine, int HOY,
-            List<ObstacleObject> obstacles, int bounces,
+            List<cObstacleObject> obstacles, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -1011,7 +1011,7 @@ namespace GHSolar
                 //foreach specular object                 
                 for (int u = 0; u < obstacles.Count; u++)
                 {
-                    if (obstacles[u].reflType != 1) continue;
+                    if (obstacles[u].reflType != 1 && obstacles[u].reflType != 2) continue;
 
                     //foreach face
                     for (int k = 0; k < obstacles[u].faceCen.Length; k++)
@@ -1026,7 +1026,7 @@ namespace GHSolar
                         {
                             if (ObstructionCheck_Pt2Face2Sun(refl_1, SPoffset[i], SPnormal[i], u, k, solarvec[t])) continue;
 
-                            IspecList[i][t].Add(obstacles[u].albedos[HOY]);
+                            IspecList[i][t].Add(obstacles[u].specCoeff[HOY]);
                             InormList[i][t].Add(refl_1);
                         }
 
@@ -1034,7 +1034,7 @@ namespace GHSolar
                         {
                             for (int n = 0; n < obstacles.Count; n++)
                             {
-                                if (obstacles[n].reflType != 1) continue;
+                                if (obstacles[n].reflType != 1 && obstacles[n].reflType != 2) continue;
 
                                 for (int q = 0; q < obstacles[n].faceCen.Length; q++)
                                 {
@@ -1052,7 +1052,7 @@ namespace GHSolar
 
                                         if (ObstructionCheck_Pt2Face2Face2Sun(refl_1, refl_2, SPoffset[i], SPnormal[i], u, k, n, q, solarvec[t])) continue;
 
-                                        IspecList[i][t].Add(obstacles[u].albedos[HOY] * obstacles[n].albedos[HOY]);
+                                        IspecList[i][t].Add(obstacles[u].specCoeff[HOY] * obstacles[n].specCoeff[HOY]);
                                         InormList[i][t].Add(refl_2);
                                     }
                                 }
@@ -1091,10 +1091,10 @@ namespace GHSolar
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         internal static void CalcSpecularNormal3MT(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine, int HOY,
-            List<ObstacleObject> obstacles, int bounces,
+            List<cObstacleObject> obstacles, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
-            Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
+            //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
 
             // Approach 3: Compute rays and reflected rays for each obstacle. Translate them to each sensor point. Check if translated rays reach obstacle and are unobstructed. 1st and 2nd order (1 or 2 bounces).
             if (bounces < 1) return;
@@ -1195,7 +1195,7 @@ namespace GHSolar
 
 
             Func<Vector3d, Vector3d, Point3d, Vector3d, int, int, int, int, Vector3d, bool> ObstructionCheck_Pt2Face2Face2Sun =
-                (_vec1storder, _vec2ndorder, _pt, _ptNormal, _u1st, _k1st, _u2nd, _k2nd, _sun) =>
+                (_vec1storder, _vec2ndorder, _pt, _ptNormal, _u1st, _k1st, _u2nd, _k2nd,_sun) =>
                 {
                     //check sp 2 2ndorder face
                     double _vAngle = Vector3d.VectorAngle(_ptNormal, Vector3d.Negate(_vec2ndorder)) * (180.0 / Math.PI);
@@ -1204,12 +1204,16 @@ namespace GHSolar
                     //check, if translated ray hits initial obstacle face
                     Ray3d rPt2Face = new Ray3d(_pt, Vector3d.Negate(_vec2ndorder));
                     Mesh mshface = new Mesh();
-                    mshface.Vertices.Add(obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).A]);
-                    mshface.Vertices.Add(obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).B]);
-                    mshface.Vertices.Add(obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).C]);
+                    Point3f A = obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).A];
+                    Point3f B = obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).B];
+                    Point3f C = obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).C];
+                    mshface.Vertices.Add(A);
+                    mshface.Vertices.Add(B);
+                    mshface.Vertices.Add(C);
                     if (obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).IsQuad)
                     {
-                        mshface.Vertices.Add(obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).D]);
+                        Point3f D = obstacles[_u2nd].mesh.Vertices[obstacles[_u2nd].mesh.Faces.GetFace(_k2nd).D];
+                        mshface.Vertices.Add(D);
                         mshface.Faces.AddFace(0, 1, 2, 3);
                     }
                     else
@@ -1245,7 +1249,7 @@ namespace GHSolar
 
 
 
-            List<Line> ln = new List<Line>();
+            //List<Line> ln = new List<Line>();
 
 
             //foreach solar vector t
@@ -1254,9 +1258,9 @@ namespace GHSolar
                 if (!sunshine[t]) continue;
 
                 //foreach specular object   
-                Parallel.For(0, obstacles.Count, u =>
+                for (int u = 0; u < obstacles.Count; u++)
                 {
-                    if (obstacles[u].reflType != 1) return;
+                    if (obstacles[u].reflType != 1 && obstacles[u].reflType != 2) continue;
 
                     //foreach face
                     for (int k = 0; k < obstacles[u].faceCen.Length; k++)
@@ -1267,19 +1271,22 @@ namespace GHSolar
                         //1st order reflection
                         Vector3d refl_1 = cMisc.ReflectVec(obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
 
-                        for (int i = 0; i < SP.Length; i++)
+                        object sync = new object();
+                        Parallel.For(0, SP.Length, i =>
                         {
-                            if (ObstructionCheck_Pt2Face2Sun(refl_1, SPoffset[i], SPnormal[i], u, k, solarvec[t])) continue;
-
-                            IspecList[i][t].Add(obstacles[u].albedos[HOY]);
-                            InormList[i][t].Add(refl_1);
-                        }
+                            if (ObstructionCheck_Pt2Face2Sun(refl_1, SPoffset[i], SPnormal[i], u, k, solarvec[t])) return;
+                            lock (sync)
+                            {
+                                IspecList[i][t].Add(obstacles[u].specCoeff[HOY]);
+                                InormList[i][t].Add(refl_1);
+                            }
+                        });
 
                         if (bounces > 1)
                         {
                             for (int n = 0; n < obstacles.Count; n++)
                             {
-                                if (obstacles[n].reflType != 1) continue;
+                                if (obstacles[n].reflType != 1 && obstacles[n].reflType != 2) continue;
 
                                 for (int q = 0; q < obstacles[n].faceCen.Length; q++)
                                 {
@@ -1291,26 +1298,29 @@ namespace GHSolar
                                     //2nd order reflection
                                     Vector3d refl_2 = cMisc.ReflectVec(obstacles[n].normals[q], refl_1);
 
-                                    for (int i = 0; i < SP.Length; i++)
+                                    Parallel.For(0, SP.Length, i =>
                                     {
-                                        if (Vector3d.Equals(SPnormal[i], obstacles[n].normals[q])) continue;
+                                        if (Vector3d.Equals(SPnormal[i], obstacles[n].normals[q])) return;
 
-                                        if (ObstructionCheck_Pt2Face2Face2Sun(refl_1, refl_2, SPoffset[i], SPnormal[i], u, k, n, q, solarvec[t])) continue;
+                                        if (ObstructionCheck_Pt2Face2Face2Sun(refl_1, refl_2, SPoffset[i], SPnormal[i], u, k, n, q, solarvec[t])) return;
 
-                                        IspecList[i][t].Add(obstacles[u].albedos[HOY] * obstacles[n].albedos[HOY]);
-                                        InormList[i][t].Add(refl_2);
-                                    }
+                                        lock (sync)
+                                        {
+                                            IspecList[i][t].Add(obstacles[u].specCoeff[HOY] * obstacles[n].specCoeff[HOY]);
+                                            InormList[i][t].Add(refl_2);
+                                        }
+                                    });
                                 }
                             }
                         }
                     }
-                });
+                }
             }
 
-            foreach (Line l in ln)
-            {
-                doc.Objects.AddLine(l);
-            }
+            //foreach (Line l in ln)
+            //{
+            //    doc.Objects.AddLine(l);
+            //}
 
             for (int i = 0; i < SP.Length; i++)
             {
@@ -1333,7 +1343,7 @@ namespace GHSolar
         /// <param name="bounces"></param>
         /// <param name="reflected_1st"></param>
         /// <param name="reflected_2nd"></param>
-        internal static void CalcSpecularVectors(List<ObstacleObject> obstacles, Vector3d solarvec, int bounces, 
+        internal static void CalcSpecularVectors(List<cObstacleObject> obstacles, Vector3d solarvec, int bounces, 
             out Vector3d[] reflected_1st, out int [] refl1_index, out int [] refl1_ind_face, 
             out Vector3d[][] reflected_2nd, out int[][] refl2_index, out int [][] refl2_ind_face)
         {
@@ -1429,7 +1439,7 @@ namespace GHSolar
         /// <param name="Inormals">Normal vectors [t][m] for one sensor point, each solar vector t and each reflected ray m.</param>
         internal static void CalcSpecularNormal4(Point3d SP, Vector3d SPnormal,
             Vector3d solarvec,bool sunshine,int HOY,
-            List<ObstacleObject> obstacles, int bounces,
+            List<cObstacleObject> obstacles, int bounces,
             Vector3d[] refl_1, int [] refl1_ind, int [] refl1_face_ind,
             Vector3d[][] refl_2, int[][] refl2_ind, int[][] refl2_face_ind,
             ref double[] Ispecular, ref Vector3d[] Inormals)
@@ -1783,8 +1793,8 @@ namespace GHSolar
         /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
-        internal static void CalcDiffuse_GetSPs(ObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
-            List<ObstacleObject> obstacles, int difDomeRes,
+        internal static void CalcDiffuse_GetSPs(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            List<cObstacleObject> obstacles, int difDomeRes,
             out Sensorpoints[] Idiffuse_SPs, out int[][] Idiff_obstacles, out int[][] Idiff_domevertexindex, out SkyDome[] Idiff_domes)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -1911,7 +1921,297 @@ namespace GHSolar
             }
         }
 
+        /// <summary>
+        /// For each sensor point of the analysis mesh, identify new sensor points which need to be calculated for diffuse interreflection.
+        /// </summary>
+        /// <remarks>Actual diffuse interreflection for the new sensor points need to be calculated in a separate routine.</remarks>
+        /// <param name="SPmesh">Analysis mesh, on which the sensor points are placed.</param>
+        /// <param name="SP">Sensor points [i] of the analysis mesh.</param>
+        /// <param name="SPnormal">Normal vectors [i] of the i sensor points.</param>
+        /// <param name="obstacles">Obstacle objects.</param>
+        /// <param name="difDomeRes">Resolution of the hemisphere spanned over each sensor point for diffuse interreflection.</param>
+        /// <param name="Idiffuse_SPs">New sensor points [i]: for each sensor point i, diffuse sensor points j which need evaluation.</param>
+        /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
+        /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
+        /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
+        internal static void CalcDiffuse_GetSPs2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            List<cObstacleObject> obstacles, int difDomeRes,
+            out List<List<double>> diffSP_beta_list, 
+            out List<List<double>> diffSP_psi_list, 
+            out List<List<Sensorpoints.v3d>> diffSP_normal_list,
+            out List<List<Sensorpoints.p3d>> diffSP_coord_list,
+            out int[][] Idiff_obstacles, 
+            out int[][] Idiff_domevertexindex, 
+            out SkyDome[] Idiff_domes)
+        {
+            //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
 
+
+            //for each SP: return a list of sensor points, which need to be evaluted in a separate routine. 
+            //  that routine calcs Global irradiation for each of the new sensor points. and assigns diffuse irradiation to the SP
+            Idiff_obstacles = new int[SP.Length][];
+            Idiff_domevertexindex = new int[SP.Length][];
+            Idiff_domes = new SkyDome[SP.Length];
+
+            //temporary. I don't know yet, how many diffuse sensorpoints per sensorpoint I'll have
+            //Sensorpoints sp = new Sensorpoints(beta, psi, normal, reclvlsky);
+            diffSP_beta_list = new List<List<double>>();
+            diffSP_psi_list = new List<List<double>>();
+            diffSP_normal_list = new List<List<Sensorpoints.v3d>>();
+            diffSP_coord_list = new List<List<Sensorpoints.p3d>>();
+            List<List<int>> diffobstacleindex_list = new List<List<int>>();
+            List<List<int>> diffdomevertindex_list = new List<List<int>>();
+            //double[] totAreas_temp = new double[SP.Length];
+            for (int i = 0; i < SP.Length; i++)
+            {
+                diffSP_beta_list.Add(new List<double>());
+                diffSP_psi_list.Add(new List<double>());
+                diffSP_normal_list.Add(new List<Sensorpoints.v3d>());
+                diffSP_coord_list.Add(new List<Sensorpoints.p3d>());
+                diffobstacleindex_list.Add(new List<int>());
+                diffdomevertindex_list.Add(new List<int>());
+            }
+
+
+
+
+            Vector3d betaangle = new Vector3d(0, 0, 1);
+            Vector3d psiangle = new Vector3d(0, 1, 0);
+            Plane psiplane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+            //for (int i = 0; i < mshvrt.Length; i++)
+            //{
+            //    mshvrtnorm[i] = msh.Normals[i];
+            //    //sensor point tilt angle (beta) and azimuth (psi)
+            //    double beta = Vector3d.VectorAngle(mshvrtnorm[i], betaangle) / rad;
+            //    double psi = Vector3d.VectorAngle(mshvrtnorm[i], psiangle, psiplane) / rad;
+
+
+
+            //foreach SP
+            Vector3d vecZ = new Vector3d(0, 0, 1);
+            for (int i = 0; i < SP.Length; i++)
+            {
+                //offset SP, otherwise there is self-intersection 
+                Point3d SPoffset = cMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
+
+                //create a dome, rotate to SP normal
+                SkyDome dome = new SkyDome(difDomeRes);
+                double[,] R = cMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
+                dome.RotateVertexVectors(R);
+                Idiff_domes[i] = dome;
+
+                //totAreas_temp[i] = 0;
+                for (int j = 0; j < dome.VerticesHemisphere.Count; j++)
+                {
+                    //totAreas_temp[i] += dome.FaceAreas[j];
+
+                    //doc.Objects.AddLine(new Line(SP[i], new Vector3d(
+                    //    dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][0], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][1], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][2]), 10));
+
+                    //check for obstruction foreach vertex
+                    Vector3d vertexvec = new Vector3d(dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][0], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][1], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][2]);
+                    Ray3d vertexray = new Ray3d(SPoffset, vertexvec);
+                    Dictionary<int, double> inters_dic = new Dictionary<int, double>();
+                    for (int u = 0; u < obstacles.Count; u++)
+                    {
+                        double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u].mesh, vertexray);
+                        if (inters >= 0)
+                        {
+                            inters_dic.Add(u, inters);
+                        }
+                    }
+                    if (inters_dic.Count == 0) continue;
+
+                    //sort intersections from closest to furthest.
+                    var ordered = inters_dic.OrderBy(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
+                    //from closest intersection, check if normal of that obstacle is < 90, if yes, take that obstacle for later calculating radiation on it.
+                    //                                                                          (return SP: Idiffuse_SPs[i].add(new sensorpoint) )
+                    //foreach (int uu in ordered.Keys)
+                    //{
+                    int uu = ordered.Keys.ElementAt(0);
+
+                    if (obstacles[uu].reflType != 0 && obstacles[uu].reflType != 2) continue;  //2 is a specular and diffuse object (like snow)
+                    
+                    Point3d pX = vertexray.PointAt(ordered[uu]);
+                    MeshPoint mshp = obstacles[uu].mesh.ClosestMeshPoint(pX, 0.0);
+                    Vector3d pNormal = obstacles[uu].mesh.NormalAt(mshp);
+                    double vAngle = Vector3d.VectorAngle(pNormal, Vector3d.Negate(vertexvec)) * (180.0 / Math.PI);
+                    if (vAngle < 90)
+                    {
+                        double beta = Vector3d.VectorAngle(pNormal, betaangle) * (180.0 / Math.PI);
+                        double psi = Vector3d.VectorAngle(pNormal, psiangle, psiplane) * (180.0 / Math.PI);
+                        diffSP_beta_list[i].Add(beta);
+                        diffSP_psi_list[i].Add(psi);
+                        Sensorpoints.v3d _v3d;
+                        _v3d.X = pNormal.X;
+                        _v3d.Y = pNormal.Y;
+                        _v3d.Z = pNormal.Z;
+                        diffSP_normal_list[i].Add(_v3d);
+                        Sensorpoints.p3d _p3d;
+                        _p3d.X = pNormal.X;
+                        _p3d.Y = pNormal.Y;
+                        _p3d.Z = pNormal.Z;
+                        diffSP_coord_list[i].Add(_p3d);
+                        diffobstacleindex_list[i].Add(uu);
+                        diffdomevertindex_list[i].Add(j);
+                        //break;
+                    }
+                    //}
+                }
+            }
+
+
+
+            for (int i = 0; i < SP.Length; i++)
+            {
+                //Idiffuse_SPs[i] = new Sensorpoints(diffSP_beta_list[i].ToArray(), diffSP_psi_list[i].ToArray(), diffSP_coord_list[i].ToArray(), diffSP_normal_list[i].ToArray(), difDomeRes);
+                Idiff_obstacles[i] = diffobstacleindex_list[i].ToArray(); //should be of same length as Idiffuse_SPs[i] has sensorpoints
+                Idiff_domevertexindex[i] = diffdomevertindex_list[i].ToArray();
+            }
+        }
+
+        /// <summary>
+        /// For each sensor point of the analysis mesh, identify new sensor points which need to be calculated for diffuse interreflection. Multi-threading version.
+        /// </summary>
+        /// <remarks>Actual diffuse interreflection for the new sensor points need to be calculated in a separate routine.</remarks>
+        /// <param name="SPmesh">Analysis mesh, on which the sensor points are placed.</param>
+        /// <param name="SP">Sensor points [i] of the analysis mesh.</param>
+        /// <param name="SPnormal">Normal vectors [i] of the i sensor points.</param>
+        /// <param name="obstacles">Obstacle objects.</param>
+        /// <param name="difDomeRes">Resolution of the hemisphere spanned over each sensor point for diffuse interreflection.</param>
+        /// <param name="Idiffuse_SPs">New sensor points [i]: for each sensor point i, diffuse sensor points j which need evaluation.</param>
+        /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
+        /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
+        /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
+        internal static void CalcDiffuse_GetSPs2MT(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            List<cObstacleObject> obstacles, int difDomeRes,
+            out List<List<double>> diffSP_beta_list,
+            out List<List<double>> diffSP_psi_list,
+            out List<List<Sensorpoints.v3d>> diffSP_normal_list,
+            out List<List<Sensorpoints.p3d>> diffSP_coord_list,
+            out int[][] Idiff_obstacles,
+            out int[][] Idiff_domevertexindex,
+            out SkyDome[] Idiff_domes)
+        {
+            //for each SP: return a list of sensor points, which need to be evaluted in a separate routine. 
+            //  that routine calcs Global irradiation for each of the new sensor points. and assigns diffuse irradiation to the SP
+            Idiff_obstacles = new int[SP.Length][];
+            Idiff_domevertexindex = new int[SP.Length][];
+            Idiff_domes = new SkyDome[SP.Length];
+
+            SkyDome[] Idiff_domes_temp = new SkyDome[SP.Length];
+            List<List<double>> diffSP_beta_list_temp = new List<List<double>>();
+            List<List<double>> diffSP_psi_list_temp = new List<List<double>>();
+            List<List<Sensorpoints.v3d>> diffSP_normal_list_temp = new List<List<Sensorpoints.v3d>>();
+            List<List<Sensorpoints.p3d>> diffSP_coord_list_temp = new List<List<Sensorpoints.p3d>>();
+
+            //temporary. I don't know yet, how many diffuse sensorpoints per sensorpoint I'll have
+            diffSP_beta_list = new List<List<double>>();
+            diffSP_psi_list = new List<List<double>>();
+            diffSP_normal_list = new List<List<Sensorpoints.v3d>>();
+            diffSP_coord_list = new List<List<Sensorpoints.p3d>>();
+            List<List<int>> diffobstacleindex_list = new List<List<int>>();
+            List<List<int>> diffdomevertindex_list = new List<List<int>>();
+
+            for (int i = 0; i < SP.Length; i++)
+            {
+                diffSP_beta_list.Add(new List<double>());
+                diffSP_psi_list.Add(new List<double>());
+                diffSP_normal_list.Add(new List<Sensorpoints.v3d>());
+                diffSP_coord_list.Add(new List<Sensorpoints.p3d>());
+                diffobstacleindex_list.Add(new List<int>());
+                diffdomevertindex_list.Add(new List<int>());
+
+                diffSP_beta_list_temp.Add(new List<double>());
+                diffSP_psi_list_temp.Add(new List<double>());
+                diffSP_normal_list_temp.Add(new List<Sensorpoints.v3d>());
+                diffSP_coord_list_temp.Add(new List<Sensorpoints.p3d>());
+            }
+
+
+
+
+            Vector3d betaangle = new Vector3d(0, 0, 1);
+            Vector3d psiangle = new Vector3d(0, 1, 0);
+            Plane psiplane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
+
+
+            //foreach SP
+            Vector3d vecZ = new Vector3d(0, 0, 1);
+            Parallel.For(0, SP.Length, i =>
+            {
+                //offset SP, otherwise there is self-intersection 
+                Point3d SPoffset = cMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
+
+                //create a dome, rotate to SP normal
+                SkyDome dome = new SkyDome(difDomeRes);
+                double[,] R = cMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
+                dome.RotateVertexVectors(R);
+                Idiff_domes_temp[i] = dome;
+
+                for (int j = 0; j < dome.VerticesHemisphere.Count; j++)
+                {
+                    //check for obstruction foreach vertex
+                    Vector3d vertexvec = new Vector3d(dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][0], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][1], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][2]);
+                    Ray3d vertexray = new Ray3d(SPoffset, vertexvec);
+                    Dictionary<int, double> inters_dic = new Dictionary<int, double>();
+                    for (int u = 0; u < obstacles.Count; u++)
+                    {
+                        double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u].mesh, vertexray);
+                        if (inters >= 0)
+                        {
+                            inters_dic.Add(u, inters);
+                        }
+                    }
+                    if (inters_dic.Count == 0) continue;
+
+                    //sort intersections from closest to furthest.
+                    var ordered = inters_dic.OrderBy(x => x.Value).ToDictionary(pair => pair.Key, pair => pair.Value);
+                    //from closest intersection, check if normal of that obstacle is < 90, if yes, take that obstacle for later calculating radiation on it.
+                    //                                                                          (return SP: Idiffuse_SPs[i].add(new sensorpoint) )
+                    int uu = ordered.Keys.ElementAt(0);
+
+                    if (obstacles[uu].reflType != 0 && obstacles[uu].reflType != 2) continue;
+
+                    Point3d pX = vertexray.PointAt(ordered[uu]);
+                    MeshPoint mshp = obstacles[uu].mesh.ClosestMeshPoint(pX, 0.0);
+                    Vector3d pNormal = obstacles[uu].mesh.NormalAt(mshp);
+                    double vAngle = Vector3d.VectorAngle(pNormal, Vector3d.Negate(vertexvec)) * (180.0 / Math.PI);
+                    if (vAngle < 90)
+                    {
+                        double beta = Vector3d.VectorAngle(pNormal, betaangle) * (180.0 / Math.PI);
+                        double psi = Vector3d.VectorAngle(pNormal, psiangle, psiplane) * (180.0 / Math.PI);
+                        diffSP_beta_list_temp[i].Add(beta);
+                        diffSP_psi_list_temp[i].Add(psi);
+                        Sensorpoints.v3d _v3d;
+                        _v3d.X = pNormal.X;
+                        _v3d.Y = pNormal.Y;
+                        _v3d.Z = pNormal.Z;
+                        diffSP_normal_list_temp[i].Add(_v3d);
+                        Sensorpoints.p3d _p3d;
+                        _p3d.X = pNormal.X;
+                        _p3d.Y = pNormal.Y;
+                        _p3d.Z = pNormal.Z;
+                        diffSP_coord_list_temp[i].Add(_p3d);
+                        diffobstacleindex_list[i].Add(uu);
+                        diffdomevertindex_list[i].Add(j);
+                    }
+                }
+            });
+
+
+            Idiff_domes = Idiff_domes_temp;
+            for (int i = 0; i < SP.Length; i++)
+            {
+                Idiff_obstacles[i] = diffobstacleindex_list[i].ToArray(); //should be of same length as Idiffuse_SPs[i] has sensorpoints
+                Idiff_domevertexindex[i] = diffdomevertindex_list[i].ToArray();
+
+                diffSP_beta_list[i] = diffSP_beta_list_temp[i];
+                diffSP_psi_list[i] = diffSP_psi_list_temp[i];
+                diffSP_normal_list[i] = diffSP_normal_list_temp[i];
+                diffSP_coord_list[i] = diffSP_coord_list_temp[i];
+            }
+        }
 
 
         /// <summary>
@@ -1927,8 +2227,244 @@ namespace GHSolar
         /// <param name="sunvectors"></param>
         /// <param name="obstacles"></param>
         /// <param name="Idiffuse"></param>
+        internal static void CalcDiffuse2(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+            List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
+            int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
+            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
+            double tolerance, double snow_threshold, double tilt_treshold,
+            out double[] Idiffuse)
+        {
+            int SPiicount = diffSP_beta_list.Count;
+
+            int HOY = (DOY - 1) * 24 + LT;
+
+            Idiffuse = new double[SPiicount];
+
+            double[] Idiff_domearea = new double[SPiicount];
+            for (int i = 0; i < Idiff_dome.Length; i++)
+            {
+                Idiff_domearea[i] = 0.0;
+                for (int l = 0; l < Idiff_dome[i].Faces.Count; l++)
+                {
+                    Idiff_domearea[i] += Idiff_dome[i].FaceAreas[l];
+                }
+            }
+
+
+            for (int i = 0; i < SPiicount; i++)
+            {
+                List<bool> ShdwBeam_hour = new List<bool>();
+                List<bool[]> ShdwSky = new List<bool[]>();
+
+                Sensorpoints SPdiff = new Sensorpoints(diffSP_beta_list[i].ToArray(), diffSP_psi_list[i].ToArray(), diffSP_coord_list[i].ToArray(), diffSP_normal_list[i].ToArray(), difDomeRes);
+                for (int ii = 0; ii < SPdiff.SPCount; ii++)
+                {
+                    Point3d orig = new Point3d(SPdiff.coord[ii].X, SPdiff.coord[ii].Y, SPdiff.coord[ii].Z);
+                    Vector3d mshvrtnorm = new Vector3d(SPdiff.normal[ii].X, SPdiff.normal[ii].Y, SPdiff.normal[ii].Z);
+
+
+                    /////////////////////////////////////////////////////////////////////
+                    //beam for one hour only.
+                    Vector3d[] vec_beam = new Vector3d[1];
+                    vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
+                    bool[] shdw_beam = new bool[1];
+                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
+                    ShdwBeam_hour.Add(shdw_beam[0]);
+                    /////////////////////////////////////////////////////////////////////
+
+
+                    /////////////////////////////////////////////////////////////////////
+                    //sky dome diffuse
+                    Vector3d[] vec_sky = new Vector3d[SPdiff.sky[ii].VerticesHemisphere.Count];
+                    for (int u = 0; u < vec_sky.Length; u++)
+                    {
+                        vec_sky[u] = new Vector3d(
+                            SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][0],
+                            SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][1],
+                            SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][2]);
+                    }
+                    bool[] shdw_sky = new bool[SPdiff.sky[ii].VerticesHemisphere.Count];
+                    cShadow.CalcShadow(orig, mshvrtnorm, 0.01, vec_sky, obst, ref shdw_sky);
+                    ShdwSky.Add(shdw_sky);
+                    /////////////////////////////////////////////////////////////////////
+                }
+
+
+
+                SPdiff.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
+                SPdiff.SetSnowcover(snow_threshold, tilt_treshold, weather);
+                SPdiff.CalcIrradiation(DOY, LT, weather, sunvectors);
+
+                double totarea = 0.0;
+                for (int f = 0; f < Idiff_dome[i].Faces.Count; f++)
+                {
+                    totarea += Idiff_dome[i].FaceAreas[f];
+                }
+
+                double[] domevertfilled = new double[Idiff_dome[i].VertexVectorsSphere.Count];
+                for (int vi = 0; vi < Idiff_dome[i].VertexVectorsSphere.Count; vi++)
+                {
+                    domevertfilled[vi] = 0.0;
+                }
+                for (int ii = 0; ii < SPdiff.SPCount; ii++)
+                {
+                    int v = Idiff_domevert[i][ii];
+                    domevertfilled[v] = SPdiff.I[ii][HOY] * obstacles[Idiff_obst[i][ii]].albedos[HOY];
+                }
+
+                double totI = 0.0;
+                for (int vi = 0; vi < Idiff_dome[i].Faces.Count; vi++)
+                {
+                    int index1 = Idiff_dome[i].Faces[vi][0];
+                    int index2 = Idiff_dome[i].Faces[vi][1];
+                    int index3 = Idiff_dome[i].Faces[vi][2];
+
+                    double Isum = domevertfilled[index1] + domevertfilled[index2] + domevertfilled[index3];
+                    Isum /= 3;
+                    Isum *= Idiff_dome[i].FaceAreas[vi];
+
+                    totI += Isum;
+                }
+                totI /= totarea;
+                Idiffuse[i] = totI;
+            }
+
+        }
+
+        /// <summary>
+        /// Calc diffuse irradiation on a list of sensor points. Multi-threading version.
+        /// </summary>
+        /// <param name="Idiff_SP"></param>
+        /// <param name="Idiff_obst"></param>
+        /// <param name="Idiff_domevert"></param>
+        /// <param name="Idiff_dome"></param>
+        /// <param name="DOY"></param>
+        /// <param name="LT"></param>
+        /// <param name="weather"></param>
+        /// <param name="sunvectors"></param>
+        /// <param name="obstacles"></param>
+        /// <param name="Idiffuse"></param>
+        internal static void CalcDiffuse2MT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+            List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
+            int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
+            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
+            double tolerance, double snow_threshold, double tilt_treshold,
+            out double[] Idiffuse)
+        {
+            int SPiicount = diffSP_beta_list.Count;
+
+            int HOY = (DOY - 1) * 24 + LT;
+
+            Idiffuse = new double[SPiicount];
+            double[] Idiffuse_temp = new double[SPiicount];
+
+            double[] Idiff_domearea = new double[SPiicount];
+            for (int i = 0; i < Idiff_dome.Length; i++)
+            {
+                Idiff_domearea[i] = 0.0;
+                for (int l = 0; l < Idiff_dome[i].Faces.Count; l++)
+                {
+                    Idiff_domearea[i] += Idiff_dome[i].FaceAreas[l];
+                }
+            }
+
+
+            Parallel.For(0, SPiicount, i =>
+            {
+                List<bool> ShdwBeam_hour = new List<bool>();
+                List<bool[]> ShdwSky = new List<bool[]>();
+
+                Sensorpoints SPdiff = new Sensorpoints(diffSP_beta_list[i].ToArray(), diffSP_psi_list[i].ToArray(), diffSP_coord_list[i].ToArray(), diffSP_normal_list[i].ToArray(), difDomeRes);
+                for (int ii = 0; ii < SPdiff.SPCount; ii++)
+                {
+                    Point3d orig = new Point3d(SPdiff.coord[ii].X, SPdiff.coord[ii].Y, SPdiff.coord[ii].Z);
+                    Vector3d mshvrtnorm = new Vector3d(SPdiff.normal[ii].X, SPdiff.normal[ii].Y, SPdiff.normal[ii].Z);
+
+
+                    /////////////////////////////////////////////////////////////////////
+                    //beam for one hour only.
+                    Vector3d[] vec_beam = new Vector3d[1];
+                    vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
+                    bool[] shdw_beam = new bool[1];
+                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
+                    ShdwBeam_hour.Add(shdw_beam[0]);
+                    /////////////////////////////////////////////////////////////////////
+
+
+                    /////////////////////////////////////////////////////////////////////
+                    //sky dome diffuse
+                    Vector3d[] vec_sky = new Vector3d[SPdiff.sky[ii].VerticesHemisphere.Count];
+                    for (int u = 0; u < vec_sky.Length; u++)
+                    {
+                        vec_sky[u] = new Vector3d(
+                            SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][0],
+                            SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][1],
+                            SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][2]);
+                    }
+                    bool[] shdw_sky = new bool[SPdiff.sky[ii].VerticesHemisphere.Count];
+                    cShadow.CalcShadow(orig, mshvrtnorm, 0.01, vec_sky, obst, ref shdw_sky);
+                    ShdwSky.Add(shdw_sky);
+                    /////////////////////////////////////////////////////////////////////
+                }
+
+
+
+                SPdiff.SetShadows(ShdwBeam_hour, ShdwSky, HOY);
+                SPdiff.SetSnowcover(snow_threshold, tilt_treshold, weather);
+                SPdiff.CalcIrradiation(DOY, LT, weather, sunvectors);
+
+                double totarea = 0.0;
+                for (int f = 0; f < Idiff_dome[i].Faces.Count; f++)
+                {
+                    totarea += Idiff_dome[i].FaceAreas[f];
+                }
+
+                double[] domevertfilled = new double[Idiff_dome[i].VertexVectorsSphere.Count];
+                for (int vi = 0; vi < Idiff_dome[i].VertexVectorsSphere.Count; vi++)
+                {
+                    domevertfilled[vi] = 0.0;
+                }
+                for (int ii = 0; ii < SPdiff.SPCount; ii++)
+                {
+                    int v = Idiff_domevert[i][ii];
+                    domevertfilled[v] = SPdiff.I[ii][HOY] * obstacles[Idiff_obst[i][ii]].albedos[HOY];
+                }
+
+                double totI = 0.0;
+                for (int vi = 0; vi < Idiff_dome[i].Faces.Count; vi++)
+                {
+                    int index1 = Idiff_dome[i].Faces[vi][0];
+                    int index2 = Idiff_dome[i].Faces[vi][1];
+                    int index3 = Idiff_dome[i].Faces[vi][2];
+
+                    double Isum = domevertfilled[index1] + domevertfilled[index2] + domevertfilled[index3];
+                    Isum /= 3;
+                    Isum *= Idiff_dome[i].FaceAreas[vi];
+
+                    totI += Isum;
+                }
+                totI /= totarea;
+                Idiffuse_temp[i] = totI;
+            });
+
+            Idiffuse = Idiffuse_temp;
+        }
+
+        /// <summary>
+        /// Calc diffuse irradiation on a list of sensor points
+        /// </summary>
+        /// <param name="Idiff_SP"></param>
+        /// <param name="Idiff_obst"></param>
+        /// <param name="Idiff_domevert"></param>
+        /// <param name="Idiff_dome"></param>
+        /// <param name="DOY"></param>
+        /// <param name="LT"></param>
+        /// <param name="weather"></param>
+        /// <param name="sunvectors"></param>
+        /// <param name="obstacles"></param>
+        /// <param name="Idiffuse"></param>
         internal static void CalcDiffuse(Sensorpoints[] Idiff_SP, int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
-            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<ObstacleObject> obstacles,
+            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
             double tolerance, double snow_threshold, double tilt_treshold,
             out double[] Idiffuse)
         {

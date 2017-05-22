@@ -57,7 +57,7 @@ namespace GHSolar
             pManager[12].Optional = true;
             pManager.AddIntegerParameter("Skydome Resolution", "SkyRes", "Sykdome resolution for diffuse shading mask. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
             pManager[13].Optional = true;
-            pManager.AddIntegerParameter("Interreflection Resolution", "RefllllRes", "Hemisphere resolution for interreflections. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays. For deactivating diffuse interreflection, input -1.", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Diff. interrefl. res.", "DiffReflRes", "Hemisphere resolution for diffuse interreflections. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays. For deactivating diffuse interreflection, input -1.", GH_ParamAccess.item);
             pManager[14].Optional = true;
 
             pManager.AddGenericParameter("Precalc Irefl", "Precalc.Irefl", "Input precalculated interreflected irradiation", GH_ParamAccess.item);
@@ -76,15 +76,16 @@ namespace GHSolar
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {       
-     
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////   INPUTS   ///////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             Mesh msh = new Mesh();
-            ObstacleObject mshobj = null;
+            cObstacleObject mshobj = null;
             if (!DA.GetData(0, ref mshobj)) { return; }
             msh = mshobj.mesh;
+
+            //should containt analysis surface itself
+            List<cObstacleObject> objObst = new List<cObstacleObject>();
+            if (!DA.GetDataList(1, objObst)) { return; }
+            Mesh[] obst = new Mesh[objObst.Count];
+
 
             double latitude = 0.0;
             if (!DA.GetData(3, ref latitude)) { return; }
@@ -96,13 +97,7 @@ namespace GHSolar
             List<double> DHI = new List<double>();
             if (!DA.GetDataList(6, DHI)) { return; }
             List<double> SNOW = new List<double>();
-            if (!DA.GetDataList(7, SNOW))
-            {
-                for (int i = 0; i < 8760; i++)
-                {
-                    SNOW.Add(0.0);
-                }
-            }
+
              
 
             int year = 0;
@@ -122,330 +117,27 @@ namespace GHSolar
             int diffRes = -1;
             if (!DA.GetData(14, ref diffRes)) { diffRes = -1; }
 
-
             cResultsInterreflections ResultsIreflIn = null;
             DA.GetData(15, ref ResultsIreflIn);
 
             bool mt = false;
             if (!DA.GetData(16, ref mt)) { mt = false; }
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////   VARIABLES   ////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //these two should be inputs
-            double snow_threshold = 1;
-            double tilt_treshold = 30;
-
-
-            double rad = Math.PI / 180;
-
-            List<SunVector> sunvectors_list = new List<SunVector>();
-            SunVector.Create8760SunVectors(ref sunvectors_list, longitude, latitude, year);
-            SunVector[] sunvectors = sunvectors_list.ToArray();
-            Context.cWeatherdata weather;
-            weather.DHI = new List<double>(DHI);
-            weather.DNI = new List<double>(DNI);
-            weather.Snow = new List<double>(SNOW);
-
-            Context.cLocation location;
-            location.dLatitude = latitude;
-            location.dLongitude = longitude;
-            location.dTgmt = 1;
-
-            int[] daysInMonth = new int[12];
-            for (int i = 0; i < daysInMonth.Length; i++) 
-                daysInMonth[i] = System.DateTime.DaysInMonth(year, i+1);
-            int DOY = 0;
-            for (int i = 0; i < month - 1; i++) 
-                DOY += daysInMonth[i];
-            DOY += day;
-            int HOY = (DOY - 1) * 24 + hour;
-
-
-            //should containt analysis surface itself
-            List<ObstacleObject> objObst = new List<ObstacleObject>();
-            if (!DA.GetDataList(1, objObst)) { return; }
-            Mesh[] obst = new Mesh[objObst.Count];
-            double[][] albedos = new double[objObst.Count][];
-            int[] reflType = new int[objObst.Count];
-            for (int i = 0; i < objObst.Count; i++)
-            {
-                reflType[i] = objObst[i].reflType;
-                albedos[i] = new double[1];
-                albedos[i][0] = objObst[i].albedos[HOY];
-                obst[i] = objObst[i].mesh;
-            }
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////   DIRECT AND DIFFUSE OBSTRUCTIONS   ///////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            List<double> I = new List<double>();
-            List<double> Ih = new List<double>();
-            List<double> Ib = new List<double>();
-
-            Point3d[] mshvrt = msh.Vertices.ToPoint3dArray();
-            Vector3d[] mshvrtnorm = new Vector3d[mshvrt.Length];
-            Sensorpoints.v3d[] v3dnormals = new Sensorpoints.v3d[mshvrtnorm.Length];
-            Sensorpoints.p3d[] p3dcoords = new Sensorpoints.p3d[mshvrt.Length];
-            msh.FaceNormals.ComputeFaceNormals();
-
-            double[] arrbeta = new double[mshvrt.Length];
-            double[] arrpsi = new double[mshvrt.Length];
             
-            Vector3d betaangle = new Vector3d(0, 0, 1);
-            Vector3d psiangle = new Vector3d(0, 1, 0);
-            Plane psiplane = new Plane(new Point3d(0, 0, 0), new Vector3d(0, 0, 1));
-            for (int i = 0; i < mshvrt.Length; i++)
-            {
-                mshvrtnorm[i] = msh.Normals[i];
-                //sensor point tilt angle (beta) and azimuth (psi)
-                double beta = Vector3d.VectorAngle(mshvrtnorm[i], betaangle) / rad;
-                double psi = Vector3d.VectorAngle(mshvrtnorm[i], psiangle, psiplane) / rad;
-                if (Double.IsNaN(psi) || Double.IsInfinity(psi))
-                {
-                    psi = 0;
-                }
-                arrbeta[i] = beta;
-                arrpsi[i] = psi;
-                v3dnormals[i].X = mshvrtnorm[i].X;
-                v3dnormals[i].Y = mshvrtnorm[i].Y;
-                v3dnormals[i].Z = mshvrtnorm[i].Z;
-                p3dcoords[i].X = mshvrt[i].X;
-                p3dcoords[i].Y = mshvrt[i].Y;
-                p3dcoords[i].Z = mshvrt[i].Z;
-            }
-            Sensorpoints p = new Sensorpoints(arrbeta, arrpsi, p3dcoords, v3dnormals, rec);
-
-
-            List<bool> ShdwBeam_hour = new List<bool>();
-            List<bool[]> ShdwSky = new List<bool[]>();
-            Line ln = new Line();
-            List<Point3d> coords = new List<Point3d>();
-
-            for (int i = 0; i < mshvrt.Length; i++)
-            {
-                Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
-                coords.Add(orig);
-
-                /////////////////////////////////////////////////////////////////////
-                //sky dome diffuse
-                Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
-                for (int u = 0; u < vec_sky.Length; u++)
-                {
-                    vec_sky[u] = new Vector3d(
-                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][0],
-                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][1],
-                        p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][2]);
-                }
-                bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
-                if (!mt)
-                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
-                else
-                    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
-                ShdwSky.Add(shdw_sky);
-                /////////////////////////////////////////////////////////////////////
 
 
 
+            cCalculateSolarMesh calc = new cCalculateSolarMesh(
+                mshobj, objObst, null, latitude, longitude, DNI, DHI, SNOW, 1.0, 30.0, 
+                year, month, day, hour, bounces, rec, diffRes, null, mt);
+            calc.RunHourSimulation();
+            Line ln = calc.getSolarVec();
+            cResults results = calc.getResults();
+            cResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();
 
-                /////////////////////////////////////////////////////////////////////
-                //beam for one hour only.
-                Vector3d[] vec_beam = new Vector3d[1];
-                vec_beam[0] = new Vector3d(sunvectors_list[HOY].udtCoordXYZ.x, sunvectors_list[HOY].udtCoordXYZ.y, sunvectors_list[HOY].udtCoordXYZ.z);
-                bool[] shdw_beam = new bool[1];
-                if(!mt)
-                    cShadow.CalcShadow(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
-                else
-                    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
-                ShdwBeam_hour.Add(shdw_beam[0]);
-                /////////////////////////////////////////////////////////////////////
-
-
-
-                /////////////////////////////////////////////////////////////////////
-                //one vector for visualization
-                if (i == mshvrt.Length - 1) ln = new Line(orig, Vector3d.Multiply(1000, vec_beam[0]));
-                //var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
-                //attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
-                //Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
-                /////////////////////////////////////////////////////////////////////
-            }
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////////   INTER-REFLECTIONS   ///////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            double[] _Idiffuse = new double[mshvrt.Length];
-            double[] Ispec_onehour = new double[mshvrt.Length];
-
-            Sensorpoints[] Idiffuse_SPs = new Sensorpoints[mshvrt.Length];
-            int[][] Idiff_obstacles = new int[mshvrt.Length][];
-            int[][] Idiff_domevertices = new int[mshvrt.Length][];
-            SkyDome[] Idiff_domes = new SkyDome[mshvrt.Length];
-
-            Vector3d[] vec_beam2 = new Vector3d[1];
-            vec_beam2[0] = new Vector3d(sunvectors_list[HOY].udtCoordXYZ.x, sunvectors_list[HOY].udtCoordXYZ.y, sunvectors_list[HOY].udtCoordXYZ.z);
-            double[][][] Ispecular2 = new double[mshvrt.Length][][];
-            Vector3d[][][] Inormals2 = new Vector3d[mshvrt.Length][][];
-
-
-            if (ResultsIreflIn != null)
-            {
-                Idiffuse_SPs = ResultsIreflIn.Idiffuse_SPs;
-                Idiff_obstacles = ResultsIreflIn.Idiff_obstacles;
-                Idiff_domevertices = ResultsIreflIn.Idiff_domevertices;
-                Idiff_domes = ResultsIreflIn.Idiff_domes;
-
-                Ispecular2 = ResultsIreflIn.Ispecular2;
-                Inormals2 = ResultsIreflIn.Inormals2;
-
-                if (!mt)
-                {
-                    cShadow.CalcDiffuse(Idiffuse_SPs, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, 0.01, snow_threshold, tilt_treshold, out _Idiffuse);
-                    cShadow.CalcSpecularIncident(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
-                }
-                else
-                {
-                    cShadow.CalcDiffuse(Idiffuse_SPs, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, 0.01, snow_threshold, tilt_treshold, out _Idiffuse);
-                    cShadow.CalcSpecularIncidentMT(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
-                }
-            }
-            else
-            {
-                //interreflections diffuse
-                if (diffRes > -1)
-                {
-                    cShadow.CalcDiffuse_GetSPs(mshobj, mshvrt, mshvrtnorm, objObst, diffRes, out Idiffuse_SPs, out Idiff_obstacles, out Idiff_domevertices, out Idiff_domes);
-                    cShadow.CalcDiffuse(Idiffuse_SPs, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, 0.01, snow_threshold, tilt_treshold, out _Idiffuse);
-                }
-
-                //interreflections specular
-                 if (!mt)
-                {
-                    cShadow.CalcSpecularNormal3(mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, HOY, objObst, bounces, ref Ispecular2, ref Inormals2);
-                    cShadow.CalcSpecularIncident(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
-                }
-                else
-                {
-                    cShadow.CalcSpecularNormal3MT(mshvrt, mshvrtnorm, vec_beam2, new bool[1] { true }, HOY, objObst, bounces, ref Ispecular2, ref Inormals2);
-                    cShadow.CalcSpecularIncidentMT(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
-                }
-            }
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //set shadows, snow, tree and interreflections and calculate irradiation
-             if (!mt)
-            {
-                p.SetShadows(ShdwBeam_hour, ShdwSky, HOY);           //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
-                p.SetSnowcover(snow_threshold, tilt_treshold, weather);
-                p.SetInterreflection(HOY, Ispec_onehour, _Idiffuse);
-                p.CalcIrradiation(DOY, hour, weather, sunvectors);
-            }
-            else
-            {
-                p.SetShadowsMT(ShdwBeam_hour, ShdwSky, HOY);           //p.SetShadows(ShdwBeam_hour, ShdwSky, ShdwTrees_hour, HOY)
-                p.SetSnowcoverMT(snow_threshold, tilt_treshold, weather);
-                p.SetInterreflectionMT(HOY, Ispec_onehour, _Idiffuse);
-                p.CalcIrradiationMT(DOY, hour, weather, sunvectors);
-            }
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////    COPY RESULTS INTO RHINO GH     ///////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            for (int i = 0; i < mshvrt.Length; i++)
-            {
-                I.Add(p.I[i][HOY]);
-                Ib.Add(p.Ibeam[i][HOY]);
-                Ih.Add(p.Idiff[i][HOY]);
-            }
-            Matrix I_hourly = new Matrix(mshvrt.Length, 1);
-            Matrix Ib_hourly = new Matrix(mshvrt.Length, 1);
-            Matrix Id_hourly = new Matrix(mshvrt.Length, 1);
-            for (int i = 0; i < mshvrt.Length; i++)
-            {
-                I_hourly[i,0] = I[i];
-                Ib_hourly[i, 0] = Ib[i];
-                Id_hourly[i, 0] = Ih[i];
-            }
-            cResults results = new cResults(I, Ib, Ih, I_hourly, Ib_hourly, Id_hourly, coords);
-            cResultsInterreflections resultsIreflOut = new cResultsInterreflections(Idiffuse_SPs,Idiff_obstacles,Idiff_domevertices,Idiff_domes,
-                Ispecular2, Inormals2);
 
             DA.SetData(0, ln);
             DA.SetData(1, results);
             DA.SetData(2, resultsIreflOut);
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
         }
 
         protected override System.Drawing.Bitmap Icon

@@ -44,7 +44,7 @@ namespace GHSolar
             List<double> leaves = new List<double>();
             if (!DA.GetDataList(1, leaves)) { return; }
 
-            TreeObject tree = new TreeObject(mesh, leaves);
+            cTreeObject tree = new cTreeObject(mesh, leaves);
 
             DA.SetData(0, tree);
         }
@@ -66,16 +66,5 @@ namespace GHSolar
     }
 
 
-    internal class TreeObject
-    {
-        internal Mesh mesh;
-        internal List<double> leaves;
-
-        internal TreeObject(Mesh _mesh, List<double> _leaves)
-        {
-            mesh = _mesh;
-            leaves = new List<double>(_leaves);
-        }
-    }
-
+  
 }

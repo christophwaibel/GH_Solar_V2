@@ -85,7 +85,7 @@ namespace GHSolar
             Mesh msh = new Mesh();
             if (!DA.GetData(0, ref msh)) { return; }
 
-            List<ObstacleObject> objObst = new List<ObstacleObject>();
+            List<cObstacleObject> objObst = new List<cObstacleObject>();
             if (!DA.GetDataList(1, objObst)) { return; }
             Mesh[] obst = new Mesh[objObst.Count];
             for (int i = 0; i < objObst.Count; i++)

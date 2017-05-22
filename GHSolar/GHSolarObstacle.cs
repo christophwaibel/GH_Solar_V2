@@ -28,12 +28,13 @@ namespace GHSolar
         {
             pManager.AddMeshParameter("Mesh", "Mesh", "Obstacle as mesh", GH_ParamAccess.item);
             pManager.AddNumberParameter("Albedo", "Albedo", "8760 time series for albedo values. Value between 0 - 1.", GH_ParamAccess.list);
-            pManager.AddIntegerParameter("Reflection", "Reflection", "Reflection type: 0: diffuse; 1: specular.", GH_ParamAccess.item);
+            pManager.AddNumberParameter("SpecCoeff", "SpecCoeff", "8760 time series for specular reflection coefficient values. Value between 0 - 1.", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("ReflType", "ReflType", "Reflection type: 0: diffuse; 1: specular; 2: diffuse & specular; 3+ : blind (no inter-reflections).", GH_ParamAccess.item);
             pManager.AddNumberParameter("Tolerance", "Tolerance", "Tolerance, used to offset mesh face centers in normal direction", GH_ParamAccess.item);
-            pManager[3].Optional = true;
+            pManager[4].Optional = true;
             pManager.AddTextParameter("Name", "Name", "Name", GH_ParamAccess.item);
             pManager.AddBooleanParameter("MT", "MT", "Multi threading", GH_ParamAccess.item);
-            pManager[5].Optional = true;
+            pManager[6].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -53,20 +54,22 @@ namespace GHSolar
 
             List<double> alb = new List<double>();
             if (!DA.GetDataList(1, alb)) { return; }
+            List<double> spec = new List<double>();
+            if (!DA.GetDataList(2, spec)) { return; }
 
             int refl = 0;
-            if (!DA.GetData(2, ref refl)) { return; }
+            if (!DA.GetData(3, ref refl)) { return; }
 
             double tolerance = 0.01;
-            if (!DA.GetData(3, ref tolerance)) { tolerance = 0.01; }
+            if (!DA.GetData(4, ref tolerance)) { tolerance = 0.01; }
 
             string name = null;
-            if (!DA.GetData(4, ref name)) { return; }
+            if (!DA.GetData(5, ref name)) { return; }
 
             bool mt = false;
-            if (!DA.GetData(5, ref mt)) { mt = false; }
+            if (!DA.GetData(6, ref mt)) { mt = false; }
 
-            ObstacleObject obst = new ObstacleObject(mesh, alb, refl, tolerance, name, mt);
+            cObstacleObject obst = new cObstacleObject(mesh, alb, spec, refl, tolerance, name, mt);
 
             DA.SetData(0, obst);
         }
@@ -87,53 +90,5 @@ namespace GHSolar
         }
     }
 
-    internal class ObstacleObject
-    {
-        internal Mesh mesh;
-        internal List<double> albedos;  //8760 values
-        internal int reflType;
-        internal Vector3d[] normals;
-        internal Vector3d[] normalsRev;
-        internal Point3d[] faceCen;
-
-        internal double tolerance;
-        internal string name;
-
-        internal ObstacleObject(Mesh _mesh, List<double> _albedos, int _reflType, double _tolerance, string _name, bool mt)
-        {
-            mesh = _mesh;
-            albedos = new List<double>(_albedos);
-            reflType = _reflType;
-            name = _name;
-            tolerance = _tolerance; 
-
-            mesh.FaceNormals.ComputeFaceNormals();
-
-            normals = new Vector3d[mesh.Faces.Count];
-            normalsRev = new Vector3d[mesh.Faces.Count];
-            faceCen = new Point3d[mesh.Faces.Count];
-            if (!mt)
-            {
-                for (int k = 0; k < mesh.Faces.Count; k++)
-                {
-                    normals[k] = mesh.FaceNormals[k];
-                    normalsRev[k] = Vector3d.Negate(normals[k]);
-                    Point3d cen0 = mesh.Faces.GetFaceCenter(k);
-                    faceCen[k] = new Point3d(Point3d.Add(cen0, Vector3d.Multiply(Vector3d.Divide(normals[k], normals[k].Length), tolerance)));
-                }
-            }
-            else
-            {
-                Parallel.For(0, mesh.Faces.Count, k =>
-                {
-                    normals[k] = mesh.FaceNormals[k];
-                    normalsRev[k] = Vector3d.Negate(normals[k]);
-                    Point3d cen0 = mesh.Faces.GetFaceCenter(k);
-                    faceCen[k] = new Point3d(Point3d.Add(cen0, Vector3d.Multiply(Vector3d.Divide(normals[k], normals[k].Length), tolerance)));
-                });
-            }
-
-
-        }
-    }
+   
 }
