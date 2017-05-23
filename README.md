@@ -14,3 +14,7 @@ To Do:
 - [ ] annual interpolation diffuse inter-reflections
 - [x] multi-threading
 - [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
+
+
+Bugs:
+- [ ] values underestimated for geometries close to origin (0,0,0)
