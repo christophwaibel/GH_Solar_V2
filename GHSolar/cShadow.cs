@@ -20,6 +20,9 @@ namespace GHSolar
 
     internal static class cShadow
     {
+        const double rad2deg = 180.0 / Math.PI;
+        const double deg2rad = Math.PI / 180.0;
+
         /// <summary>
         /// Calculates obstruction of vectors to a sensor point.
         /// </summary>
@@ -31,11 +34,14 @@ namespace GHSolar
         /// <param name="shadow">Indicates for each input vector, if it is obstructed (true) or if it reaches the sensor point (false).</param>
         internal static void CalcShadow(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, Mesh[] obstacles, ref bool[] shadow)
         {
+            //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
+
             shadow = new bool[vec.Length];        //by default all elements false. true means it's obstructed
             Point3d origOffset = new Point3d(Point3d.Add(SP, Vector3d.Multiply(Vector3d.Divide(SPnormal, SPnormal.Length), offset)));
             for (int t = 0; t < vec.Length; t++)
             {
-                if (Vector3d.VectorAngle(SPnormal, vec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
+                //double test = Math.Round(Vector3d.VectorAngle(SPnormal, vec[t]) * rad2deg, 1);
+                if (Math.Round(Vector3d.VectorAngle(SPnormal, vec[t]) * rad2deg,0) >= 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                 {
                     shadow[t] = true;
                 }
@@ -57,7 +63,7 @@ namespace GHSolar
                 //    Line ln = new Line(origOffset, Vector3d.Multiply(1000, vec[t]));
                 //    var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
                 //    attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
-                //    Rhino.RhinoDoc.ActiveDoc.Objects.AddLine(ln, attribs);
+                //    doc.Objects.AddLine(ln, attribs);
                 //}
             }
         }
@@ -78,7 +84,7 @@ namespace GHSolar
             Point3d origOffset = new Point3d(Point3d.Add(SP, Vector3d.Multiply(Vector3d.Divide(SPnormal, SPnormal.Length), offset)));
             Parallel.For(0, vec.Length, t =>
             {
-                if (Vector3d.VectorAngle(SPnormal, vec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
+                if (Math.Round(Vector3d.VectorAngle(SPnormal, vec[t]) * rad2deg, 0) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                 {
                     shdw_mt[t] = true;
                 }
@@ -117,7 +123,7 @@ namespace GHSolar
             {
                 if (sunshine[t])
                 {
-                    if (Vector3d.VectorAngle(SPnormal, solarVec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
+                    if (Math.Round(Vector3d.VectorAngle(SPnormal, solarVec[t]) * rad2deg, 0) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                     {
                         shadow[t] = true;
                     }
@@ -161,7 +167,7 @@ namespace GHSolar
             {
                 if (sunshine[t])
                 {
-                    if (Vector3d.VectorAngle(SPnormal, vec[t]) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
+                    if (Math.Round(Vector3d.VectorAngle(SPnormal, vec[t]) * rad2deg, 0) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                     {
                         shdw_mt[t] = true;
                     }
@@ -186,6 +192,58 @@ namespace GHSolar
             });
 
             shdw_mt.CopyTo(shadow, 0);
+        }
+
+
+        /// <summary>
+        /// Calculates obstruction of vectors via semi-permeable objects to a sensor point. 
+        /// </summary>
+        /// <param name="SP">Sensor point.</param>
+        /// <param name="SPnormal">Sensor point normal.</param>
+        /// <param name="offset">Offset vectors from sensor point to avoid self-obstruction.</param>
+        /// <param name="vec">Vectors to be checked for obstruction to sensor point.</param>
+        /// <param name="obstacles">Semi-permeable obstacle objects.</param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
+        /// <param name="shadow">Indicates for each input vector, how much it permeates through the obstacles. 1.0 : no obstruction, 0.0 : full obstruction.</param>
+        internal static void CalcSemiPerm(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, List<cSemiPermObject> obstacles, int HOY, ref double[] shadow)
+        {
+            Point3d origOffset = new Point3d(Point3d.Add(SP, Vector3d.Multiply(Vector3d.Divide(SPnormal, SPnormal.Length), offset)));
+
+            for (int t = 0; t < shadow.Length; t++)
+            {
+                if (shadow[t] == 1.0) continue; //only look at previously unobstructed rays
+
+                double permeates = 1.0;
+                for (int u = 0; u < obstacles.Count; u++)
+                {
+                    if (obstacles[u].permeability[HOY] <= 0.0) continue;
+
+                    Ray3d ray = new Ray3d(origOffset, vec[t]);
+                    double inters = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u].mesh, ray);
+                    if (inters >= 0)
+                    {
+                        Point3d pFarAway = Point3d.Add(origOffset, Vector3d.Multiply(999999999, vec[t]));
+                        Ray3d rayOpposite = new Ray3d(pFarAway, Vector3d.Negate(vec[t]));
+                        double inters2 = Rhino.Geometry.Intersect.Intersection.MeshRay(obstacles[u].mesh, rayOpposite);
+                        if (inters2 >= 0)
+                        {
+                            Point3d p1 = ray.PointAt(inters);
+                            Point3d p2 = rayOpposite.PointAt(inters2);
+                            double length = Misc.Distance2Pts(new double[3] { p1.X, p1.Y, p1.Z }, new double[3] { p2.X, p2.Y, p2.Z });   //units must be in meters
+                            if (length > 0.0) 
+                            { 
+                                permeates -= length * (1 - obstacles[u].permeability[HOY]); 
+                            }
+                            if (permeates <= 0.0)
+                            {
+                                permeates = 0.0;
+                                break;
+                            }
+                        }
+                    }
+                }
+                shadow[t] = 1.0 - permeates;
+            }
         }
 
 
@@ -844,6 +902,7 @@ namespace GHSolar
         /// <param name="SPnormal">Normal vectors [i] of the i sensor points.</param>
         /// <param name="solarvec">Solar vectors for each time step t.</param>
         /// <param name="sunshine">Indicating sunshine for each respective solar vector.</param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
         /// <param name="obstacles">Obstacle objects.</param>
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
@@ -853,32 +912,10 @@ namespace GHSolar
             List<cObstacleObject> obstacles, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
-            //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
-
-            // Approach 3: Compute rays and reflected rays for each obstacle. Translate them to each sensor point. Check if translated rays reach obstacle and are unobstructed. 1st and 2nd order (1 or 2 bounces).
-            if (bounces < 1) return;
-
-            List<List<List<double>>> IspecList = new List<List<List<double>>>();
-            List<List<List<Vector3d>>> InormList = new List<List<List<Vector3d>>>();
-            Point3d[] SPoffset = new Point3d[SP.Length];
-            for (int i = 0; i < SP.Length; i++)
-            {
-                SPoffset[i] = new Point3d(Point3d.Add(SP[i], Vector3d.Multiply(Vector3d.Divide(SPnormal[i], SPnormal[i].Length), obstacles[0].tolerance)));
-
-                Ispecular[i] = new double[solarvec.Length][];
-                Inormals[i] = new Vector3d[solarvec.Length][];
-
-                IspecList.Add(new List<List<double>>());
-                InormList.Add(new List<List<Vector3d>>());
-                for (int t = 0; t < solarvec.Length; t++)
-                {
-                    IspecList[i].Add(new List<double>());
-                    InormList[i].Add(new List<Vector3d>());
-                }
-            }
-
-
-
+            //___________________________________________________________________
+            /////////////////////////////////////////////////////////////////////
+            ////////////////////   Obstruction check functions   ////////////////
+            /////////////////////////////////////////////////////////////////////
             Func<Vector3d, Point3d, Vector3d, bool> ObstructionCheck_Pt2Ray =
                 (_vecincident, _pt, _ptNormal) =>
                 {
@@ -1001,6 +1038,42 @@ namespace GHSolar
                     //check 2ndorder face to 1storder face                 //check 1storder face to sun
                     return ObstructionCheck_Pt2Face2Sun(_vec1storder, pXoffset, pNormal, _u1st, _k1st, _sun);
                 };
+            /////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////
+            //___________________________________________________________________
+
+
+
+
+            //___________________________________________________________________
+            /////////////////////////////////////////////////////////////////////
+            //////////////////////////   Approach 3    //////////////////////////
+            /////////////////////////////////////////////////////////////////////
+            // Approach 3: Compute rays and reflected rays for each obstacle. 
+            // Translate them to each sensor point. Check if translated rays reach 
+            //   obstacle and are unobstructed. 1st and 2nd order (1 or 2 bounces).
+            if (bounces < 1) return;
+
+            List<List<List<double>>> IspecList = new List<List<List<double>>>();
+            List<List<List<Vector3d>>> InormList = new List<List<List<Vector3d>>>();
+            Point3d[] SPoffset = new Point3d[SP.Length];
+            for (int i = 0; i < SP.Length; i++)
+            {
+                SPoffset[i] = new Point3d(Point3d.Add(SP[i], Vector3d.Multiply(Vector3d.Divide(SPnormal[i], SPnormal[i].Length), obstacles[0].tolerance)));
+
+                Ispecular[i] = new double[solarvec.Length][];
+                Inormals[i] = new Vector3d[solarvec.Length][];
+
+                IspecList.Add(new List<List<double>>());
+                InormList.Add(new List<List<Vector3d>>());
+                for (int t = 0; t < solarvec.Length; t++)
+                {
+                    IspecList[i].Add(new List<double>());
+                    InormList[i].Add(new List<Vector3d>());
+                }
+            }
+
 
 
             //foreach solar vector t
@@ -1062,8 +1135,6 @@ namespace GHSolar
                 }
             }
 
-
-
             for (int i = 0; i < SP.Length; i++)
             {
                 for (int t = 0; t < solarvec.Length; t++)
@@ -1072,6 +1143,10 @@ namespace GHSolar
                     Inormals[i][t] = InormList[i][t].ToArray();
                 }
             }
+            /////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////
+            //___________________________________________________________________
         }
 
 
@@ -1085,6 +1160,7 @@ namespace GHSolar
         /// <param name="SPnormal">Normal vectors [i] of the i sensor points.</param>
         /// <param name="solarvec">Solar vectors for each time step t.</param>
         /// <param name="sunshine">Indicating sunshine for each respective solar vector.</param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
         /// <param name="obstacles">Obstacle objects.</param>
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
@@ -1433,6 +1509,7 @@ namespace GHSolar
         /// <param name="SPnormal">Normal vector of the sensor point.</param>
         /// <param name="solarvec">Solar vectors for each time step t.</param>
         /// <param name="sunshine">Indicating sunshine for each respective solar vector.</param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
         /// <param name="obstacles">Obstacle objects.</param>
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [t][m] for one sensor point, each solar vector t and each reflected ray m.</param>
@@ -1996,9 +2073,21 @@ namespace GHSolar
 
                 //create a dome, rotate to SP normal
                 SkyDome dome = new SkyDome(difDomeRes);
+                //for (int j = 0; j < dome.VerticesHemisphere.Count; j++)
+                //{
+                //    Vector3d v = new Vector3d(dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][0], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][1], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][2]);
+                //    Line l = new Line(SPoffset, v);
+                //    doc.Objects.AddLine(l);
+                //}
                 double[,] R = cMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
                 dome.RotateVertexVectors(R);
                 Idiff_domes[i] = dome;
+                //for (int j = 0; j < dome.VerticesHemisphere.Count; j++)
+                //{
+                //    Vector3d v = new Vector3d(dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][0], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][1], dome.VertexVectorsSphere[dome.VerticesHemisphere[j]][2]);
+                //    Line l = new Line(SPoffset, v);
+                //    doc.Objects.AddLine(l);
+                //}
 
                 //totAreas_temp[i] = 0;
                 for (int j = 0; j < dome.VerticesHemisphere.Count; j++)
@@ -2018,6 +2107,8 @@ namespace GHSolar
                         if (inters >= 0)
                         {
                             inters_dic.Add(u, inters);
+                            //Line l = new Line(vertexray.PointAt(inters), SPoffset);
+                            //doc.Objects.AddLine(l);
                         }
                     }
                     if (inters_dic.Count == 0) continue;
@@ -2040,6 +2131,7 @@ namespace GHSolar
                     {
                         double beta = Vector3d.VectorAngle(pNormal, betaangle) * (180.0 / Math.PI);
                         double psi = Vector3d.VectorAngle(pNormal, psiangle, psiplane) * (180.0 / Math.PI);
+                        if (double.IsInfinity(psi)) psi = 0.0;
                         diffSP_beta_list[i].Add(beta);
                         diffSP_psi_list[i].Add(psi);
                         Sensorpoints.v3d _v3d;
@@ -2181,6 +2273,7 @@ namespace GHSolar
                     {
                         double beta = Vector3d.VectorAngle(pNormal, betaangle) * (180.0 / Math.PI);
                         double psi = Vector3d.VectorAngle(pNormal, psiangle, psiplane) * (180.0 / Math.PI);
+                        if (double.IsInfinity(psi)) psi = 0.0;
                         diffSP_beta_list_temp[i].Add(beta);
                         diffSP_psi_list_temp[i].Add(psi);
                         Sensorpoints.v3d _v3d;

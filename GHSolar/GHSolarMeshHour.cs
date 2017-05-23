@@ -86,6 +86,9 @@ namespace GHSolar
             if (!DA.GetDataList(1, objObst)) { return; }
             Mesh[] obst = new Mesh[objObst.Count];
 
+            List<cSemiPermObject> treeObst = new List<cSemiPermObject>();
+            DA.GetDataList(2, treeObst);
+
 
             double latitude = 0.0;
             if (!DA.GetData(3, ref latitude)) { return; }
@@ -127,7 +130,7 @@ namespace GHSolar
 
 
             cCalculateSolarMesh calc = new cCalculateSolarMesh(
-                mshobj, objObst, null, latitude, longitude, DNI, DHI, SNOW, 1.0, 30.0, 
+                mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, 1.0, 30.0, 
                 year, month, day, hour, bounces, rec, diffRes, null, mt);
             calc.RunHourSimulation();
             Line ln = calc.getSolarVec();

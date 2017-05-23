@@ -21,7 +21,7 @@ namespace GHSolar
     {
         private cObstacleObject mshobj;
         private List<cObstacleObject> objObst = new List<cObstacleObject>();
-        private List<cTreeObject> objTrees = new List<cTreeObject>();
+        private List<cSemiPermObject> objTrees = new List<cSemiPermObject>();
         private double latitude;
         private double longitude;
         private List<double> DNI = new List<double>();
@@ -49,7 +49,7 @@ namespace GHSolar
 
 
 
-        internal cCalculateSolarMesh(cObstacleObject _mshobj, List<cObstacleObject> _objObst, List<cTreeObject> _objTrees,
+        internal cCalculateSolarMesh(cObstacleObject _mshobj, List<cObstacleObject> _objObst, List<cSemiPermObject> _objTrees,
             double _latitude, double _longitude, List<double> _DNI, List<double> _DHI, List<double> _SNOW, double _snow_threshold, double _tilt_threshold,
             int _year, int _month, int _day, int _hour,
             int _bounces, int _rec, int _diffRes, cResultsInterreflections _ResultsIreflIn,
@@ -194,8 +194,8 @@ namespace GHSolar
             Sensorpoints p = new Sensorpoints(arrbeta, arrpsi, p3dcoords, v3dnormals, rec);
 
 
-            List<bool> ShdwBeam_hour = new List<bool>();
-            List<bool[]> ShdwSky = new List<bool[]>();
+            List<double> ShdwBeam_hour = new List<double>();
+            List<double[]> ShdwSky = new List<double[]>();
             List<Point3d> coords = new List<Point3d>();
 
 
@@ -204,8 +204,8 @@ namespace GHSolar
             {
                 Point3d orig = new Point3d(mshvrt[i].X, mshvrt[i].Y, mshvrt[i].Z);
                 coords.Add(orig);
-                ShdwSky.Add(new bool[] { });
-                ShdwBeam_hour.Add(false);
+                ShdwSky.Add(new double[] { });
+                ShdwBeam_hour.Add(0.0);
             }
             if (!mt)
             {
@@ -226,7 +226,16 @@ namespace GHSolar
                     cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, obst, ref shdw_sky);
                     //else
                     //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
-                    ShdwSky[i] = shdw_sky;
+                    if (objTrees.Count > 0)
+                    {
+                        double[] shdw_sky_dbl = shdw_sky.Select<bool, double>(s => Convert.ToDouble(s)).ToArray<double>();
+                        cShadow.CalcSemiPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, objTrees, HOY, ref shdw_sky_dbl);
+                        ShdwSky[i] = shdw_sky_dbl;
+                    }
+                    else
+                    {
+                        ShdwSky[i] = shdw_sky.Select<bool, double>(s => Convert.ToDouble(s)).ToArray<double>();
+                    }
                     /////////////////////////////////////////////////////////////////////
 
 
@@ -241,7 +250,17 @@ namespace GHSolar
                     cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam, obst, ref shdw_beam);
                     //else
                     //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
-                    ShdwBeam_hour[i] = shdw_beam[0];
+                    
+                    if (objTrees.Count > 0)
+                    {
+                        double[] shdw_beam_dbl = new double[1] { Convert.ToDouble(shdw_beam[0]) };
+                        cShadow.CalcSemiPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam, objTrees, HOY, ref shdw_beam_dbl);
+                        ShdwBeam_hour[i] = shdw_beam_dbl[0];
+                    }
+                    else
+                    {
+                        ShdwBeam_hour[i] = Convert.ToDouble(shdw_beam[0]);
+                    }
                     /////////////////////////////////////////////////////////////////////
 
 
@@ -274,7 +293,16 @@ namespace GHSolar
                     cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, obst, ref shdw_sky);
                     //else
                     //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
-                    ShdwSky[i]=shdw_sky;
+                    if (objTrees.Count > 0)
+                    {
+                        double[] shdw_sky_dbl = shdw_sky.Select<bool, double>(s => Convert.ToDouble(s)).ToArray<double>();
+                        cShadow.CalcSemiPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, objTrees, HOY, ref shdw_sky_dbl);
+                        ShdwSky[i] = shdw_sky_dbl;
+                    }
+                    else
+                    {
+                        ShdwSky[i] = shdw_sky.Select<bool, double>(s => Convert.ToDouble(s)).ToArray<double>();
+                    }
                     /////////////////////////////////////////////////////////////////////
 
 
@@ -289,8 +317,19 @@ namespace GHSolar
                     cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam, obst, ref shdw_beam);
                     //else
                     //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
-                    ShdwBeam_hour[i]=shdw_beam[0];
+
+                    if (objTrees.Count > 0)
+                    {
+                        double[] shdw_beam_dbl = new double[1] { Convert.ToDouble(shdw_beam[0]) };
+                        cShadow.CalcSemiPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam, objTrees, HOY, ref shdw_beam_dbl);
+                        ShdwBeam_hour[i] = shdw_beam_dbl[0];
+                    }
+                    else
+                    {
+                        ShdwBeam_hour[i] = Convert.ToDouble(shdw_beam[0]);
+                    }
                     /////////////////////////////////////////////////////////////////////
+
 
 
 
