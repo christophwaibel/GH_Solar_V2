@@ -46,7 +46,7 @@ namespace SolarModel
         /// <summary>
         /// Indicating for each vertex of the hemisphere, if it is obstructed (true).
         /// </summary>
-        public bool[] VertexShadowSphere { get; internal set; }
+        public double[] VertexShadowSphere { get; internal set; }
         /// <summary>
         /// Vertices of the hemisphere. Referencing to VertexCoordinatesSphere.
         /// </summary>
@@ -71,7 +71,7 @@ namespace SolarModel
         /// <summary>
         /// 8760 list (for each hour of the year) of booleans, indicating if the sun vector is obstructed or not (1=obstructed).
         /// </summary>
-        public bool[] ShdwBeam { get; private set; }
+        public double[] ShdwBeam { get; private set; }
 
 
 
@@ -91,12 +91,12 @@ namespace SolarModel
             HorizonSegments = new List<double>();
             FaceAreas = new List<double>();
 
-            ShdwBeam = new bool[8760];
+            ShdwBeam = new double[8760];
 
             CalcHemisphere();
             CalcHorizonSegmentWeights();
 
-            VertexShadowSphere = new bool[VertexVectorsSphere.Count];
+            VertexShadowSphere = new double[VertexVectorsSphere.Count];
             //create a list of size of the facaes of the dome. use this list for shadow factors...
         }
 
@@ -109,12 +109,12 @@ namespace SolarModel
             ico = copy.ico;
             Faces = copy.Faces;
             FaceAreas = copy.FaceAreas;
-            ShdwBeam = new bool[8760];
+            ShdwBeam = new double[8760];
             VertexVectorsSphere = copy.VertexVectorsSphere;
             VerticesHemisphere = copy.VerticesHemisphere;
             VerticesHorizon = copy.VerticesHorizon;
             HorizonSegments = copy.HorizonSegments;
-            VertexShadowSphere = new bool[VertexVectorsSphere.Count];
+            VertexShadowSphere = new double[VertexVectorsSphere.Count];
             //ShdwHorizon, ShdwDome, ShdwSunVector must be re-evaluated for new sensor point
         }
 
@@ -171,7 +171,7 @@ namespace SolarModel
                 int wl = this.Faces[i].Length;
                 for (int u = 0; u < wl; u++)
                 {
-                    w += Convert.ToDouble(this.VertexShadowSphere[this.Faces[i][u]]);
+                    w += this.VertexShadowSphere[this.Faces[i][u]];
                 }
                 w = w / Convert.ToDouble(wl);
                 weights += w * this.FaceAreas[i];
@@ -189,9 +189,9 @@ namespace SolarModel
             double weights = 0.0;
             for (int i = 0; i < this.VerticesHorizon.Count; i++)
             {
-                weights += (1 - Convert.ToInt32(this.VertexShadowSphere[this.VerticesHorizon[i]])) * this.HorizonSegments[i];
+                weights += (1.0 - this.VertexShadowSphere[this.VerticesHorizon[i]]) * this.HorizonSegments[i];
             }
-            this.ShdwHorizon = Convert.ToDouble(weights) / 720.0;     //720 is 2 circles : the sum angle of all horizon segments
+            this.ShdwHorizon = weights / 720.0;     //720 is 2 circles : the sum angle of all horizon segments
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace SolarModel
         /// </summary>
         /// <param name="HOY">Hour of year, HOY ∈ [0,8759].</param>
         /// <param name="shadow">shadow = true.</param>
-        internal void SetShadow_Beam(int HOY, bool shadow)
+        internal void SetShadow_Beam(int HOY, double shadow)
         {
             this.ShdwBeam[HOY] = shadow;
         }

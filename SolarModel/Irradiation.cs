@@ -145,7 +145,7 @@ namespace SolarModel
         /// <param name="domeshdw">0-1 fraction of the obstructed skydome. (1 = fully obstructed; 0 = no obstruction)</param>
         /// <param name="circumsolshdw">Boolean, indicating if solar vector of that moment is obstructed. (true = obstructed; false = no obstruction)</param>
         ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.</returns>
-        public static double Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, bool circumsolshdw)
+        public static double Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, double circumsolshdw)
         {
             double D = 0.0;
             if (θZ > 90.0)    //after sunset, could still be an hour of diffuse light. assume isotropic sky
@@ -205,7 +205,7 @@ namespace SolarModel
                 //double D = DHI * ((1 - F1) * ((1 + Math.Cos(θβ * rad)) / 2) + F1 * (a / b) + F2 * Math.Sin(θβ * rad));
                 double Dhorizon = (DHI * F2 * Math.Sin(θβ * rad)) * (1.0 - horizonshdw);
                 double Ddome = (DHI * (1 - F1) * (1 + Math.Cos(θβ * rad)) / 2.0) * (1.0 - domeshdw);
-                double Dcircum = (DHI * F1 * (a / b)) * (1.0 - Convert.ToDouble(circumsolshdw));
+                double Dcircum = (DHI * F1 * (a / b)) * (1.0 - circumsolshdw);
                 D = Dhorizon + Ddome + Dcircum;
             }
             return Math.Max(0.0, D);

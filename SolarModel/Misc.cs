@@ -15,6 +15,12 @@ namespace SolarModel
 {
     public static class Misc
     {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <returns></returns>
         public static bool IsNullOrEmpty<T>(this ICollection<T> collection)
         {
             return collection == null || collection.Count == 0;
@@ -34,6 +40,23 @@ namespace SolarModel
                 Math.Pow((p2[0] * p1[2]) - (p3[0] * p1[2]) - (p1[0] * p2[2]) + (p3[0] * p2[2]) + (p1[0] * p3[2]) - (p2[0] * p3[2]), 2) +
                 Math.Pow((p2[1] * p1[2]) - (p3[1] * p1[2]) - (p1[1] * p2[2]) + (p3[1] * p2[2]) + (p1[1] * p3[2]) - (p2[1] * p3[2]), 2));
             return area;
+        }
+
+        /// <summary>
+        /// Calculates the distance between 2 points in Rn space. Dimensions of both points must be equal.
+        /// </summary>
+        /// <param name="p1">Point 1.</param>
+        /// <param name="p2">Point 2.</param>
+        /// <returns>The distance between 2 points.</returns>
+        public static double Distance2Pts(double[] p1, double[] p2)
+        {
+            int d = p1.Length;
+            double l = 0.0;
+            for (int i = 0; i < d; i++)
+            {
+                l += Math.Pow((p1[i] - p2[i]), 2);
+            }
+            return Math.Sqrt(l);
         }
     }
 }

@@ -413,8 +413,50 @@ namespace SolarModel
         /// </summary>
         /// <param name="ShdwBeam_hour">Indicate for one hour of the year, if a sensor point is obstructed from beam radiation (true), or not (false). The list must have booleans for each sensor point.</param>
         /// <param name="ShdwSky">Indicate for each vertex of a sensor point's skydome, if the view between sensor point and vertex is obstructed (true), or not (false). The list has boolean arrays for each sensor point; an array is of length of the sky dome vertex count (this.sky[i].VerticesHemisphere.Count).</param>
-        /// <param name="HOY"></param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
         public void SetShadows(List<bool> ShdwBeam_hour, List<bool[]> ShdwSky, int HOY)
+        {
+            for (int i = 0; i < sky.Length; i++)
+            {
+                for (int u = 0; u < ShdwSky[i].Length; u++)
+                {
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
+                }
+
+                this.sky[i].SetShadow_Dome();
+                this.sky[i].SetShadow_Horizon();
+                this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(ShdwBeam_hour[i]));
+            }
+        }
+
+        /// <summary>
+        /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points. Multi-threading version.
+        /// </summary>
+        /// <param name="ShdwBeam_hour">Indicate for one hour of the year, if a sensor point is obstructed from beam radiation (true), or not (false). The list must have booleans for each sensor point.</param>
+        /// <param name="ShdwSky">Indicate for each vertex of a sensor point's skydome, if the view between sensor point and vertex is obstructed (true), or not (false). The list has boolean arrays for each sensor point; an array is of length of the sky dome vertex count (this.sky[i].VerticesHemisphere.Count).</param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
+        public void SetShadowsMT(List<bool> ShdwBeam_hour, List<bool[]> ShdwSky, int HOY)
+        {
+            Parallel.For(0, sky.Length, i =>
+            {
+                for (int u = 0; u < ShdwSky[i].Length; u++)
+                {
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
+                }
+
+                this.sky[i].SetShadow_Dome();
+                this.sky[i].SetShadow_Horizon();
+                this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(ShdwBeam_hour[i]));
+            });
+        }
+
+        /// <summary>
+        /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
+        /// </summary>
+        /// <param name="ShdwBeam_hour">Indicate for one hour of the year, if a sensor point is obstructed from beam radiation (1.0), or not (0.0). The list must have coefficients (taking a value from 0.0 to 1.0) for each sensor point. A coefficient makes sense, e.g. if a semi-transparent object is obstructing the sensor point, like a tree.</param>
+        /// <param name="ShdwSky">Indicate for each vertex of a sensor point's skydome, if the view between sensor point and vertex is obstructed (1.0), or not (0.0). The list has arrays of doubles for each sensor point; an array is of length of the sky dome vertex count (this.sky[i].VerticesHemisphere.Count).</param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
+        public void SetShadows(List<double> ShdwBeam_hour, List<double[]> ShdwSky, int HOY)
         {
             for (int i = 0; i < sky.Length; i++)
             {
@@ -432,10 +474,10 @@ namespace SolarModel
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points. Multi-threading version.
         /// </summary>
-        /// <param name="ShdwBeam_hour">Indicate for one hour of the year, if a sensor point is obstructed from beam radiation (true), or not (false). The list must have booleans for each sensor point.</param>
-        /// <param name="ShdwSky">Indicate for each vertex of a sensor point's skydome, if the view between sensor point and vertex is obstructed (true), or not (false). The list has boolean arrays for each sensor point; an array is of length of the sky dome vertex count (this.sky[i].VerticesHemisphere.Count).</param>
-        /// <param name="HOY"></param>
-        public void SetShadowsMT(List<bool> ShdwBeam_hour, List<bool[]> ShdwSky, int HOY)
+        /// <param name="ShdwBeam_hour">Indicate for one hour of the year, if a sensor point is obstructed from beam radiation (1.0), or not (0.0). The list must have coefficients (taking a value from 0.0 to 1.0) for each sensor point. A coefficient makes sense, e.g. if a semi-transparent object is obstructing the sensor point, like a tree.</param>
+        /// <param name="ShdwSky">Indicate for each vertex of a sensor point's skydome, if the view between sensor point and vertex is obstructed (1.0), or not (0.0). The list has arrays of doubles for each sensor point; an array is of length of the sky dome vertex count (this.sky[i].VerticesHemisphere.Count).</param>
+        /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
+        public void SetShadowsMT(List<double> ShdwBeam_hour, List<double[]> ShdwSky, int HOY)
         {
             Parallel.For(0, sky.Length, i =>
             {
@@ -451,6 +493,7 @@ namespace SolarModel
         }
 
 
+
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
         /// </summary>
@@ -463,13 +506,13 @@ namespace SolarModel
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
-                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
                 }
                 this.sky[i].SetShadow_Dome();
                 this.sky[i].SetShadow_Horizon();
                 for (int t = 0; t < 8760; t++)
                 {
-                    this.sky[i].SetShadow_Beam(t, ShdwBeam_hour[i][t]);
+                    this.sky[i].SetShadow_Beam(t, Convert.ToDouble(ShdwBeam_hour[i][t]));
                 }
             }
         }
@@ -488,7 +531,7 @@ namespace SolarModel
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
-                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
                 }
 
                 this.sky[i].SetShadow_Dome();
@@ -579,7 +622,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                     //    Next
                 }
@@ -618,7 +661,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Summer[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                     //    Next
                 }
@@ -656,7 +699,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                     //    Next
                 }
@@ -693,7 +736,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Winter[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                     //    Next
                 }
@@ -731,7 +774,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                     //    Next
                 }
@@ -755,7 +798,7 @@ namespace SolarModel
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
-                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
                 }
                 this.sky[i].SetShadow_Dome();
                 this.sky[i].SetShadow_Horizon();
@@ -808,7 +851,7 @@ namespace SolarModel
                                 ((1 - Convert.ToDouble(ShdwBeam[i][dd][u])) * dist2);
                             bool shdw = (factor >= 0.5) ? false : true;
                             int HOY = (n - 1) * 24 + u;
-                            this.sky[i].SetShadow_Beam(HOY, shdw);
+                            this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                         }
                     }
                 }
@@ -829,7 +872,7 @@ namespace SolarModel
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
-                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
                 }
                 this.sky[i].SetShadow_Dome();
                 this.sky[i].SetShadow_Horizon();
@@ -872,7 +915,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                 }
 
@@ -896,7 +939,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Summer[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                 }
 
@@ -919,7 +962,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                 }
                 //    fullF1 = y4                      '100% shadowequinox on this day
@@ -942,7 +985,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Winter[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                 }
 
@@ -966,7 +1009,7 @@ namespace SolarModel
                             ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist2);
                         bool shdw = (factor >= 0.5) ? false : true;
                         int HOY = d * 24 + u;
-                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                        this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
                 }
             });
@@ -986,7 +1029,7 @@ namespace SolarModel
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
-                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = ShdwSky[i][u];
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
                 }
                 this.sky[i].SetShadow_Dome();
                 this.sky[i].SetShadow_Horizon();
@@ -1040,7 +1083,7 @@ namespace SolarModel
                                 ((1 - Convert.ToDouble(ShdwBeam[i][dd][u])) * dist2);
                             bool shdw = (factor >= 0.5) ? false : true;
                             int HOY = (n - 1) * 24 + u;
-                            this.sky[i].SetShadow_Beam(HOY, shdw);
+                            this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                         }
                     }
                 }
