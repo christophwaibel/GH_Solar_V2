@@ -143,7 +143,7 @@ namespace SolarModel
         /// <param name="DNI">Day of year (DOY).</param>
         /// <param name="horizonshdw">0-1 fraction of obstructed horizon. (1 = fully obstructed; 0 = no obstruction)</param>
         /// <param name="domeshdw">0-1 fraction of the obstructed skydome. (1 = fully obstructed; 0 = no obstruction)</param>
-        /// <param name="circumsolshdw">Boolean, indicating if solar vector of that moment is obstructed. (true = obstructed; false = no obstruction)</param>
+        /// <param name="circumsolshdw">Value indicating how much solar vector of that moment is obstructed. (1.0 = fully obstructed; 0.0 = no obstruction)</param>
         ///<returns>Diffuse radiation of a sensor point for one moment (e.g. hour) of the year.</returns>
         public static double Diffuse(double DHI, double DNI, double θZ, double θA, double θβ, double θAsrf, int DOY, double horizonshdw, double domeshdw, double circumsolshdw)
         {
@@ -270,11 +270,12 @@ namespace SolarModel
         /// <param name="θA">Solar Azimuth, in degree.</param>
         /// <param name="θβ">Analysis surface tilt angle.</param>
         /// <param name="θAsrf">Analysis surface azimuth.</param>
+        /// <param name="shadow">Value indicating how much solar vector of that moment is obstructed. (1.0 = fully obstructed; 0.0 = no obstruction)</param>
         /// <returns></returns>
-        public static double Beam(double DNI, double θZ, double θA, double θβ, double θAsrf)
+        public static double Beam(double DNI, double θZ, double θA, double θβ, double θAsrf, double shadow)
         {
             double B = DNI * (Math.Cos(θZ * rad) * Math.Cos(θβ * rad) + Math.Sin(θZ * rad) * Math.Sin(θβ * rad) * Math.Cos((θA - θAsrf) * rad));
-            return Math.Max(0, B); 
+            return Math.Max(0, B * (1.0 - shadow)); 
         }
 
 

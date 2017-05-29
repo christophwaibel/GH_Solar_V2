@@ -244,13 +244,14 @@ namespace SolarModel
             {
                 for (int i = 0; i < this.SPCount; i++)
                 {
-                    if (Convert.ToInt32(sky[i].ShdwBeam[HOY]) + Convert.ToInt32(snowcovered[i][HOY]) > 0)
+                    if (this.sky[i].ShdwBeam[HOY] + Convert.ToDouble(snowcovered[i][HOY]) > 1.0)
                         this.Ibeam[i][HOY] = 0.0;
                     else
                     {
                         this.Ibeam[i][HOY] = Irradiation.Beam(
                             weather.DNI[HOY], sunvectors[HOY].udtCoordinates.dZenithAngle,
-                            sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i]);
+                            sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], 
+                            this.sky[i].ShdwBeam[HOY]);
                     }
                 }
             }
@@ -276,13 +277,14 @@ namespace SolarModel
             {
                 Parallel.For(0, this.SPCount, i =>
                 {
-                    if (Convert.ToInt32(sky[i].ShdwBeam[HOY]) + Convert.ToInt32(snowcovered[i][HOY]) > 0)
+                    if (this.sky[i].ShdwBeam[HOY] + Convert.ToDouble(snowcovered[i][HOY]) > 1.0)
                         this.Ibeam[i][HOY] = 0.0;
                     else
                     {
                         this.Ibeam[i][HOY] = Irradiation.Beam(
                                 weather.DNI[HOY], sunvectors[HOY].udtCoordinates.dZenithAngle,
-                                sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i]);
+                                sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i],
+                                this.sky[i].ShdwBeam[HOY]);
                     }
                 });
             }
