@@ -66,7 +66,7 @@ namespace Tester
 
             // Read the file and display it line by line.
             System.IO.StreamReader file =
-               new System.IO.StreamReader("C:\\Users\\wach\\Desktop\\SolarV2\\DHI.txt");
+               new System.IO.StreamReader("C:\\Users\\Chris\\Desktop\\WORK\\DHI_sarah.txt");
             while ((line = file.ReadLine()) != null)
             {
                 DHI.Add(Convert.ToDouble(line));
@@ -75,7 +75,7 @@ namespace Tester
             }
             file.Close();
 
-            System.IO.StreamReader file2 = new System.IO.StreamReader("C:\\Users\\wach\\Desktop\\SolarV2\\DNI.txt");
+            System.IO.StreamReader file2 = new System.IO.StreamReader("C:\\Users\\Chris\\Desktop\\WORK\\DNI_sarah.txt");
             while ((line = file2.ReadLine()) != null)
             {
                 DNI.Add(Convert.ToDouble(line));
@@ -90,14 +90,14 @@ namespace Tester
 
             //Sunvectors are always the same for the location and year
             int recursion = 2;
-            double longitude = 8.5500025;
-            double latitude = 47.367347;
-            int year = 2016;
+            double longitude = 8.539;
+            double latitude = 47.370;
+            int year = 2000;
 
 
 
             List<SunVector> sunvectors = new List<SunVector>(); 
-            Context.Create8760SunVectors(ref sunvectors, longitude, latitude, year);
+            SunVector.Create8760SunVectors(ref sunvectors, longitude, latitude, year);
             Context.cWeatherdata weather;
             weather.DHI = new List<double>();
             weather.DNI = new List<double>();
@@ -113,16 +113,46 @@ namespace Tester
             location.dLongitude = longitude;
             location.dTgmt = 1;
 
-            Sensorpoint p = new Sensorpoint(year, weather, location, sunvectors,90,30,recursion);
-            p.CalcIrradiation();
+            //Sensorpoint p = new Sensorpoint(year, weather, location, sunvectors, 90, 30, recursion);
+            //p.CalcIrradiation();
 
-            //for (int i = 0; i < p.I.Count(); i++)
-            //{
-            //    Console.WriteLine(p.I[i]);
-            //}
+           
 
-     
 
+
+
+
+
+
+            //int[] a = SunVector.GetEquinoxSolstice(2010);
+
+            double []beta = new double[1]{0};
+            double [] psi=new double[1]{0};
+            Sensorpoints.p3d [] coord  = new Sensorpoints.p3d[1];
+            coord[0].X=0;
+            coord[0].Y=0;
+            coord[0].Z=0;
+            Sensorpoints.v3d[] normal = new Sensorpoints.v3d[1];
+            normal[0].X=0;
+            normal[0].Y=1;
+            normal[0].Z=0;
+
+            Sensorpoints p = new Sensorpoints(beta, psi, coord, normal, recursion);
+            p.CalcIrradiation(weather, sunvectors.ToArray());
+
+            System.IO.StreamWriter write = new System.IO.StreamWriter("C:\\Users\\Chris\\Desktop\\sara.txt");
+            System.IO.StreamWriter write2 = new System.IO.StreamWriter("C:\\Users\\Chris\\Desktop\\sarabeam.txt");
+            System.IO.StreamWriter write3 = new System.IO.StreamWriter("C:\\Users\\Chris\\Desktop\\saradiff.txt");
+            for (int i = 0; i < p.I[0].Count(); i++)
+            {
+                //Console.WriteLine(p.I[0][i]);
+                write.WriteLine(p.I[0][i]);
+                write2.WriteLine(p.Ibeam[0][i]);
+                write3.WriteLine(p.Idiff[0][i]);
+            }
+            write.Close();
+            write2.Close();
+            write3.Close();
 
             Console.ReadKey();
         }
