@@ -253,7 +253,7 @@ namespace SolarModel
                 {
                     for (int i = 0; i <= 23; i++)
                     {
-                        SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
+                        SunVector sunvec = new SunVector(year, m, d, i,0, 0, longitude, latitude);
                         sunvectors.Add(sunvec);
                     }
                 }

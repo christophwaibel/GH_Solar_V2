@@ -238,7 +238,7 @@ namespace SolarModel
         /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>        
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIbeam(int DOY, int HOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
+        private void CalcIbeam(int HOY, Context.cWeatherdata weather, SunVector[] sunvectors)
         {
             if (sunvectors[HOY].Sunshine == true)
             {
@@ -271,7 +271,7 @@ namespace SolarModel
         /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>      
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIbeam_MT(int DOY, int HOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
+        private void CalcIbeam_MT(int HOY, Context.cWeatherdata weather, SunVector[] sunvectors)
         {
             if (sunvectors[HOY].Sunshine == true)
             {
@@ -305,14 +305,9 @@ namespace SolarModel
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
         private void CalcIbeam(Context.cWeatherdata weather, SunVector[] sunvectors)
         {
-            int HOY = 0;
-            for (int i = 1; i < 366; i++)
+            for (int t = 0; t < 8760; t++)
             {
-                for (int u = 0; u < 24; u++)
-                {
-                    CalcIbeam(i, HOY, u, weather, sunvectors);
-                    HOY++;
-                }
+                CalcIbeam(t, weather, sunvectors);
             }
         }
 
@@ -324,13 +319,9 @@ namespace SolarModel
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
         private void CalcIbeam_MT(Context.cWeatherdata weather, SunVector[] sunvectors)
         {
-            Parallel.For(1, 366, i =>
+            Parallel.For(0, 8760, t =>
             {
-                for (int u = 0; u < 24; u++)
-                {
-                    int HOY = (i - 1) * 24 + u;
-                    CalcIbeam(i, HOY, u, weather, sunvectors);
-                }
+                CalcIbeam(t, weather, sunvectors);
             });
         }
 
@@ -347,7 +338,7 @@ namespace SolarModel
         public void CalcIrradiation(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
         {
             int HOY = (DOY - 1) * 24 + LT;
-            CalcIbeam(DOY, HOY, LT, weather, sunvectors);
+            CalcIbeam(HOY, weather, sunvectors);
             CalcIdiff(DOY, HOY, weather, sunvectors);
             for (int i = 0; i < this.I.Length; i++)
                 this.I[i][HOY] = this.Ibeam[i][HOY] + this.Idiff[i][HOY] + this.Irefl_spec[i][HOY] + this.Irefl_diff[i][HOY];
@@ -365,7 +356,7 @@ namespace SolarModel
         {
             int HOY = (DOY - 1) * 24 + LT;
 
-            CalcIbeam_MT(DOY, HOY, LT, weather, sunvectors);
+            CalcIbeam_MT(HOY, weather, sunvectors);
             CalcIdiff_MT(DOY, HOY, weather, sunvectors);
 
             Parallel.For(0, this.I.Length, i =>
