@@ -227,12 +227,17 @@ namespace SolarModel
         return SunposXYZout;
      }
 
-        
+        /// <summary>
+        /// Solar zenith and azimuth angles.
+        /// </summary>
         public struct cSunCoordinates
         {
             public double dZenithAngle;
             public double dAzimuth;
         }
+        /// <summary>
+        /// 3d solar vectors.
+        /// </summary>
         public struct cSunXYZ
         {
             public double x;
@@ -243,9 +248,16 @@ namespace SolarModel
 
 
 
-
-        public static void Create8760SunVectors(ref List<SunVector> sunvectors, double longitude, double latitude, int year)
+        /// <summary>
+        /// Create solar vectors for each hour of the year, depending on geographic location and year.
+        /// </summary>
+        /// <param name="sunvectors"></param>
+        /// <param name="longitude"></param>
+        /// <param name="latitude"></param>
+        /// <param name="year"></param>
+        public static void Create8760SunVectors(out List<SunVector> sunvectors, double longitude, double latitude, int year)
         {
+            sunvectors = new List<SunVector>();
             for (int m = 1; m <= 12; m++)
             {
                 int daysInMonth = System.DateTime.DaysInMonth(year, m);

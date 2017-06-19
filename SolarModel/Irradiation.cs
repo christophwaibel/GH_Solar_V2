@@ -234,7 +234,7 @@ namespace SolarModel
         public static double Beam(double DNI, double β, double φ, double λ, double ψ, int DOY, int LT, int δTgmt)
         {
             //Equation of Time (EoT)
-            double Bangle = (360 / 365) * (DOY - 81);      //in degrees
+            double Bangle = (360 / 365) * Convert.ToDouble(DOY - 81);      //in degrees
             double EoT = 9.87 * Math.Sin(rad * (2 * Bangle)) - 7.53 * Math.Cos(rad * Bangle) - 1.5 * Math.Sin(rad * Bangle);
 
             ///Local Standard Time Meridian (LSTM)
@@ -250,7 +250,7 @@ namespace SolarModel
             double HRA = 15 * (LST - 12);
 
             //declination angle
-            double δ = Math.Asin(Math.Sin(rad * 23.45) * Math.Sin(rad * ((360 / 365) * (DOY - 81))));
+            double δ = Math.Asin(Math.Sin(rad * 23.45) * Math.Sin(rad * ((360 / 365) * Convert.ToDouble(DOY - 81))));
 
             double B = DNI * (Math.Sin(rad * δ) * Math.Sin(rad * φ) * Math.Cos(rad * β) -
                                      Math.Sin(rad * δ) * Math.Cos(rad * φ) * Math.Sin(rad * β) * Math.Cos(rad * ψ) +

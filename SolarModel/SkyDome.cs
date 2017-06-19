@@ -15,12 +15,6 @@ using System.Windows;
 
 namespace SolarModel
 {
-    //skycumulative values?? do i need?
-
-
-
-
-
     /// <summary>
     /// Constructs a skydome (hemisphere). Used in Sensorpoints.cs.
     /// <para>Each sensor point will have one skydome.</para>
@@ -63,11 +57,11 @@ namespace SolarModel
         /// <summary>
         /// Weighted fraction of the horizon, which is obstructed. 1 = full obstruction.
         /// </summary>
-        public double ShdwHorizon { get; private set; }
+        public double[] ShdwHorizon { get; private set; }
         /// <summary>
         /// Weighted fraction of the hemisphere, which is obstructed. 1 = full obstruction.
         /// </summary>
-        public double ShdwDome { get; private set; }
+        public double[] ShdwDome { get; private set; }
         /// <summary>
         /// 8760 list (for each hour of the year) of booleans, indicating if the sun vector is obstructed or not (1=obstructed).
         /// </summary>
@@ -91,6 +85,8 @@ namespace SolarModel
             HorizonSegments = new List<double>();
             FaceAreas = new List<double>();
 
+            ShdwHorizon = new double[8760];
+            ShdwDome = new double[8760];
             ShdwBeam = new double[8760];
 
             CalcHemisphere();
@@ -109,6 +105,8 @@ namespace SolarModel
             ico = copy.ico;
             Faces = copy.Faces;
             FaceAreas = copy.FaceAreas;
+            ShdwHorizon = new double[8760];
+            ShdwDome = new double[8760];
             ShdwBeam = new double[8760];
             VertexVectorsSphere = copy.VertexVectorsSphere;
             VerticesHemisphere = copy.VerticesHemisphere;
@@ -177,8 +175,11 @@ namespace SolarModel
                 weights += w * this.FaceAreas[i];
                 totalArea += this.FaceAreas[i];
             }
-            this.ShdwDome = weights / totalArea;
+            double val = weights / totalArea;
+            for (int t=0; t<8760;t++)
+                this.ShdwDome[t] = val;
         }
+
 
         /// <summary>
         /// Set the fraction of the horizon, which is obstructed.
@@ -191,8 +192,112 @@ namespace SolarModel
             {
                 weights += (1.0 - this.VertexShadowSphere[this.VerticesHorizon[i]]) * this.HorizonSegments[i];
             }
-            this.ShdwHorizon = weights / 720.0;     //720 is 2 circles : the sum angle of all horizon segments
+            double val = weights / 720.0;//720 is 2 circles : the sum angle of all horizon segments
+            for (int t = 0; t < 8760; t++)
+                this.ShdwHorizon[t] = val;
         }
+
+
+        /// <summary>
+        /// Set the fraction of the dome, which is obstructed. With permeable objects which have a time-series as extinction coefficient.
+        /// <para>Needs some obstruction calculation, which you have to run in another program (e.g. Rhinoceros)</para>
+        /// </summary>
+        /// <param name="permObj">[u] indicate for each dome vertex, if and only if it is obstructed by permeable object.</param>
+        /// <param name="permObjInd">[u][p] for each dome vertex u, array of indices to permObjlen[p]</param>
+        /// <param name="permObjLen">[u][p] for each element in permObjInd, it's corresponding length.</param>
+        /// <param name="extCoeff">[p][t] for each perm obcject p and time step t, extinction coefficient.</param>
+        internal void SetShadow_DomeAndHorizon(bool[] permObj, int [][] permObjInd, double [][] permObjLen, List<double[]> extCoeff)
+        {
+            double[][] extCoeffSum = new double[this.VertexVectorsSphere.Count][];  //[u][t] extinction coefficients for each dome vertex [u] and for each time step [t].
+            for (int u = 0; u < this.VertexVectorsSphere.Count; u++)
+            {
+                extCoeffSum[u] = new double[8760];
+                for (int t = 0; t < 8760; t++)
+                {
+                    extCoeffSum[u][t] = 0.0;
+                }
+            }
+
+            bool [] permObjSphere = new bool[this.VertexVectorsSphere.Count];
+            for (int u = 0; u < permObj.Length; u++)
+            {
+                if (permObj[u])
+                {
+                    permObjSphere[this.VerticesHemisphere[u]] = true;
+                    for (int t = 0; t < 8760; t++)
+                    {
+                        for (int k = 0; k < permObjInd[u].Length; k++)
+                        {
+                            extCoeffSum[this.VerticesHemisphere[u]][t] += permObjLen[u][k] * extCoeff[permObjInd[u][k]][t];
+                        }
+                    }
+                }
+            }
+
+
+            double totalArea = 0.0;
+            double[] weights = new double[8760];
+            double[] weightsHorizon = new double[8760];
+            for (int t = 0; t < 8760; t++)
+            {
+                weights[t] = 0.0;
+                weightsHorizon[t] = 0.0;
+            }
+
+            for (int i = 0; i < this.Faces.Count; i++)
+            {
+                double[] w = new double[8760];
+                int wl = this.Faces[i].Length;
+                for (int t = 0; t < 8760; t++)
+                {
+                    w[t] = 0.0;
+                    for (int u = 0; u < wl; u++)
+                    {
+                        if (permObjSphere[this.Faces[i][u]])
+                        {
+                            w[t] += (this.VertexShadowSphere[this.Faces[i][u]] * extCoeffSum[this.Faces[i][u]][t]);
+                        }
+                        else
+                        {
+                            w[t] += this.VertexShadowSphere[this.Faces[i][u]];
+                        }
+                    }
+                    w[t] = w[t] / Convert.ToDouble(wl);
+                    weights[t] += w[t] * this.FaceAreas[i];
+                }
+                totalArea += this.FaceAreas[i];
+            }
+
+
+
+            for (int i = 0; i < this.VerticesHorizon.Count; i++)
+            {
+                for (int t = 0; t < 8760; t++)
+                {
+                    if (permObjSphere[this.VerticesHorizon[i]])
+                    {
+                        weightsHorizon[t] = (this.VertexShadowSphere[this.VerticesHorizon[i]] * extCoeffSum[this.VerticesHorizon[i]][t]);
+                    }
+                    else
+                    {
+                        weightsHorizon[t] = this.VertexShadowSphere[this.VerticesHorizon[i]];
+                    }
+                    weightsHorizon[t] += weightsHorizon[t] * this.HorizonSegments[i];
+                }
+            }
+
+
+
+            for (int t = 0; t < 8760; t++)
+            {
+                this.ShdwDome[t] = weights[t] / totalArea;
+                this.ShdwHorizon[t] = weightsHorizon[t] / 720.0;    //720 is 2 circles : the sum angle of all horizon segments
+            }
+        }
+
+
+
+
 
         /// <summary>
         /// Indicate for a certain hour of the year, if the center of the skydome lies in shadow. I.e. has no beam radiation.

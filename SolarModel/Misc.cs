@@ -16,7 +16,7 @@ namespace SolarModel
     public static class Misc
     {
         /// <summary>
-        /// 
+        /// Is an array null or empty?
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collection"></param>

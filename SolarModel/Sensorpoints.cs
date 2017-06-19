@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace SolarModel
 {
+    /// <summary>
+    /// Sensorpoints class to calculate solar irradiation.
+    /// </summary>
     public class Sensorpoints
     {
         /// <summary>
@@ -161,7 +164,7 @@ namespace SolarModel
                     this.Idiff[i][HOY] = Irradiation.Diffuse(
                         weather.DHI[HOY], weather.DNI[HOY], sunvectors[HOY].udtCoordinates.dZenithAngle,
                         sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], DOY,
-                        sky[i].ShdwHorizon, sky[i].ShdwDome, sky[i].ShdwBeam[HOY]);
+                        this.sky[i].ShdwHorizon[HOY], this.sky[i].ShdwDome[HOY], this.sky[i].ShdwBeam[HOY]);
                 }
             }
         }
@@ -185,7 +188,7 @@ namespace SolarModel
                     this.Idiff[i][HOY] = Irradiation.Diffuse(
                         weather.DHI[HOY], weather.DNI[HOY], sunvectors[HOY].udtCoordinates.dZenithAngle,
                         sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], DOY,
-                        sky[i].ShdwHorizon, sky[i].ShdwDome, sky[i].ShdwBeam[HOY]);
+                        sky[i].ShdwHorizon[HOY], sky[i].ShdwDome[HOY], sky[i].ShdwBeam[HOY]);
                 }
             });
         }
@@ -327,6 +330,9 @@ namespace SolarModel
 
 
 
+
+        #region PublicFunctions
+
         /// <summary>
         /// Calculates total solar irradiation on a sensor point for one hour of the year.
         /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759]. HOY = (DOY-1) * 24 + LT.</para>
@@ -398,8 +404,52 @@ namespace SolarModel
         }
 
 
+        /// <summary>
+        /// Set simple sky dome obstruction by taking into account the sensor points tilt angles.
+        /// </summary>
+        /// <param name="tiltangle">Sensor points tilt angles, in degree.</param>
+        public void SetSimpleSky(double[] tiltangle)
+        {
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                double visibleHemisphere = (1 + Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2;
+                for (int HOY = 0; HOY < 8760; HOY++)
+                {
+                    this.sky[i].ShdwDome[HOY] = 1 - visibleHemisphere;
+                }   
+            }
+        }
 
 
+        /// <summary>
+        /// Set simplified ground reflection values, based on albedo value of the ground.
+        /// </summary>
+        /// <remarks>Reflected irradiation is added to the current diffuse inter-reflection value.</remarks>
+        /// <param name="tiltangle">Sensor points tilt angles, in degree. [i] = for each sensor point.</param>
+        /// <param name="albedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
+        /// <param name="weather">Weather data.</param>
+        /// <param name="sunvectors">8760 sunvectors, [t] = for each hour of the year.</param>
+        public void SetSimpleGroundReflection(double [] tiltangle, double [] albedo, Context.cWeatherdata weather, SunVector[] sunvectors)
+        {
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                for (int HOY = 0; HOY < 8760; HOY++)
+                {
+                    this.Irefl_diff[i][HOY] += (albedo[HOY] *
+                        (weather.DNI[HOY] * Math.Cos((sunvectors[HOY].udtCoordinates.dZenithAngle) * (Math.PI / 180))
+                        + weather.DHI[HOY])) * ((1 - Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2);
+                }
+            }
+        }
+
+        #endregion
+
+
+
+
+
+
+        #region ExternalComputingNecessary
 
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
@@ -485,8 +535,6 @@ namespace SolarModel
             });
         }
 
-
-
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
         /// </summary>
@@ -511,6 +559,533 @@ namespace SolarModel
         }
 
         /// <summary>
+        /// Set annual shadows, using interpolation of several calculated days.
+        /// </summary>
+        /// <param name="StartDays">Array of start days, as day of year 1-365.</param>
+        /// <param name="EndDays">Array of end days, as day of year 1-365.</param>
+        /// <param name="ShdwBeam">Indicate, if vector is obstructed (true) or not (false). List [i]: each sensor point. [d][h], d=each day used, h = 24 hours.</param>
+        /// <param name="BeamPermIs">Indicate, iff vector is obstructed by permeable object (true) or not (false). List [i]: each sensor point. [d][h], d=each day used, h = 24 hours.</param>
+        /// <param name="BeamPermRefs">Iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [d][h][p], d=each day used, h = 24 hours, p = reference to each hit permeable object.</param>
+        /// <param name="BeamPermLength">Iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [d][h], d=each day used, h = 24 hours, p = reference to each hit permeable object.</param>
+        /// <param name="ShdwSky">List [i]: each sensor point. [u] = each sky dome vertex.</param>
+        /// <param name="SkyPermIs">Indicate, if and only if it is obstructed by permeable object. List [i]: each sensor point. [u] = each sky dome vertex.</param>
+        /// <param name="SkyPermRefs">Iff obstructed by perm object, indicate the index of the permeable object. List [i]: each SP, [u][p], u = each sky dome vertex, p = index to permobject ext.coeff.</param>
+        /// <param name="SkyPermLength">Iff obstructed by perm object, indicate the length of penetration through object. List [i]: each SP, [u][p], u = each sky dome vertex, p = index to permobject ext.coeff.</param>
+        ///<param name="extinctCoeff">For each permeable object, 8760 time series of extinction coefficients. List [p] = each permeable object, [hoy] = hour of the year 1-8760.</param>
+        public void SetShadows_Annual_Permeables(int[] StartDays, int[] EndDays,
+            List<bool[][]> ShdwBeam, List<bool[][]> BeamPermIs, List<int[][][]> BeamPermRefs, List<double[][][]> BeamPermLength,
+            List<bool[]> ShdwSky, List<bool[]> SkyPermIs, List<int[][]> SkyPermRefs, List<double[][]> SkyPermLength, List<double[]> extinctCoeff)
+        {
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                for (int u = 0; u < ShdwSky[i].Length; u++)
+                {
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
+                }
+                this.sky[i].SetShadow_DomeAndHorizon(SkyPermIs[i], SkyPermRefs[i], SkyPermLength[i], extinctCoeff);
+            }
+
+
+            int dayStart, dayEnd;
+            int dayIntervals = EndDays[0] - StartDays[0];
+            double maxPi = 2 * Math.PI / Convert.ToDouble(ShdwBeam[0].Length);
+
+            int daysUsed = StartDays.Length;
+
+            for (int i = 0; i < this.SPCount; i++)    
+            {
+                int dd;
+                for (int d = 0; d < daysUsed; d++)
+                {
+                    if (d == daysUsed - 1)
+                        dd = 0;
+                    else
+                        dd = d + 1;
+                    dayStart = StartDays[d];
+                    dayEnd = EndDays[d];
+                    for (int n = dayStart; n < dayEnd; n++)
+                    {
+                        double dist1 = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - n)) / Convert.ToDouble(dayIntervals);
+                        if (d < (daysUsed / 4))
+                        {
+                            dist1 = 1 - dist1;
+                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((daysUsed / 4) * 2) && d >= ((daysUsed / 4) * 1))
+                        {
+                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((daysUsed / 4) * 3) && d >= ((daysUsed / 4) * 2))
+                        {
+                            dist1 = 1 - dist1;
+                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((daysUsed / 4) * 4) && d >= ((daysUsed / 4) * 3))
+                        {
+                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                        }
+
+                        double dist2 = 1 - dist1;
+                        for (int h = 0; h < 24; h++)
+                        {
+                            int HOY = (n - 1) * 24 + h;
+                            if (BeamPermIs[i][d][h])
+                            {
+                                double extCoeffSum1 = 0;
+                                double extCoeffSum2 = 0;
+                                double factor1 = 0;
+                                double factor2 = 0;
+                                for (int p = 0; p < BeamPermLength[i][d][h].Length; p++)
+                                {
+                                    extCoeffSum1 += BeamPermLength[i][d][h][p] * extinctCoeff[BeamPermRefs[i][d][h][p]][HOY];
+                                }
+                                if (extCoeffSum1 > 1) extCoeffSum1 = 1;
+                                factor1 = (1 - Convert.ToDouble(ShdwBeam[i][d][h]) * extCoeffSum1) * dist1;
+                                if (BeamPermIs[i][dd][h])
+                                {
+                                    for (int p = 0; p < BeamPermLength[i][dd][h].Length; p++)
+                                    {
+                                        extCoeffSum2 += BeamPermLength[i][dd][h][p] * extinctCoeff[BeamPermRefs[i][dd][h][p]][HOY];
+                                    }
+                                    if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                    factor2 = (1 - Convert.ToDouble(ShdwBeam[i][dd][h]) * extCoeffSum2) * dist2;
+                                }
+                                else
+                                {
+                                    factor2 = (1 - Convert.ToDouble(ShdwBeam[i][dd][h])) * dist2;
+                                }
+                                double shdw = factor1 + factor2;
+                                this.sky[i].SetShadow_Beam(HOY, shdw);
+                            }
+                            else
+                            {
+                                double factor = ((1 - Convert.ToDouble(ShdwBeam[i][d][h])) * dist1) +
+                                    ((1 - Convert.ToDouble(ShdwBeam[i][dd][h])) * dist2);
+                                bool shdw = (factor >= 0.5) ? false : true;
+                                this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set annual shadows, using interpolation of three calculated days: Equinox, summer and winter solstice.
+        /// </summary>
+        /// <param name="StartDays">Array of start days, as day of year 1-365.</param>
+        /// <param name="EndDays">Array of end days, as day of year 1-365.</param>
+        /// <param name="ShdwBeam_Equinox">Indicate for equinox day, if vector is obstructed (true) or not (false). List [i] = each sensor point. [h] = 24 hours.</param>
+        /// <param name="BeamPermIs_Equi">Indicate for equinox day, iff vector is obstructed by permeable object (true) or not (false). List [i] = each sensor point. [h] = 24 hours.</param>
+        /// <param name="BeamPermRefs_Equi">For equinox day, iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [h][p], h = 24 hours, p = reference to each hit permeable object.</param>
+        /// <param name="BeamPermLength_Equi">For equinox day, iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [h] = 24 hours, p = reference to each hit permeable object.</param>
+        ///<param name="ShdwBeam_Summer">Indicate for summer day, if vector is obstructed (true) or not (false). List [i] = each sensor point. [h] = 24 hours.</param>
+        ///<param name="BeamPermIs_Sum">Indicate for summer day, iff vector is obstructed by permeable object (true) or not (false). List [i] = each sensor point. [h] = 24 hours.</param>
+        ///<param name="BeamPermRefs_Sum">For summer day, iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [h][p], h = 24 hours, p = reference to each hit permeable object.</param>
+        ///<param name="BeamPermLength_Sum">For summer day, iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [h] = 24 hours, p = reference to each hit permeable object.</param>
+        ///<param name="ShdwBeam_Winter">Indicate for winter day, if vector is obstructed (true) or not (false). List [i] = each sensor point. [h] = 24 hours.</param>
+        ///<param name="BeamPermIs_Win">Indicate for winter day, iff vector is obstructed by permeable object (true) or not (false). List [i] = each sensor point. [h] = 24 hours.</param>
+        ///<param name="BeamPermRefs_Win">For winter day, iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [h][p], h = 24 hours, p = reference to each hit permeable object.</param>
+        ///<param name="BeamPermLength_Win">For winter day, iff vector is obstructed by permeable object, reference to permeable object extinction coefficients. List [i]: each sensor point. [h] = 24 hours, p = reference to each hit permeable object.</param>
+        /// <param name="ShdwSky">List [i]: each sensor point. [u] = each sky dome vertex.</param>
+        /// <param name="SkyPermIs">Indicate, if and only if it is obstructed by permeable object. List [i]: each sensor point. [u] = each sky dome vertex.</param>
+        /// <param name="SkyPermRefs">Iff obstructed by perm object, indicate the index of the permeable object. List [i]: each SP, [u][p], u = each sky dome vertex, p = index to permobject ext.coeff.</param>
+        /// <param name="SkyPermLength">Iff obstructed by perm object, indicate the length of penetration through object. List [i]: each SP, [u][p], u = each sky dome vertex, p = index to permobject ext.coeff.</param>
+        ///<param name="extinctCoeff">For each permeable object, 8760 time series of extinction coefficients. List [p] = each permeable object, [hoy] = hour of the year 1-8760.</param>
+        public void SetShadows_Annual_Permeables(List<bool[]> ShdwBeam_Equinox, List<bool[]> ShdwBeam_Summer, List<bool[]> ShdwBeam_Winter, 
+            bool[][] BeamPermIs_Equ, int[][][] BeamPermRefs_Equ, double[][][] BeamPermLength_Equ,
+            bool[][] BeamPermIs_Sum, int[][][] BeamPermRefs_Sum, double[][][] BeamPermLength_Sum,
+            bool[][] BeamPermIs_Win, int[][][] BeamPermRefs_Win, double[][][] BeamPermLength_Win,
+            List<bool[]> ShdwSky, bool[][] SkyPermIs, int[][][] SkyPermRefs, double[][][] SkyPermLength, List<double[]> extinctCoeff)
+        {
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                for (int u = 0; u < ShdwSky[i].Length; u++)
+                {
+                    this.sky[i].VertexShadowSphere[this.sky[i].VerticesHemisphere[u]] = Convert.ToDouble(ShdwSky[i][u]);
+                }
+                this.sky[i].SetShadow_DomeAndHorizon(SkyPermIs[i], SkyPermRefs[i], SkyPermLength[i], extinctCoeff);
+            }
+
+
+            //    '100% equinox is 20 march and 23 Sept
+            //    '100% summer is 21 june
+            //    '100% winter is 22 decemebr
+            int y1, y2, y3, y4, y5, y6;
+            y1 = -9;    //winter solstice
+            y2 = 78;    //equinox spring
+            y3 = 171;   // summer solstice
+            y4 = 265;   //equinox solstice
+            y5 = 355;   //winter solstice
+            y6 = 443;   //equinox spring
+
+            int fullF1, fullF2;
+            int InterpolInterv;
+            double dist1, dist2;
+
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                fullF1 = y1;    //100% shadowwinter on this day
+                fullF2 = y2;    //100% shadowequinox on this day
+                InterpolInterv = y2 + y1 * -1;
+                for (int d = 0; d < y2; d++)        //from 0.Jan to 19.March
+                {
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                    dist2 = 1 - dist1;
+                    for (int h = 0; h < 24; h++)
+                    {
+                        bool permPresent = false;
+                        int HOY = d * 24 + h;
+                        double factor1 = 0;
+                        double factor2 = 0;
+                        if (BeamPermIs_Win[i][h])     //if and only if obstructed by trees
+                        {
+                            permPresent = true;
+                            double extCoeffSum1 = 0;
+                            for (int p = 0; p < BeamPermLength_Win[i][h].Length; p++)
+                            {
+                                extCoeffSum1 += BeamPermLength_Win[i][h][p] * extinctCoeff[BeamPermRefs_Win[i][h][p]][HOY];
+                            }
+                            if (extCoeffSum1 > 1) extCoeffSum1 = 1;
+                            factor1 = (Convert.ToDouble(BeamPermIs_Win[i][h]) * extCoeffSum1) * dist1;
+                            if (BeamPermIs_Equ[i][h])
+                            {
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Equinox[i][h])) * dist2;
+                            }
+                        }
+                        else
+                        {
+                            factor1 = Convert.ToDouble(ShdwBeam_Winter[i][h]) * dist1;
+                            if (BeamPermIs_Equ[i][h])
+                            {
+                                permPresent = true;
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Equinox[i][h])) * dist2;
+                            }
+                        }
+                        double shdw = factor1 + factor2;
+                        if (permPresent)
+                        {
+                            if (shdw > 1.0) shdw = 1.0;
+                        }
+                        else
+                        {
+                            shdw = (shdw < 0.5) ? 0 : 1;
+                        }
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                }
+
+                fullF1 = y2;        // 100% shadowequinox on this day
+                fullF2 = y3;        // 100% shadowsummer on this day
+                InterpolInterv = y3 - y2;
+                for (int d = y2; d < y3; d++)       //from 20.March to 20.june
+                {
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
+                    dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                    dist2 = 1 - dist1;
+                    for (int h = 0; h < 24; h++)
+                    {
+                        bool permPresent = false;
+                        int HOY = d * 24 + h;
+                        double factor1 = 0;
+                        double factor2 = 0;
+                        if (BeamPermIs_Equ[i][h])     //if and only if obstructed by trees
+                        {
+                            permPresent = true;
+                            double extCoeffSum1 = 0;
+                            for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                            {
+                                extCoeffSum1 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                            }
+                            if (extCoeffSum1 > 1) extCoeffSum1 = 1;
+                            factor1 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum1) * dist1;
+                            if (BeamPermIs_Sum[i][h])
+                            {
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Sum[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Sum[i][h][p] * extinctCoeff[BeamPermRefs_Sum[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Sum[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Summer[i][h])) * dist2;
+                            }
+                        }
+                        else
+                        {
+                            factor1 = Convert.ToDouble(ShdwBeam_Equinox[i][h]) * dist1;
+                            if (BeamPermIs_Sum[i][h])
+                            {
+                                permPresent = true;
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Sum[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Sum[i][h][p] * extinctCoeff[BeamPermRefs_Sum[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Sum[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Summer[i][h])) * dist2;
+                            }
+                        }
+                        double shdw = factor1 + factor2;
+                        if (permPresent)
+                        {
+                            if (shdw > 1.0) shdw = 1.0;
+                        }
+                        else
+                        {
+                            shdw = (shdw < 0.5) ? 0 : 1;
+                        }
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                }
+
+                fullF1 = y3;        //100% shadowsummer on this day
+                fullF2 = y4;        //100% shadowequinox on this day
+                InterpolInterv = y4 - y3;
+                for (int d = y3; d < y4; d++)       //from 21.June to 22.Sept
+                {
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                    dist2 = 1 - dist1;
+                    for (int h = 0; h < 24; h++)
+                    {
+                        bool permPresent = false;
+                        int HOY = d * 24 + h;
+                        double factor1 = 0;
+                        double factor2 = 0;
+                        if (BeamPermIs_Sum[i][h])     //if and only if obstructed by trees
+                        {
+                            permPresent = true;
+                            double extCoeffSum1 = 0;
+                            for (int p = 0; p < BeamPermLength_Sum[i][h].Length; p++)
+                            {
+                                extCoeffSum1 += BeamPermLength_Sum[i][h][p] * extinctCoeff[BeamPermRefs_Sum[i][h][p]][HOY];
+                            }
+                            if (extCoeffSum1 > 1) extCoeffSum1 = 1;
+                            factor1 = (Convert.ToDouble(BeamPermIs_Sum[i][h]) * extCoeffSum1) * dist1;
+                            if (BeamPermIs_Equ[i][h])
+                            {
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Equinox[i][h])) * dist2;
+                            }
+                        }
+                        else
+                        {
+                            factor1 = Convert.ToDouble(ShdwBeam_Summer[i][h]) * dist1;
+                            if (BeamPermIs_Equ[i][h])
+                            {
+                                permPresent = true;
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Equinox[i][h])) * dist2;
+                            }
+                        }
+                        double shdw = factor1 + factor2;
+                        if (permPresent)
+                        {
+                            if (shdw > 1.0) shdw = 1.0;
+                        }
+                        else
+                        {
+                            shdw = (shdw < 0.5) ? 0 : 1;
+                        }
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                }
+
+                fullF1 = y4;        //100% shadowequinox on this day
+                fullF2 = y5;        //100% shadowwinter on this day
+                InterpolInterv = y5 - y4;
+                for (int d = y4; d < y5; d++)       //from 23.Sept to 21.Dec
+                {
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
+                    dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                    dist2 = 1 - dist1;
+                    for (int h = 0; h < 24; h++)
+                    {
+                        bool permPresent = false;
+                        int HOY = d * 24 + h;
+                        double factor1 = 0;
+                        double factor2 = 0;
+                        if (BeamPermIs_Equ[i][h])     //if and only if obstructed by trees
+                        {
+                            permPresent = true;
+                            double extCoeffSum1 = 0;
+                            for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                            {
+                                extCoeffSum1 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                            }
+                            if (extCoeffSum1 > 1) extCoeffSum1 = 1;
+                            factor1 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum1) * dist1;
+                            if (BeamPermIs_Win[i][h])
+                            {
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Win[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Win[i][h][p] * extinctCoeff[BeamPermRefs_Win[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Win[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Winter[i][h])) * dist2;
+                            }
+                        }
+                        else
+                        {
+                            factor1 = Convert.ToDouble(ShdwBeam_Equinox[i][h]) * dist1;
+                            if (BeamPermIs_Win[i][h])
+                            {
+                                permPresent = true;
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Win[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Win[i][h][p] * extinctCoeff[BeamPermRefs_Win[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Win[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Winter[i][h])) * dist2;
+                            }
+                        }
+                        double shdw = factor1 + factor2;
+                        if (permPresent)
+                        {
+                            if (shdw > 1.0) shdw = 1.0;
+                        }
+                        else
+                        {
+                            shdw = (shdw < 0.5) ? 0 : 1;
+                        }
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                }
+
+                fullF1 = y5;        //100% shadowwinter on this day
+                fullF2 = y6;        //100% shadowequinox spring on this day
+                InterpolInterv = y6 - y5;
+                for (int d = y5; d < 365; d++)      //from 22.Dec to 31.Dec
+                {
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
+                    dist1 = 1 - dist1;
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                    dist2 = 1 - dist1;
+                    for (int h = 0; h < 24; h++)
+                    {
+                        bool permPresent = false;
+                        int HOY = d * 24 + h;
+                        double factor1 = 0;
+                        double factor2 = 0;
+                        if (BeamPermIs_Win[i][h])     //if and only if obstructed by trees
+                        {
+                            permPresent = true;
+                            double extCoeffSum1 = 0;
+                            for (int p = 0; p < BeamPermLength_Win[i][h].Length; p++)
+                            {
+                                extCoeffSum1 += BeamPermLength_Win[i][h][p] * extinctCoeff[BeamPermRefs_Win[i][h][p]][HOY];
+                            }
+                            if (extCoeffSum1 > 1) extCoeffSum1 = 1;
+                            factor1 = (Convert.ToDouble(BeamPermIs_Win[i][h]) * extCoeffSum1) * dist1;
+                            if (BeamPermIs_Equ[i][h])
+                            {
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Equinox[i][h])) * dist2;
+                            }
+                        }
+                        else
+                        {
+                            factor1 = Convert.ToDouble(ShdwBeam_Winter[i][h]) * dist1;
+                            if (BeamPermIs_Equ[i][h])
+                            {
+                                permPresent = true;
+                                double extCoeffSum2 = 0;
+                                for (int p = 0; p < BeamPermLength_Equ[i][h].Length; p++)
+                                {
+                                    extCoeffSum2 += BeamPermLength_Equ[i][h][p] * extinctCoeff[BeamPermRefs_Equ[i][h][p]][HOY];
+                                }
+                                if (extCoeffSum2 > 1) extCoeffSum2 = 1;
+                                factor2 = (Convert.ToDouble(BeamPermIs_Equ[i][h]) * extCoeffSum2) * dist2;
+                            }
+                            else
+                            {
+                                factor2 = (Convert.ToDouble(ShdwBeam_Equinox[i][h])) * dist2;
+                            }
+                        }
+                        double shdw = factor1 + factor2;
+                        if (permPresent)
+                        {
+                            if (shdw > 1.0) shdw = 1.0;
+                        }
+                        else
+                        {
+                            shdw = (shdw < 0.5) ? 0 : 1;
+                        }
+                        this.sky[i].SetShadow_Beam(HOY, shdw);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// 3 days interpolation (equinox, summer, winter solstices)
         /// </summary>
         /// <param name="ShdwBeam_Equinox"></param>
@@ -520,7 +1095,7 @@ namespace SolarModel
         public void SetShadowsInterpolated(List<bool[]> ShdwBeam_Equinox, List<bool[]> ShdwBeam_Summer, List<bool[]> ShdwBeam_Winter, List<bool[]> ShdwSky)
         {
 
-            for (int i = 0; i < sky.Length; i++)
+            for (int i = 0; i < this.SPCount; i++)
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
@@ -529,36 +1104,9 @@ namespace SolarModel
 
                 this.sky[i].SetShadow_Dome();
                 this.sky[i].SetShadow_Horizon();
-                //this.sky[i].SetShadow_Beam(HOY, ShdwBeam_hour[i]);
             }
 
 
-            //shdwbeam_summer, winter ewquinox have different lengths!!! coz only when sunshine true. 
-            //but its always 
-            //march 20
-            //june 21
-            //december 21
-
-            //interpolate!   check github solar_v1
-
-
-            //            'interpolating all 8760 between correct dates equinox, summer, winter
-            //Private Function InterpolateShadowDays(radList As List(Of Double), _
-            //                                       _shadowsummer As ShadowFactor, _
-            //                                       _shadowwinter As ShadowFactor, _
-            //                                       _shadowequinox As ShadowFactor) As List(Of Double)
-
-            //    '100% equinox is 20 march and 23 Sept
-            //    '100% summer is 21 june
-            //    '100% winter is 22 decemebr
-
-            //    Dim y1, y2, y3, y4, y5, y6 As Integer
-            //    y1 = -9     'winter solstice
-            //    y2 = 78     'equinox spring
-            //    y3 = 171    'summer solstice
-            //    y4 = 265    'equinox autumn
-            //    y5 = 355    'winter solstice
-            //    y6 = 443    'equinox spring
             int y1, y2, y3, y4, y5, y6;
             y1 = -9;    //winter solstice
             y2 = 78;    //equinox spring
@@ -567,48 +1115,23 @@ namespace SolarModel
             y5 = 355;   //winter solstice
             y6 = 443;   //equinox spring
 
-            //    Dim fullF1, fullF2 As Integer
             int fullF1, fullF2;
 
-            //    Dim factor As Double = 1
-            //    Dim i, u As Integer
-            //    Dim InterpolInterv As Integer
-            //    Dim dist1, dist2 As Double
             double factor = 1.0;
             int InterpolInterv;
             double dist1, dist2;
 
-
-            for (int i = 0; i < this.sky.Length; i++)
+            for (int i = 0; i < this.SPCount; i++)
             {
-                //    fullF1 = y1                    '100% shadowwinter on this day
-                //    fullF2 = y2                     '100% shadowequinox on this day
-                //    InterpolInterv = y2 + (y1 * -1)
                 fullF1 = y1;    //100% shadowwinter on this day
                 fullF2 = y2;    //100% shadowequinox on this day
                 InterpolInterv = y2 + y1 * -1;
-                //    For i = 0 To y2 - 1             'from 0.Jan to 19.March
-                for (int d = 0; d < y2; d++)
+                for (int d = 0; d < y2; d++)  //from 0.Jan to 19.March
                 {
-                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
-                    //        dist1 = 1 - dist1
-                    //        dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = 1 - dist1;
                     dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
-                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
-                    //        dist2 = 1 - dist1
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
-                    //        For u = 0 To 23
-                    //            factor = ((1 - Math.Round(_shadowwinter.ShadowFactors(u), 4)) * dist1) * _shadowwinter.sunshine(u) + _
-                    //                ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist2) * _shadowequinox.sunshine(u)
-
-                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
-                    //            If factor > 1 Then
-                    //                factor = 1
-                    //            End If
-                    //        Next
                     for (int u = 0; u < 24; u++)
                     {
                         factor = ((1 - Convert.ToDouble(ShdwBeam_Winter[i][u])) * dist1) +
@@ -617,37 +1140,16 @@ namespace SolarModel
                         int HOY = d * 24 + u;
                         this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
-                    //    Next
                 }
 
-
-                //    fullF1 = y2                      '100% shadowequinox on this day
-                //    fullF2 = y3                     '100% shadowsummer on this day
-                //    InterpolInterv = y3 - y2
                 fullF1 = y2;        // 100% shadowequinox on this day
                 fullF2 = y3;        // 100% shadowsummer on this day
                 InterpolInterv = y3 - y2;
-                //    For i = y2 To y3 - 1            'from 20.March to 20.june
-                for (int d = y2; d < y3; d++)
+                for (int d = y2; d < y3; d++)  //from 20.March to 20.june
                 {
-                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
-                    //        'dist1 = 1 - dist1
-                    //        dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
-                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
-                    //        dist2 = 1 - dist1
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
-                    dist1 = 1 - dist1;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
-                    //        For u = 0 To 23
-                    //            factor = ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist1) * _shadowequinox.sunshine(u) + _
-                    //               ((1 - Math.Round(_shadowsummer.ShadowFactors(u), 4)) * dist2) * _shadowsummer.sunshine(u)
-                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
-                    //            If factor > 1 Then
-                    //                factor = 1
-                    //            End If
-                    //        Next
                     for (int u = 0; u < 24; u++)
                     {
                         factor = ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist1) +
@@ -656,36 +1158,17 @@ namespace SolarModel
                         int HOY = d * 24 + u;
                         this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
-                    //    Next
                 }
 
-                //    fullF1 = y3                      '100% shadowsummer on this day
-                //    fullF2 = y4                     '100% shadowequinox on this day
-                //    InterpolInterv = y4 - y3
                 fullF1 = y3;        //100% shadowsummer on this day
                 fullF2 = y4;        //100% shadowequinox on this day
                 InterpolInterv = y4 - y3;
-                //    For i = y3 To y4 - 1            'from 21.June to 22.Sept
-                for (int d = y3; d < y4; d++)
+                for (int d = y3; d < y4; d++)  //from 21.June to 22.Sept
                 {
-                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
-                    //        dist1 = 1 - dist1
-                    //        dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
-                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
-                    //        dist2 = 1 - dist1
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = 1 - dist1;
                     dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
-                    //        For u = 0 To 23
-                    //            factor = ((1 - Math.Round(_shadowsummer.ShadowFactors(u), 4)) * dist1) * _shadowsummer.sunshine(u) + _
-                    //               ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist2) * _shadowequinox.sunshine(u)
-                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
-                    //            If factor > 1 Then
-                    //                factor = 1
-                    //            End If
-                    //        Next
                     for (int u = 0; u < 24; u++)
                     {
                         factor = ((1 - Convert.ToDouble(ShdwBeam_Summer[i][u])) * dist1) +
@@ -694,35 +1177,16 @@ namespace SolarModel
                         int HOY = d * 24 + u;
                         this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
-                    //    Next
                 }
-                //    fullF1 = y4                      '100% shadowequinox on this day
-                //    fullF2 = y5                     '100% shadowwinter on this day
-                //    InterpolInterv = y5 - y4
-                fullF1 = y4;
-                fullF2 = y5;
+
+                fullF1 = y4;    //100% shadowequinox on this day
+                fullF2 = y5;    //100% shadowwinter on this day
                 InterpolInterv = y5 - y4;
-                //    For i = y4 To y5 - 1            'from 23.Sept to 21.Dec
-                for (int d = y4; d < y5; d++)
+                for (int d = y4; d < y5; d++)   //from 23.Sept to 21.Dec
                 {
-                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
-                    //        'dist1 = 1 - dist1
-                    //        dist1 = Math.Sin(dist1 * (0.5 * Math.PI))
-                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
-                    //        dist2 = 1 - dist1
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
-                    dist1 = 1 - dist1;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
-                    //        For u = 0 To 23
-                    //            factor = ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist1) * _shadowequinox.sunshine(u) + _
-                    //               ((1 - Math.Round(_shadowwinter.ShadowFactors(u), 4)) * dist2) * _shadowwinter.sunshine(u)
-                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
-                    //            If factor > 1 Then
-                    //                factor = 1
-                    //            End If
-                    //        Next
                     for (int u = 0; u < 24; u++)
                     {
                         factor = ((1 - Convert.ToDouble(ShdwBeam_Equinox[i][u])) * dist1) +
@@ -731,36 +1195,17 @@ namespace SolarModel
                         int HOY = d * 24 + u;
                         this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
-                    //    Next
                 }
 
-                //    fullF1 = y5                      '100% shadowwinter on this day
-                //    fullF2 = y6                     '100% shadowequinox spring on this day
-                //    InterpolInterv = y6 - y5
-                fullF1 = y5;
-                fullF2 = y6;
+                fullF1 = y5;    //100% shadowwinter on this day
+                fullF2 = y6;    //100% shadowequinox spring on this day
                 InterpolInterv = y6 - y5;
-                //    For i = y5 To 364            'from 22.Dec to 31.Dec
-                for (int d = y5; d < 365; d++)
+                for (int d = y5; d < 365; d++)  //from 22.Dec to 31.Dec
                 {
-                    //        dist1 = (InterpolInterv - Math.Abs(fullF1 - i)) / InterpolInterv
-                    //        dist1 = 1 - dist1
-                    //        dist1 = Math.Cos(dist1 * (0.5 * Math.PI))
-                    //        'dist2 = (InterpolInterv - Math.Abs(fullF2 - i)) / InterpolInterv
-                    //        dist2 = 1 - dist1
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = 1 - dist1;
                     dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
-                    //        For u = 0 To 23
-                    //            factor = ((1 - Math.Round(_shadowwinter.ShadowFactors(u), 4)) * dist1) * _shadowwinter.sunshine(u) + _
-                    //               ((1 - Math.Round(_shadowequinox.ShadowFactors(u), 4)) * dist2) * _shadowequinox.sunshine(u)
-                    //            radList(i * 24 + u) = radList(i * 24 + u) * factor
-                    //            If factor > 1 Then
-                    //                factor = 1
-                    //            End If
-                    //        Next
                     for (int u = 0; u < 24; u++)
                     {
                         factor = ((1 - Convert.ToDouble(ShdwBeam_Winter[i][u])) * dist1) +
@@ -769,12 +1214,9 @@ namespace SolarModel
                         int HOY = d * 24 + u;
                         this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
                     }
-                    //    Next
                 }
 
             }
-            //    Return radList
-            //End Function
 
         }
 
@@ -897,10 +1339,9 @@ namespace SolarModel
                 //    For i = 0 To y2 - 1             'from 0.Jan to 19.March
                 for (int d = 0; d < y2; d++)
                 {
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = 1 - dist1;
                     dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
                     for (int u = 0; u < 24; u++)
                     {
@@ -921,10 +1362,8 @@ namespace SolarModel
                 //    For i = y2 To y3 - 1            'from 20.March to 20.june
                 for (int d = y2; d < y3; d++)
                 {
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
-                    dist1 = 1 - dist1;
-                    dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
                     dist2 = 1 - dist1;
                     for (int u = 0; u < 24; u++)
                     {
@@ -944,10 +1383,9 @@ namespace SolarModel
                 //    For i = y3 To y4 - 1            'from 21.June to 22.Sept
                 for (int d = y3; d < y4; d++)
                 {
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = 1 - dist1;
                     dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
                     for (int u = 0; u < 24; u++)
                     {
@@ -967,10 +1405,8 @@ namespace SolarModel
                 //    For i = y4 To y5 - 1            'from 23.Sept to 21.Dec
                 for (int d = y4; d < y5; d++)
                 {
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
-                    dist1 = 1 - dist1;
-                    dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
+                    dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
                     dist2 = 1 - dist1;
                     for (int u = 0; u < 24; u++)
                     {
@@ -991,10 +1427,9 @@ namespace SolarModel
                 //    For i = y5 To 364            'from 22.Dec to 31.Dec
                 for (int d = y5; d < 365; d++)
                 {
-                    dist1 = (InterpolInterv - Math.Abs(fullF1 - d)) / InterpolInterv;
+                    dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
                     dist1 = 1 - dist1;
                     dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
-                    dist2 = (InterpolInterv - Math.Abs(fullF2 - d)) / InterpolInterv;
                     dist2 = 1 - dist1;
                     for (int u = 0; u < 24; u++)
                     {
@@ -1178,12 +1613,26 @@ namespace SolarModel
         /// Set irradiation by inter-reflections for all hours of the year, using interpolation for specular reflection. 
         /// Actual irradiation calculation needs to be done externally.
         /// </summary>
-        /// <param name="_Ispecular">Irradiation values by specular reflection for several days and for each sensor point. List = each element is one day, double[SPCount][24]</param>
-        /// <param name="_Idiffuse">Irradiation values by diffuse reflection for each sensor point.</param>
-        public void SetInterreflInterpolated(List<double[][]> _Ispecular, double[] _Idiffuse)
+        /// <param name="_IreflSpecular">Irradiation values by specular reflection for each sensor point and each hour of the year.</param>
+        /// <param name="_IreflDiffuse">Irradiation values by diffuse reflection for each sensor point and each hour of the year.</param>
+        public void SetInterrefl_Annual(double[][] _IreflSpecular, double[][] _IreflDiffuse)
         {
-
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                for(int t=0; t<8760; t++)
+                {
+                    this.Irefl_spec[i][t] = _IreflSpecular[i][t];
+                    this.Irefl_diff[i][t] = _IreflDiffuse[i][t];
+                }
+            }
         }
+
+
+
+        #endregion
+
+
+
 
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -46,7 +46,6 @@
     <Compile Include="Irradiation.cs" />
     <Compile Include="Misc.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sensorpoint.cs" />
     <Compile Include="Sensorpoints.cs" />
     <Compile Include="SkyDome.cs" />
     <Compile Include="SunVector.cs" />
