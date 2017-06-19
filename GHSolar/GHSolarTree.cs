@@ -44,7 +44,7 @@ namespace GHSolar
             List<double> leaves = new List<double>();
             if (!DA.GetDataList(1, leaves)) { return; }
 
-            cSemiPermObject tree = new cSemiPermObject(mesh, leaves.ToArray());
+            cPermObject tree = new cPermObject(mesh, leaves.ToArray());
 
             DA.SetData(0, tree);
         }

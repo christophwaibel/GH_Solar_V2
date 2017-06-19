@@ -33,6 +33,7 @@ namespace GHSolar
         /// </summary>
         /// <param name="_mesh">Mesh object. Face normals are important.</param>
         /// <param name="_albedos">8760 albedo values.</param>
+        /// <param name="_specCoeff">8760 time series for specular reflection coefficient values. Value between 0 - 1.</param>
         /// <param name="_reflType">Reflection type. 0 = diffuse, 1 = specular (no refraction currently considered), 2 = specular and diffuse (snow), all other numbers = blind (no inter-reflections)</param>
         /// <param name="_tolerance">Tolerance, used to offset point from actual face center point, to avoid self obstruction.</param>
         /// <param name="_name">Name of the obstacle. E.g. use to indicate an analysis surface.</param>

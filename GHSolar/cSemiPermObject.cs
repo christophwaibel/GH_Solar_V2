@@ -16,17 +16,17 @@ using SolarModel;
 
 namespace GHSolar
 {
-    internal class cSemiPermObject
+    internal class cPermObject
     {
         internal Mesh mesh;
         internal double[] permeability = new double[8760];
 
         /// <summary>
-        /// Semipermeable object (e.g. a tree).
+        /// Permeable object (e.g. a tree).
         /// </summary>
         /// <param name="_mesh">Geometry.</param>
         /// <param name="_permeability">8760 coefficients for each hour of the year, 1.0 : non-permeable, 0.0 : fully permeable.</param>
-        internal cSemiPermObject(Mesh _mesh, double[] _permeability)
+        internal cPermObject(Mesh _mesh, double[] _permeability)
         {
             mesh = _mesh;
             _permeability.CopyTo(permeability,0);
