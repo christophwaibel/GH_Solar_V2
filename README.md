@@ -12,7 +12,7 @@ To Do:
 - [ ] specular inter-reflections refraction coefficients
 - [x] diffuse inter-reflections max 1 bounce
 - [x] annual interpolation diffuse inter-reflections
-- [x] multi-threading
+- [ ] multi-threading
 - [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
 
 
