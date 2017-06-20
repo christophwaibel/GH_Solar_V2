@@ -123,6 +123,164 @@ namespace SolarModel
             }
         }
 
+
+
+
+
+        #region PublicFunctions
+
+        /// <summary>
+        /// Calculates total solar irradiation on a sensor point for one hour of the year.
+        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759]. HOY = (DOY-1) * 24 + LT.</para>
+        /// </summary>
+        /// <param name="DOY">Day of the year, ∈ [1, 365].</param>
+        /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>
+        /// <param name="weather">Weather data.</param>
+        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
+        public void CalcIrradiation(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
+        {
+            int HOY = (DOY - 1) * 24 + LT;
+            CalcIbeam(HOY, weather, sunvectors);
+            CalcIdiff(DOY, HOY, weather, sunvectors);
+            for (int i = 0; i < this.I.Length; i++)
+            {
+                if (this.snowcovered[i][HOY])
+                {
+                    this.I[i][HOY] = 0.0;
+                }
+                else
+                {
+                    this.I[i][HOY] = this.Ibeam[i][HOY] + this.Idiff[i][HOY] + this.Irefl_spec[i][HOY] + this.Irefl_diff[i][HOY];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calculates total solar irradiation on a sensor point for one hour of the year. Multi-Threading version.
+        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759]. HOY = (DOY-1) * 24 + LT.</para>
+        /// </summary>
+        /// <param name="DOY">Day of the year, ∈ [1, 365].</param>
+        /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>
+        /// <param name="weather">Weather data.</param>
+        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
+        public void CalcIrradiationMT(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
+        {
+            int HOY = (DOY - 1) * 24 + LT;
+
+            CalcIbeam_MT(HOY, weather, sunvectors);
+            CalcIdiff_MT(DOY, HOY, weather, sunvectors);
+
+            Parallel.For(0, this.I.Length, i =>
+            {
+                if (this.snowcovered[i][HOY])
+                {
+                    this.I[i][HOY] = 0.0;
+                }
+                else
+                {
+                    this.I[i][HOY] = this.Ibeam[i][HOY] + this.Idiff[i][HOY] + this.Irefl_spec[i][HOY] + this.Irefl_diff[i][HOY];
+                }
+            });
+        }
+
+        /// <summary>
+        /// Calculates hourly total solar irradiation on the sensor point for the entire year.
+        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759].</para>
+        /// </summary>
+        /// <param name="weather">Weather data.</param>
+        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
+        public void CalcIrradiation(Context.cWeatherdata weather, SunVector[] sunvectors)
+        {
+            CalcIbeam(weather, sunvectors);
+            CalcIdiff(weather, sunvectors);
+            for (int i = 0; i < this.I.Length; i++)
+            {
+                for (int t = 0; t < 8760; t++)
+                {
+                    if (this.snowcovered[i][t])
+                    {
+                        this.I[i][t] = 0.0;
+                    }
+                    else
+                    {
+                        this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t] + this.Irefl_spec[i][t] + this.Irefl_diff[i][t];
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calculates hourly total solar irradiation on the sensor point for the entire year. Multi-Threading version.
+        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759].</para>
+        /// </summary>
+        /// <param name="weather">Weather data.</param>
+        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
+        public void CalcIrradiationMT(Context.cWeatherdata weather, SunVector[] sunvectors)
+        {
+            CalcIbeam_MT(weather, sunvectors);
+            CalcIdiff_MT(weather, sunvectors);
+            Parallel.For(0, this.I.Length, i =>
+            {
+                for (int t = 0; t < 8760; t++)
+                {
+                    if (this.snowcovered[i][t])
+                    {
+                        this.I[i][t] = 0.0;
+                    }
+                    else
+                    {
+                        this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t] + this.Irefl_spec[i][t] + this.Irefl_diff[i][t];
+                    }
+                }
+            });
+        }
+
+
+        /// <summary>
+        /// Set simple sky dome obstruction by taking into account the sensor points tilt angles.
+        /// </summary>
+        /// <param name="tiltangle">Sensor points tilt angles, in degree.</param>
+        public void SetSimpleSky(double[] tiltangle)
+        {
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                double visibleHemisphere = (1 + Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2;
+                for (int HOY = 0; HOY < 8760; HOY++)
+                {
+                    this.sky[i].ShdwDome[HOY] = 1 - visibleHemisphere;
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Set simplified ground reflection values, based on albedo value of the ground.
+        /// </summary>
+        /// <remarks>Reflected irradiation is added to the current diffuse inter-reflection value.</remarks>
+        /// <param name="tiltangle">Sensor points tilt angles, in degree. [i] = for each sensor point.</param>
+        /// <param name="albedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
+        /// <param name="weather">Weather data.</param>
+        /// <param name="sunvectors">8760 sunvectors, [t] = for each hour of the year.</param>
+        public void SetSimpleGroundReflection(double[] tiltangle, double[] albedo, Context.cWeatherdata weather, SunVector[] sunvectors)
+        {
+            for (int i = 0; i < this.SPCount; i++)
+            {
+                for (int HOY = 0; HOY < 8760; HOY++)
+                {
+                    this.Irefl_diff[i][HOY] += (albedo[HOY] *
+                        (weather.DNI[HOY] * Math.Cos((sunvectors[HOY].udtCoordinates.dZenithAngle) * (Math.PI / 180))
+                        + weather.DHI[HOY])) * ((1 - Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2);
+                }
+            }
+        }
+
+        #endregion
+
+
+
+
+
+
         /// <summary>
         /// 3d vector.
         /// </summary>
@@ -144,7 +302,7 @@ namespace SolarModel
 
 
 
-
+        #region PrivateFunctions
         /// <summary>
         /// Calculates diffuse irradiation on the sensor point for one hour of the year.
         /// <para>Access: total diffuse irradiation: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
@@ -247,7 +405,7 @@ namespace SolarModel
             {
                 for (int i = 0; i < this.SPCount; i++)
                 {
-                    if (this.sky[i].ShdwBeam[HOY] + Convert.ToDouble(snowcovered[i][HOY]) > 1.0)
+                    if (this.sky[i].ShdwBeam[HOY] + Convert.ToDouble(snowcovered[i][HOY]) >= 1.0)
                         this.Ibeam[i][HOY] = 0.0;
                     else
                     {
@@ -327,122 +485,8 @@ namespace SolarModel
                 CalcIbeam(t, weather, sunvectors);
             });
         }
-
-
-
-
-        #region PublicFunctions
-
-        /// <summary>
-        /// Calculates total solar irradiation on a sensor point for one hour of the year.
-        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759]. HOY = (DOY-1) * 24 + LT.</para>
-        /// </summary>
-        /// <param name="DOY">Day of the year, ∈ [1, 365].</param>
-        /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        public void CalcIrradiation(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            int HOY = (DOY - 1) * 24 + LT;
-            CalcIbeam(HOY, weather, sunvectors);
-            CalcIdiff(DOY, HOY, weather, sunvectors);
-            for (int i = 0; i < this.I.Length; i++)
-                this.I[i][HOY] = this.Ibeam[i][HOY] + this.Idiff[i][HOY] + this.Irefl_spec[i][HOY] + this.Irefl_diff[i][HOY];
-        }
-
-        /// <summary>
-        /// Calculates total solar irradiation on a sensor point for one hour of the year. Multi-Threading version.
-        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759]. HOY = (DOY-1) * 24 + LT.</para>
-        /// </summary>
-        /// <param name="DOY">Day of the year, ∈ [1, 365].</param>
-        /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        public void CalcIrradiationMT(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            int HOY = (DOY - 1) * 24 + LT;
-
-            CalcIbeam_MT(HOY, weather, sunvectors);
-            CalcIdiff_MT(DOY, HOY, weather, sunvectors);
-
-            Parallel.For(0, this.I.Length, i =>
-            {
-                this.I[i][HOY] = this.Ibeam[i][HOY] + this.Idiff[i][HOY] + this.Irefl_spec[i][HOY] + this.Irefl_diff[i][HOY];
-            });
-        }
-
-        /// <summary>
-        /// Calculates hourly total solar irradiation on the sensor point for the entire year.
-        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759].</para>
-        /// </summary>
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        public void CalcIrradiation(Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            CalcIbeam(weather, sunvectors);
-            CalcIdiff(weather, sunvectors);
-            for (int i = 0; i < this.I.Length; i++)
-                for (int t = 0; t < 8760; t++)
-                    this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t] + this.Irefl_spec[i][t] + this.Irefl_diff[i][t];
-        }
-
-        /// <summary>
-        /// Calculates hourly total solar irradiation on the sensor point for the entire year. Multi-Threading version.
-        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759].</para>
-        /// </summary>
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        public void CalcIrradiationMT(Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            CalcIbeam_MT(weather, sunvectors);
-            CalcIdiff_MT(weather, sunvectors);
-            Parallel.For(0, this.I.Length, i =>
-            {
-                for (int t = 0; t < 8760; t++)
-                    this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t] + this.Irefl_spec[i][t] + this.Irefl_diff[i][t]; 
-            });
-        }
-
-
-        /// <summary>
-        /// Set simple sky dome obstruction by taking into account the sensor points tilt angles.
-        /// </summary>
-        /// <param name="tiltangle">Sensor points tilt angles, in degree.</param>
-        public void SetSimpleSky(double[] tiltangle)
-        {
-            for (int i = 0; i < this.SPCount; i++)
-            {
-                double visibleHemisphere = (1 + Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2;
-                for (int HOY = 0; HOY < 8760; HOY++)
-                {
-                    this.sky[i].ShdwDome[HOY] = 1 - visibleHemisphere;
-                }   
-            }
-        }
-
-
-        /// <summary>
-        /// Set simplified ground reflection values, based on albedo value of the ground.
-        /// </summary>
-        /// <remarks>Reflected irradiation is added to the current diffuse inter-reflection value.</remarks>
-        /// <param name="tiltangle">Sensor points tilt angles, in degree. [i] = for each sensor point.</param>
-        /// <param name="albedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">8760 sunvectors, [t] = for each hour of the year.</param>
-        public void SetSimpleGroundReflection(double [] tiltangle, double [] albedo, Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            for (int i = 0; i < this.SPCount; i++)
-            {
-                for (int HOY = 0; HOY < 8760; HOY++)
-                {
-                    this.Irefl_diff[i][HOY] += (albedo[HOY] *
-                        (weather.DNI[HOY] * Math.Cos((sunvectors[HOY].udtCoordinates.dZenithAngle) * (Math.PI / 180))
-                        + weather.DHI[HOY])) * ((1 - Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2);
-                }
-            }
-        }
-
         #endregion
+
 
 
 
@@ -573,8 +617,8 @@ namespace SolarModel
         /// <param name="SkyPermLength">Iff obstructed by perm object, indicate the length of penetration through object. List [i]: each SP, [u][p], u = each sky dome vertex, p = index to permobject ext.coeff.</param>
         ///<param name="extinctCoeff">For each permeable object, 8760 time series of extinction coefficients. List [p] = each permeable object, [hoy] = hour of the year 1-8760.</param>
         public void SetShadows_Annual_Permeables(int[] StartDays, int[] EndDays,
-            List<bool[][]> ShdwBeam, List<bool[][]> BeamPermIs, List<int[][][]> BeamPermRefs, List<double[][][]> BeamPermLength,
-            List<bool[]> ShdwSky, List<bool[]> SkyPermIs, List<int[][]> SkyPermRefs, List<double[][]> SkyPermLength, List<double[]> extinctCoeff)
+            List<bool[][]> ShdwBeam, bool[][][] BeamPermIs, int[][][][] BeamPermRefs, double[][][][] BeamPermLength,
+            List<bool[]> ShdwSky, bool[][] SkyPermIs, int[][][] SkyPermRefs, double[][][] SkyPermLength, List<double[]> extinctCoeff)
         {
             for (int i = 0; i < this.SPCount; i++)
             {
@@ -626,44 +670,67 @@ namespace SolarModel
                         }
 
                         double dist2 = 1 - dist1;
+
                         for (int h = 0; h < 24; h++)
                         {
+                            bool permPresent = false;
                             int HOY = (n - 1) * 24 + h;
+                            double factor1 = 0;
+                            double factor2 = 0;
                             if (BeamPermIs[i][d][h])
                             {
+                                permPresent = true;
                                 double extCoeffSum1 = 0;
-                                double extCoeffSum2 = 0;
-                                double factor1 = 0;
-                                double factor2 = 0;
                                 for (int p = 0; p < BeamPermLength[i][d][h].Length; p++)
                                 {
                                     extCoeffSum1 += BeamPermLength[i][d][h][p] * extinctCoeff[BeamPermRefs[i][d][h][p]][HOY];
                                 }
                                 if (extCoeffSum1 > 1) extCoeffSum1 = 1;
-                                factor1 = (1 - Convert.ToDouble(ShdwBeam[i][d][h]) * extCoeffSum1) * dist1;
+                                factor1 = (Convert.ToDouble(BeamPermIs[i][d][h]) * extCoeffSum1) * dist1;
                                 if (BeamPermIs[i][dd][h])
                                 {
+                                    double extCoeffSum2 = 0.0;
                                     for (int p = 0; p < BeamPermLength[i][dd][h].Length; p++)
                                     {
                                         extCoeffSum2 += BeamPermLength[i][dd][h][p] * extinctCoeff[BeamPermRefs[i][dd][h][p]][HOY];
                                     }
                                     if (extCoeffSum2 > 1) extCoeffSum2 = 1;
-                                    factor2 = (1 - Convert.ToDouble(ShdwBeam[i][dd][h]) * extCoeffSum2) * dist2;
+                                    factor2 = (Convert.ToDouble(BeamPermIs[i][dd][h]) * extCoeffSum2) * dist2;
                                 }
                                 else
                                 {
-                                    factor2 = (1 - Convert.ToDouble(ShdwBeam[i][dd][h])) * dist2;
+                                    factor2 = (Convert.ToDouble(ShdwBeam[i][dd][h])) * dist2;
                                 }
-                                double shdw = factor1 + factor2;
-                                this.sky[i].SetShadow_Beam(HOY, shdw);
                             }
                             else
                             {
-                                double factor = ((1 - Convert.ToDouble(ShdwBeam[i][d][h])) * dist1) +
-                                    ((1 - Convert.ToDouble(ShdwBeam[i][dd][h])) * dist2);
-                                bool shdw = (factor >= 0.5) ? false : true;
-                                this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(shdw));
+                                factor1 = Convert.ToDouble(ShdwBeam[i][d][h]) * dist1;
+                                if (BeamPermIs[i][dd][h])
+                                {
+                                    permPresent = true;
+                                    double extCoeffSum2 = 0.0;
+                                    for (int p = 0; p < BeamPermLength[i][dd][h].Length; p++)
+                                    {
+                                        extCoeffSum2 += BeamPermLength[i][dd][h][p] * extinctCoeff[BeamPermRefs[i][dd][h][p]][HOY];
+                                    }
+                                    if (extCoeffSum2 > 1) extCoeffSum2 = 1.0;
+                                    factor2 = (Convert.ToDouble(BeamPermIs[i][dd][h]) * extCoeffSum2) * dist2;
+                                }
+                                else
+                                {
+                                    factor2 = (Convert.ToDouble(ShdwBeam[i][dd][h])) * dist2;
+                                }
                             }
+                            double shdw = factor1 + factor2;
+                            if (permPresent)
+                            {
+                                if (shdw > 1.0) shdw = 1.0;
+                            }
+                            else
+                            {
+                                shdw = (shdw < 0.5) ? 0 : 1;
+                            }
+                            this.sky[i].SetShadow_Beam(HOY, shdw);
                         }
                     }
                 }
@@ -1572,16 +1639,8 @@ namespace SolarModel
         {
             for (int i = 0; i < this.SPCount; i++)
             {
-                if (this.snowcovered[i][HOY])
-                {
-                    this.Irefl_spec[i][HOY] = 0.0;
-                    this.Irefl_diff[i][HOY] = 0.0;
-                }
-                else
-                {
-                    this.Irefl_spec[i][HOY] = _Ispecular[i];
-                    this.Irefl_diff[i][HOY] = _Idiffuse[i];
-                }
+                this.Irefl_spec[i][HOY] = _Ispecular[i];
+                this.Irefl_diff[i][HOY] = _Idiffuse[i];
             }
         }
 
@@ -1596,16 +1655,8 @@ namespace SolarModel
         {
             Parallel.For(0, this.SPCount, i =>
             {
-                if (this.snowcovered[i][HOY])
-                {
-                    this.Irefl_spec[i][HOY] = 0.0;
-                    this.Irefl_diff[i][HOY] = 0.0;
-                }
-                else
-                {
-                    this.Irefl_spec[i][HOY] = _Ispecular[i];
-                    this.Irefl_diff[i][HOY] = _Idiffuse[i];
-                }
+                this.Irefl_spec[i][HOY] = _Ispecular[i];
+                this.Irefl_diff[i][HOY] = _Idiffuse[i];
             });
         }
 
@@ -1633,130 +1684,5 @@ namespace SolarModel
 
 
 
-
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        //public void SetInterreflection()
-        //{
-
-        //    // decomposed between SPECULAR and DIFFUSE interreflections
-        //    // limit to bounce = 1
-
-
-
-        //    //  rhino obstructions forall t. use INTERPOLATION 
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////     S P E C U L A R   /////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    //SPECULAR
-        //    // double total_Specular_Budget = 0;
-        //    // forall specular objects:
-
-        //    // 01:
-        //    //  from sensorpoint (SP), shoot rays ONLY to specular objects. 
-        //    //      - check, if vectorangle(ray, sensorpoint normal) <= 90°. if not, break. else:
-        //    //          - check, if ray unobstructed. if not, break. else, go to 02.
-
-        //    // 02:
-        //    // if ray <= 90° (otherwise it hits the backside of the specular surface) and unobstructed:
-        //    //      - if bounce > 1 (else go to 03):
-        //    //          - for each bounce > 1, calc reflected ray on the specular obstacle and for new ray, go to 01:
-        //    //              - go to 03, if unobstructed:
-
-        //    // 03:
-        //    //      - for all t in [0,8759]
-        //    //          - check, if daytime. if not, break. else:
-        //    //              - from specular obstacle object, make ray to sunvector. calc vectorangle(sunvector, obstacle normal). if not <= 90°, break. else:
-        //    //                  - make reflection of sunvector on obstacle. if this reflecting vector *-1 is not coincident with connecting ray to SP (tolerance of +- 1°?), break. else:
-        //    //                      - check if the sunvector (not the reflected) is obstructed. if yes, break. else, go to 03.
-            
-        //    // 03:
-        //    // calc Specular_interreflection = I_direct incident on obstacle object. Multiply with its specular coefficient (albedo?). 
-        //    //      and account for incidence angle on sensorpoint: I_sensorpoint = I_incident sin(90°-vectorangle(sp_normal, incident_ray))
-        //    // total_Specular_Budget += Specular_interreflection;
-
-
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-        //    // rhino obstructions only once.
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////     D I F F U S E     /////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    //DIFFUSE
-        //    // double average_Diffuse_Budget = 0;
-        //    // set diffuse hedgehog ray count. using icosahedron vertices, but not those at the "horizon"/perimeter. too flat anyway.
-        //    // the more rays, the more precise the average value will be.
-
-        //    // 01:
-        //    // for all hedgehog rays:
-        //    //      - check, if it hits a diffuse obstacle object. if not, break. else, go to 02:
-
-        //    // 02:
-        //    //      - calc I_obstacle = total irradiation on this obstacle. multiply with its diffuse reflection (albedo?) coefficient.
-        //    //      - average_Diffuse_Budget += I_obstacle
-
-        //    // 03:
-        //    // average_Diffuse_Budget /= hedgehog_ray_Count
-
-
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //}
-
-
-
-
-     
-
-
-        ///// <summary>
-        ///// Sets the obstruction factors (i.e. shadows) of each sensor point.
-        ///// <para>Split into shadows of diffuse radiation (further split into horizon and dome) and beam radiation.</para>
-        ///// <para>Using three days for beam radiation shadow calculation, and interpolates for the other days of the year.</para>
-        ///// </summary>
-        ///// <param name="SunVShdw_equinox">List (for each sensorpoint) of boolean arrays with each 24 elements (for each hour of the day) indicating for the equinox day, wether beam radiation hits the sensorpoint.</param>
-        ///// <param name="SunVShdw_summer">List (for each sensorpoint) of boolean arrays with each 24 elements (for each hour of the day) indicating for the summer solstice day, wether beam radiation hits the sensorpoint.</param>
-        ///// <param name="SunVShdw_winter">List (for each sensorpoint) of boolean arrays with each 24 elements (for each hour of the day) indicating for the winter solstice day, wether beam radiation hits the sensorpoint.</param>
-        ///// <param name="HorizonShdw">List (for each sensorpoint) of boolean arrays with each n elements (for each segment of the horizon, accessible with Sensorpoints[i].sky.VerticesHorizon and .HorizonSegments) indicating, wether the sensorpoint has free view to the respective horizon segment.</param>
-        ///// <param name="SkyShdw">List (for each sensorpoint) of boolean arrays with each m elements (for each vertex of the skydome, accessible with Sensorpoints[i].sky.VerticesHemisphere) indicating, wether the sensorpoint has free view to the respective skydome vertex.</param>
-        //public void SetShadows(List<bool[]> SunVShdw_equinox, List<bool[]> SunVShdw_summer, List<bool[]> SunVShdw_winter, List<bool[]> HorizonShdw, List<bool[]> SkyShdw)
-        //{
-        //    //List: foreach sensorpoint in sensorpoints; bool[24] foreach hour of day.
-
-        //    //!!!!!!!!!! quite trivial. rhino will provide list of vectors for obstruction. INTERPOLATION!!! take 3 days! and itnerpolate in-between.
-        //    // I wonder if a meta-model would work, which takes 3 calculated days as features (and longi+latitude) and tells me for the rest days, if the rays are also blocked. I cuold try that quite quickly, coz I can calculate the training data in rhino. Just run 8760 obstruction checks. Then, meta model in matlab, python, Accord.net or whatever
-        //    //sky[i].SetShadow_SunVector(
-
-        //    //!!!!!!!!!!!!!!!!!!!!   these factors need to be calculated. rhino will give me bools of faces of the dome or horizon obstructed.
-        //    //some calc needs to be further done to account for the regions, that are blocked anyway. these should be ommited for the factor calcualtion! only consider those faces, which would also be hit by sun rays 
-        //    //sky[i].SetShadow_Dome(
-        //    //sky[i].SetShadow_Horizon(
-
-
-
-
-
-
-        //    for (int i = 0; i < this.I.Length; i++)
-        //    {
-        //        for (int t = 0; t < 8760; t++)
-        //        {
-        //            this.Ibeam[i][t] *= (1 - Convert.ToInt32(sky[i].ShdwBeam[t]));
-        //            this.Idiff[i][t][3] *= (1 - Convert.ToInt32(sky[i].ShdwBeam[t]));
-        //            this.Idiff[i][t][2] *= (1 - sky[i].ShdwDome);
-        //            this.Idiff[i][t][1] *= (1 - sky[i].ShdwHorizon);
-        //            this.Idiff[i][t][0] = this.Idiff[i][t][1] + this.Idiff[i][t][2] + this.Idiff[i][t][3];
-        //            this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t][0];
-        //        }
-        //    }
-        //}
-
-        //!!!!!!!!!!! SetShadows(DOY, LT)
     }
 }

@@ -77,7 +77,7 @@ namespace SolarModel
         /// </summary>
         /// <param name="year"></param>
         /// <returns>[0]: spring equinox, [1]: summer solstice, [2]: autumn equinox, [3]: winter solstice. ∈ [1, 365]</returns>
-        public static int [] GetEquinoxSolstice(int year)
+        public static int[] GetEquinoxSolstice(int year)
         {
             //http://farside.ph.utexas.edu/Books/Syntaxis/Almagest/node36.html
             //view-source:https://stellafane.org/misc/equinox.html
@@ -121,111 +121,117 @@ namespace SolarModel
 
 
 
-    //PSA position sun algorithm
-    //http://www.psa.es/sdg/sunpos.htm
-    //http://www.sciencedirect.com/science/article/pii/S0038092X00001560
-    private cSunCoordinates sunpos() 
-    { 
-        //Main variables
-        double dElapsedJulianDays;
-        double dDecimalHours;
-        double dEclipticLongitude;
-        double dEclipticObliquity;
-        double dRightAscension;
-        double dDeclination;
+        /// <summary>
+        /// PSA position sun algorithm
+        /// http://www.psa.es/sdg/sunpos.htm
+        /// http://www.sciencedirect.com/science/article/pii/S0038092X00001560
+        /// </summary>
+        /// <returns></returns>
+        private cSunCoordinates sunpos()
+        {
+            //Main variables
+            double dElapsedJulianDays;
+            double dDecimalHours;
+            double dEclipticLongitude;
+            double dEclipticObliquity;
+            double dRightAscension;
+            double dDeclination;
 
-        //Auxuliary variables
-        double dY;
-        double dX;
+            //Auxuliary variables
+            double dY;
+            double dX;
 
-        //Calculate difference in days between the current Julian Day
-        //and JD 2451545.0, which is noon 1 January 2000 Universal Time
-        double dJulianDate;
-        long liAux1;
-        long liAux2;
-        //Calculate time of the day in UT decimal hours
-        dDecimalHours = udtTime.dHours + (udtTime.dMinutes + udtTime.dSeconds / 60.0) / 60.0;
-        //Calculate current Julian Day
-        liAux1 = (udtTime.iMonth - 14) / 12;
-        liAux2 = (1461 * (udtTime.iYear + 4800 + liAux1)) / 4 + (367 * (udtTime.iMonth
-                    - 2 - 12 * liAux1)) / 12 - (3 * ((udtTime.iYear + 4900
-                + liAux1) / 100)) / 4 + udtTime.iDay - 32075;
-        dJulianDate = liAux2 - 0.5 + dDecimalHours / 24.0;
-        //Calculate difference between current Julian Day and JD 2451545.0 
-        dElapsedJulianDays = dJulianDate - 2451545.0;
+            //Calculate difference in days between the current Julian Day
+            //and JD 2451545.0, which is noon 1 January 2000 Universal Time
+            double dJulianDate;
+            long liAux1;
+            long liAux2;
+            //Calculate time of the day in UT decimal hours
+            dDecimalHours = udtTime.dHours + (udtTime.dMinutes + udtTime.dSeconds / 60.0) / 60.0;
+            //Calculate current Julian Day
+            liAux1 = (udtTime.iMonth - 14) / 12;
+            liAux2 = (1461 * (udtTime.iYear + 4800 + liAux1)) / 4 + (367 * (udtTime.iMonth
+                        - 2 - 12 * liAux1)) / 12 - (3 * ((udtTime.iYear + 4900
+                    + liAux1) / 100)) / 4 + udtTime.iDay - 32075;
+            dJulianDate = liAux2 - 0.5 + dDecimalHours / 24.0;
+            //Calculate difference between current Julian Day and JD 2451545.0 
+            dElapsedJulianDays = dJulianDate - 2451545.0;
 
-        //Calculate ecliptic coordinates (ecliptic longitude and obliquity of the 
-        //ecliptic in radians but without limiting the angle to be less than 2*Pi 
-        //(i.e., the result may be greater than 2*Pi)
-        double dMeanLongitude;
-        double dMeanAnomaly;
-        double dOmega;
-        dOmega = 2.1429 - 0.0010394594 * dElapsedJulianDays;
-        dMeanLongitude = 4.895063 + 0.017202791698 * dElapsedJulianDays;   //Radians
-        dMeanAnomaly = 6.24006 + 0.0172019699 * dElapsedJulianDays;
-        dEclipticLongitude = dMeanLongitude + 0.03341607 * Math.Sin(dMeanAnomaly) 
-            + 0.00034894 * Math.Sin(2 * dMeanAnomaly) - 0.0001134 
-            - 0.0000203 * Math.Sin(dOmega);
-        dEclipticObliquity = 0.4090928 - 0.000000006214 * dElapsedJulianDays 
-            + 0.0000396 * Math.Cos(dOmega);
-
-
-        //Calculate celestial coordinates ( right ascension and declination ) in radians 
-        //but without limiting the angle to be less than 2*Pi (i.e., the result may be 
-        //greater than 2*Pi)
-        double dSin_EclipticLongitude;
-        dSin_EclipticLongitude = Math.Sin(dEclipticLongitude);
-        dY = Math.Cos(dEclipticObliquity) * dSin_EclipticLongitude;
-        dX = Math.Cos(dEclipticLongitude);
-        dRightAscension = Math.Atan2(dY, dX);
-        if (dRightAscension < 0.0) dRightAscension = dRightAscension + twopi;
-        dDeclination = Math.Asin(Math.Sin(dEclipticObliquity) * dSin_EclipticLongitude);
+            //Calculate ecliptic coordinates (ecliptic longitude and obliquity of the 
+            //ecliptic in radians but without limiting the angle to be less than 2*Pi 
+            //(i.e., the result may be greater than 2*Pi)
+            double dMeanLongitude;
+            double dMeanAnomaly;
+            double dOmega;
+            dOmega = 2.1429 - 0.0010394594 * dElapsedJulianDays;
+            dMeanLongitude = 4.895063 + 0.017202791698 * dElapsedJulianDays;   //Radians
+            dMeanAnomaly = 6.24006 + 0.0172019699 * dElapsedJulianDays;
+            dEclipticLongitude = dMeanLongitude + 0.03341607 * Math.Sin(dMeanAnomaly)
+                + 0.00034894 * Math.Sin(2 * dMeanAnomaly) - 0.0001134
+                - 0.0000203 * Math.Sin(dOmega);
+            dEclipticObliquity = 0.4090928 - 0.000000006214 * dElapsedJulianDays
+                + 0.0000396 * Math.Cos(dOmega);
 
 
-        //Calculate local coordinates ( azimuth and zenith angle ) in degrees
-        double dGreenwichMeanSiderealTime;
-        double dLocalMeanSiderealTime;
-        double dLatitudeInRadians;
-        double dHourAngle;
-        double dCos_Latitude;
-        double dSin_Latitude;
-        double dCos_HourAngle;
-        double dParallax;
-        dGreenwichMeanSiderealTime = 6.6974243242 + 0.0657098283 * dElapsedJulianDays + dDecimalHours;
-        dLocalMeanSiderealTime = (dGreenwichMeanSiderealTime * 15 + udtLocation.dLongitude) * rad;
-        dHourAngle = dLocalMeanSiderealTime - dRightAscension;
-        dLatitudeInRadians = udtLocation.dLatitude * rad;
-        dCos_Latitude = Math.Cos(dLatitudeInRadians);
-        dSin_Latitude = Math.Sin(dLatitudeInRadians);
-        dCos_HourAngle = Math.Cos(dHourAngle);
-
-        cSunCoordinates sunposout;
-        sunposout.dZenithAngle = (Math.Acos(dCos_Latitude * dCos_HourAngle 
-            * Math.Cos(dDeclination) + Math.Sin(dDeclination) * dSin_Latitude));
-        dY = -Math.Sin(dHourAngle);
-        dX = Math.Tan(dDeclination) * dCos_Latitude - dSin_Latitude * dCos_HourAngle;
-        sunposout.dAzimuth = Math.Atan2(dY, dX);
-        if (sunposout.dAzimuth < 0.0) sunposout.dAzimuth = sunposout.dAzimuth + twopi;
-        sunposout.dAzimuth = sunposout.dAzimuth / rad;
-        //Parallax Correction
-        dParallax = (dEarthMeanRadius / dAstronomicalUnit) * Math.Sin(sunposout.dZenithAngle);
-        sunposout.dZenithAngle = (sunposout.dZenithAngle + dParallax) / rad;
-        return sunposout;
-    }
+            //Calculate celestial coordinates ( right ascension and declination ) in radians 
+            //but without limiting the angle to be less than 2*Pi (i.e., the result may be 
+            //greater than 2*Pi)
+            double dSin_EclipticLongitude;
+            dSin_EclipticLongitude = Math.Sin(dEclipticLongitude);
+            dY = Math.Cos(dEclipticObliquity) * dSin_EclipticLongitude;
+            dX = Math.Cos(dEclipticLongitude);
+            dRightAscension = Math.Atan2(dY, dX);
+            if (dRightAscension < 0.0) dRightAscension = dRightAscension + twopi;
+            dDeclination = Math.Asin(Math.Sin(dEclipticObliquity) * dSin_EclipticLongitude);
 
 
-    //translate Spherical Coordinate System (Azimuth and Zenith) to Cartesian (XYZ)
-    private cSunXYZ SunposXYZ() 
-    {
-        //http://ch.mathworks.com/help/matlab/ref/sph2cart.html?requestedDomain=www.mathworks.com
-        double r = 1;
-        //don't know, why I have to do this 90°- stuff and especially why I have to make *-1 for X...
-        cSunXYZ SunposXYZout;
-        SunposXYZout.x = (r * Math.Cos(rad * 90.0 - rad * udtCoordinates.dZenithAngle) * Math.Cos((rad * udtCoordinates.dAzimuth) + (rad * 90.0))) * -1.0;
-        SunposXYZout.y = r * Math.Cos(rad * 90.0 - rad * udtCoordinates.dZenithAngle) * Math.Sin((rad * udtCoordinates.dAzimuth) + (rad * 90.0));
-        SunposXYZout.z = r * Math.Sin(rad * 90.0 - rad * udtCoordinates.dZenithAngle);
-        return SunposXYZout;
-     }
+            //Calculate local coordinates ( azimuth and zenith angle ) in degrees
+            double dGreenwichMeanSiderealTime;
+            double dLocalMeanSiderealTime;
+            double dLatitudeInRadians;
+            double dHourAngle;
+            double dCos_Latitude;
+            double dSin_Latitude;
+            double dCos_HourAngle;
+            double dParallax;
+            dGreenwichMeanSiderealTime = 6.6974243242 + 0.0657098283 * dElapsedJulianDays + dDecimalHours;
+            dLocalMeanSiderealTime = (dGreenwichMeanSiderealTime * 15 + udtLocation.dLongitude) * rad;
+            dHourAngle = dLocalMeanSiderealTime - dRightAscension;
+            dLatitudeInRadians = udtLocation.dLatitude * rad;
+            dCos_Latitude = Math.Cos(dLatitudeInRadians);
+            dSin_Latitude = Math.Sin(dLatitudeInRadians);
+            dCos_HourAngle = Math.Cos(dHourAngle);
+
+            cSunCoordinates sunposout;
+            sunposout.dZenithAngle = (Math.Acos(dCos_Latitude * dCos_HourAngle
+                * Math.Cos(dDeclination) + Math.Sin(dDeclination) * dSin_Latitude));
+            dY = -Math.Sin(dHourAngle);
+            dX = Math.Tan(dDeclination) * dCos_Latitude - dSin_Latitude * dCos_HourAngle;
+            sunposout.dAzimuth = Math.Atan2(dY, dX);
+            if (sunposout.dAzimuth < 0.0) sunposout.dAzimuth = sunposout.dAzimuth + twopi;
+            sunposout.dAzimuth = sunposout.dAzimuth / rad;
+            //Parallax Correction
+            dParallax = (dEarthMeanRadius / dAstronomicalUnit) * Math.Sin(sunposout.dZenithAngle);
+            sunposout.dZenithAngle = (sunposout.dZenithAngle + dParallax) / rad;
+            return sunposout;
+        }
+
+
+        /// <summary>
+        /// translate Spherical Coordinate System (Azimuth and Zenith) to Cartesian (XYZ)
+        /// </summary>
+        /// <returns></returns>
+        private cSunXYZ SunposXYZ()
+        {
+            //http://ch.mathworks.com/help/matlab/ref/sph2cart.html?requestedDomain=www.mathworks.com
+            double r = 1;
+            //don't know, why I have to do this 90°- stuff and especially why I have to make *-1 for X...
+            cSunXYZ SunposXYZout;
+            SunposXYZout.x = (r * Math.Cos(rad * 90.0 - rad * udtCoordinates.dZenithAngle) * Math.Cos((rad * udtCoordinates.dAzimuth) + (rad * 90.0))) * -1.0;
+            SunposXYZout.y = r * Math.Cos(rad * 90.0 - rad * udtCoordinates.dZenithAngle) * Math.Sin((rad * udtCoordinates.dAzimuth) + (rad * 90.0));
+            SunposXYZout.z = r * Math.Sin(rad * 90.0 - rad * udtCoordinates.dZenithAngle);
+            return SunposXYZout;
+        }
 
         /// <summary>
         /// Solar zenith and azimuth angles.
@@ -265,8 +271,44 @@ namespace SolarModel
                 {
                     for (int i = 0; i <= 23; i++)
                     {
-                        SunVector sunvec = new SunVector(year, m, d, i,0, 0, longitude, latitude);
+                        SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
                         sunvectors.Add(sunvec);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Create solar vectors objects for each hour of the year, copy pasting solar vectors from an external source (e.g. .epw file) instead of the solar vector algorithm.
+        /// </summary>
+        /// <param name="sunvectors"></param>
+        /// <param name="longitude"></param>
+        /// <param name="latitude"></param>
+        /// <param name="year"></param>
+        /// <param name="solarAzimuth">8760 solar azimuth values in degree.</param>
+        /// <param name="solarAltitude">8760 solar altitude values in degree. (90 - solar altitude)</param>
+        public static void Create8760SunVectors(out List<SunVector> sunvectors, double longitude, double latitude, int year,
+            double[] solarAzimuth, double[] solarAltitude)
+        {
+            sunvectors = new List<SunVector>();
+            int HOY = 0;
+            for (int m = 1; m <= 12; m++)
+            {
+                int daysInMonth = System.DateTime.DaysInMonth(year, m);
+                for (int d = 1; d <= daysInMonth; d++)
+                {
+                    for (int i = 0; i <= 23; i++)
+                    {
+                        SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
+                        sunvec.udtCoordinates.dAzimuth = solarAzimuth[HOY];
+                        sunvec.udtCoordinates.dZenithAngle = 90.0 - solarAltitude[HOY];
+                        sunvec.udtCoordXYZ = sunvec.SunposXYZ();
+                        if (sunvec.udtCoordinates.dZenithAngle <= 90)
+                            sunvec.Sunshine = true;
+                        else
+                            sunvec.Sunshine = false;
+                        sunvectors.Add(sunvec);
+                        HOY++;
                     }
                 }
             }
