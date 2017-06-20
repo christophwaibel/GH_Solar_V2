@@ -36,45 +36,77 @@ namespace GHSolar
             pManager.AddGenericParameter("TreeObject", "TreeObj", "Input tree objects.", GH_ParamAccess.list);    //each tree object is : (i) a mesh obstacle, (ii) a 8760-timeseries of 0-1 fractions, indicating leave-coverage 1 is full of leaves=full obstruction.
             pManager[2].Optional = true;
 
+
+            //________________________________________________________________________________________________________________________________________________________________
+            pManager.AddIntegerParameter("////////////////////", "////////////////////", "////////////////////", GH_ParamAccess.item);
+            pManager[3].Optional = true;
+            //________________________________________________________________________________________________________________________________________________________________
+
+
             pManager.AddNumberParameter("Latitude", "Latitude", "Latitude of the location in [°].", GH_ParamAccess.item);
             pManager.AddNumberParameter("Longitude", "Longitude", "Longitude of the location in [°].", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Year", "Year", "Year", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Month", "Month", "Month ∈ [1, 12]", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Day", "Day", "Day ∈ [1, 31]", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Hour", "Hour", "Hour ∈ [0, 23]", GH_ParamAccess.item);
+            pManager.AddNumberParameter("SnwThrsh", "SnwThrsh", "Snow thickness threshold, before which snow does not remain on surface. Default is 1.", GH_ParamAccess.item);
+            pManager[10].Optional = true;
+            pManager.AddNumberParameter("TiltThrsh", "TiltThrsh", "Tilst threshold, after which snow does not remain on surface. Default is 60.", GH_ParamAccess.item);
+            pManager[11].Optional = true;
+
+
+            //________________________________________________________________________________________________________________________________________________________________
+            pManager.AddIntegerParameter("////////////////////", "////////////////////", "////////////////////", GH_ParamAccess.item);
+            pManager[12].Optional = true;
+            //________________________________________________________________________________________________________________________________________________________________
+
 
             pManager.AddNumberParameter("DNI", "DNI", "Direct normal irradiation 8760-time series.", GH_ParamAccess.list);
             pManager.AddNumberParameter("DHI", "DHI", "Diffuse horizontal irradiation 8760-time series.", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Snow", "Snow", "Snow coverage 8760-time series. Used for coverage of horizontal analysis surfaces ~ -/+ 45°. More inclined surfaces are not affected.", GH_ParamAccess.list);
-            pManager[7].Optional = true;
-
-            pManager.AddIntegerParameter("Year", "Year", "Year", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Month", "Month", "Month ∈ [1, 12]", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Day", "Day", "Day", GH_ParamAccess.item);
-            pManager.AddIntegerParameter("Hour", "Hour", "Hour ∈ [0, 23]", GH_ParamAccess.item);
-
-            ////don´t know if I need these 2
-            //pManager.AddBooleanParameter("Simplified Direct", "SimplDir", "Simplified shading mask for direct radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
-            //pManager[12].Optional = true;
-            //pManager.AddBooleanParameter("Simplified Diffuse", "SimplDiff", "Simplified shading mask for diffuse radiation? Shading mask is then only caculated for the mesh face center of the analysis surface, instead of for each mesh vertex.", GH_ParamAccess.item);
-            //pManager[13].Optional = true;
-
-
-            pManager.AddIntegerParameter("Spec. bounces", "Spec.bounces", "Number of specular bounces for inter-reflections. 0 (min) - 2 (max).", GH_ParamAccess.item);
-            pManager[12].Optional = true;
-            pManager.AddIntegerParameter("Skydome Resolution", "SkyRes", "Sykdome resolution for diffuse shading mask. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays.", GH_ParamAccess.item);
-            pManager[13].Optional = true;
-            pManager.AddIntegerParameter("Interrefl. res.", "InterreflRes", "Precision of interreflections calculations. For values >=0, the value sets the recursion level of the diffuse interreflection hemisphere (0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays). For assuming unobstructed diffuse ground reflection only, use: -1.", GH_ParamAccess.item);
-            pManager[14].Optional = true;
-
-            pManager.AddGenericParameter("Precalc Irefl", "Precalc.Irefl", "Input precalculated interreflected irradiation", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Snow", "Snow", "Snow coverage 8760-time series. Default is 0 throughout the year. Used for coverage of analysis surfaces. Surfaces with an inclination angle higher than the specified threshold are not affected.", GH_ParamAccess.list);
             pManager[15].Optional = true;
-
-            pManager.AddBooleanParameter("MT", "MT", "Multi threading?", GH_ParamAccess.item);
+            pManager.AddNumberParameter("GrndAlb", "GrndAlb", "Ground albedo, 8760 time series. Default is 0.3 throughout the year.", GH_ParamAccess.list);
             pManager[16].Optional = true;
-
-            pManager.AddNumberParameter("GrndAlb", "GrndAlb", "Ground albedo, 8760 time series", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Azimuth", "Azimuth", "Solar Azimuth 8760-time series. Optional. If not data is provided, the solar vectors are calculated according to latitude, longitude, timezone and year.", GH_ParamAccess.list);
             pManager[17].Optional = true;
-            pManager.AddNumberParameter("SnwThrsh", "SnwThrsh", "Snow thickness threshold, before which snow does not remain on surface", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Altitude", "Altitude", "Solar Altitude 8760-time series. Optional. If not data is provided, the solar vectors are calculated according to latitude, longitude, timezone and year.", GH_ParamAccess.list);
             pManager[18].Optional = true;
-            pManager.AddNumberParameter("TiltThrsh", "TiltThrsh", "Tilst threshold, after which snow does not remain on surface", GH_ParamAccess.item);
+
+
+            //________________________________________________________________________________________________________________________________________________________________
+            pManager.AddIntegerParameter("////////////////////", "////////////////////", "////////////////////", GH_ParamAccess.item);
             pManager[19].Optional = true;
+            //________________________________________________________________________________________________________________________________________________________________
+
+
+            pManager.AddIntegerParameter("MainSkyRes", "MainSkyRes", "Sykdome resolution for diffuse shading mask. I.e. recursion level of the icosahedron hemisphere. 0: 10 rays; 1: 29 rays; 2: 97 rays; 3: 353 rays. Default is (2).", GH_ParamAccess.item);
+            pManager[20].Optional = true;
+            pManager.AddIntegerParameter("SpecBounces", "SpecBounces", "Number of specular bounces for inter-reflections. 0 (min) - 2 (max). Default is (1).", GH_ParamAccess.item);
+            pManager[21].Optional = true;
+            pManager.AddIntegerParameter("DiffIReflSkyRes", "DiffIReflSkyRes", "SkyDome resolution for diffuse shading mask, i.e. rays leaving maing sensor point. (0): 10 rays; (1): 29 rays; (2): 97 rays. Default is (0).", GH_ParamAccess.item);
+            pManager[22].Optional = true;
+            pManager.AddIntegerParameter("DiffIReflSkyRes2nd", "DiffIReflSkyRes2nd", "SkyDome resolution for diffuse shading mask of secondary sensor points, i.e. rays leaving secondary sensor points. (0): 10 rays; (1): 29 rays; (2): 97 rays. Default is (0).", GH_ParamAccess.item);
+            pManager[23].Optional = true;
+
+
+            //________________________________________________________________________________________________________________________________________________________________
+            pManager.AddIntegerParameter("////////////////////", "////////////////////", "////////////////////", GH_ParamAccess.item);
+            pManager[24].Optional = true;
+            //________________________________________________________________________________________________________________________________________________________________
+
+
+            pManager.AddGenericParameter("PrecalcIrefl", "PrecalcIrefl", "Input precalculated interreflected specular and diffuse irradiation.", GH_ParamAccess.item);
+            pManager[25].Optional = true;
+
+
+            //________________________________________________________________________________________________________________________________________________________________
+            pManager.AddIntegerParameter("////////////////////", "////////////////////", "////////////////////", GH_ParamAccess.item);
+            pManager[26].Optional = true;
+            //________________________________________________________________________________________________________________________________________________________________
+
+
+            pManager.AddBooleanParameter("MT", "MT", "Multi threading. Default is (false).", GH_ParamAccess.item);
+            pManager[27].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -87,8 +119,9 @@ namespace GHSolar
         protected override void SolveInstance(IGH_DataAccess DA)
         {       
             #region INPUTS
-            //______________________________________________________________________________________________
-            ////////////////////////////////          I N P U T S        ///////////////////////////////////
+            //___________________________________________________________________
+            /////////////////////////////////////////////////////////////////////
+            //INPUTS
             Mesh msh = new Mesh();
             cObstacleObject mshobj = null;
             if (!DA.GetData(0, ref mshobj)) { return; }
@@ -102,50 +135,59 @@ namespace GHSolar
             DA.GetDataList(2, treeObst);
 
             double latitude = 0.0;
-            if (!DA.GetData(3, ref latitude)) { return; }
+            if (!DA.GetData(4, ref latitude)) { return; }
             double longitude = 0.0;
-            if (!DA.GetData(4, ref longitude)) { return; }
-
-            List<double> DNI = new List<double>();
-            if (!DA.GetDataList(5, DNI)) { return; }
-            List<double> DHI = new List<double>();
-            if (!DA.GetDataList(6, DHI)) { return; }
-            List<double> SNOW = new List<double>();
-            if (!DA.GetDataList(7, SNOW)) { return; }
+            if (!DA.GetData(5, ref longitude)) { return; }
 
             int year = 0;
-            if (!DA.GetData(8, ref year)) { return; }
+            if (!DA.GetData(6, ref year)) { return; }
             int month = 0;
-            if (!DA.GetData(9, ref month)) { return; }
+            if (!DA.GetData(7, ref month)) { return; }
             int day = 0;
-            if (!DA.GetData(10, ref day)) { return; }
+            if (!DA.GetData(8, ref day)) { return; }
             int hour = 0;
-            if (!DA.GetData(11, ref hour)) { return; }
-            int bounces = 1;
-            if (!DA.GetData(12, ref bounces)) { bounces = 1; }
-            bounces = (bounces < 0) ? 0 : bounces;  
-
-            int rec = 0;
-            if (!DA.GetData(13, ref rec)) { rec = 1; }
-            int diffRes = -2;
-            if (!DA.GetData(14, ref diffRes)) { diffRes = -2; }
-
-            cResultsInterreflections ResultsIreflIn = null;
-            DA.GetData(15, ref ResultsIreflIn);
-
-            bool mt = false;
-            if (!DA.GetData(16, ref mt)) { mt = false; }
-
-            List<double> groundalbedo = new List<double>();
-            if (!DA.GetDataList(17, groundalbedo)){ for (int t = 0; t < 8760; t++) groundalbedo.Add(0.3); }
+            if (!DA.GetData(9, ref hour)) { return; }
 
             double snow_threshold = 1.0;
-            if (!DA.GetData(18, ref snow_threshold)) { snow_threshold = 1.0; }
-            double tilt_threshold = 30.0;
-            if (!DA.GetData(19, ref tilt_threshold)) { tilt_threshold = 30.0; }
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            //______________________________________________________________________________________________
+            if (!DA.GetData(10, ref snow_threshold)) { snow_threshold = 1.0; }
+            double tilt_threshold = 60.0;
+            if (!DA.GetData(11, ref tilt_threshold)) { tilt_threshold = 60.0; }
+
+
+            List<double> DNI = new List<double>();
+            if (!DA.GetDataList(13, DNI)) { return; }
+            List<double> DHI = new List<double>();
+            if (!DA.GetDataList(14, DHI)) { return; }
+            List<double> SNOW = new List<double>();
+            if (!DA.GetDataList(15, SNOW)) { for (int t = 0; t < 8760; t++) SNOW.Add(0.0); }
+            List<double> groundalbedo = new List<double>();
+            if (!DA.GetDataList(16, groundalbedo)) { for (int t = 0; t < 8760; t++) groundalbedo.Add(0.3); }
+            List<double> solarAzimuth = new List<double>();
+            DA.GetDataList(17, solarAzimuth);
+            List<double> solarAltitude = new List<double>();
+            DA.GetDataList(18, solarAltitude);
+
+
+            int MainSkyRes = 0;
+            if (!DA.GetData(20, ref MainSkyRes)) { MainSkyRes = 1; }
+            int SpecBounces = 1;
+            if (!DA.GetData(21, ref SpecBounces)) { SpecBounces = 1; }
+            SpecBounces = (SpecBounces < 0) ? 0 : SpecBounces;
+            int DiffIReflSkyRes = 0;
+            if (!DA.GetData(22, ref DiffIReflSkyRes)) { DiffIReflSkyRes = 0; }
+            int DiffIReflSkyRes2nd = 0;
+            if (!DA.GetData(23, ref DiffIReflSkyRes2nd)) { DiffIReflSkyRes2nd = 0; }
+            
+            cResultsInterreflections ResultsIreflIn = null;
+            DA.GetData(25, ref ResultsIreflIn);
+
+            bool mt = false;
+            if (!DA.GetData(27, ref mt)) { mt = false; }
+
+            /////////////////////////////////////////////////////////////////////
+            //___________________________________________________________________
             #endregion
+
 
 
 
@@ -153,9 +195,9 @@ namespace GHSolar
             //______________________________________________________________________________________________
             ////////////////////////////////        S I M U L A T E      ///////////////////////////////////
             cCalculateSolarMesh calc = new cCalculateSolarMesh(
-                mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold, 
-                year, bounces, rec, diffRes, null, mt);
-            calc.RunHourSimulation(month,day,hour);
+                mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
+                year, null, mt, solarAzimuth, solarAltitude);
+            calc.RunHourSimulation(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd);
             Line ln = calc.getSolarVec();
             cResults results = calc.getResults();
             cResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();

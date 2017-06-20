@@ -2433,6 +2433,123 @@ namespace GHSolar
 
         }
 
+        /// <summary>
+        /// Calculates incident beam radiation on each SP based on interpolation of interreflected rays of multiple days.
+        /// </summary>
+        /// <param name="IObstRef1st">Multiple days: References to 1st order specular object of the reflected ray, before it reaches the sensor point. [i][h][m], i=each SP, h=24 hours, m=rays hitting that SP for that timestep.</param>
+        /// <param name="IObstRef2nd">Multiple days: References to 2nd order specular object of the reflected ray, before it reaches the sensor point. [i][h][m], i=each SP, h=24 hours, m=rays hitting that SP for that timestep.</param>
+        /// <param name="Inormals">Multiple days: Reflected rays reaching a sensor point. [i][h][m], i=each SP, h=24 hours, m=rays hitting that SP for that timestep.</param>
+        /// <param name="obstacles">Obstacle objects, containing beam reflection coefficient values for each hour of the year.</param>
+        /// <param name="DNI">[t] 8760 DNI values, for each hour of the year.</param>
+        /// <param name="origNormal">[i] Normal vectors for each sensor point.</param>
+        /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
+        internal static void CalcSpecularIncident_Annual(int[] StartDays, int[] EndDays,
+            int[][][][] IObstRef1st, int[][][][] IObstRef2nd, Vector3d[][][][] Inormals,
+            List<cObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
+            out double[][] Ispecular_annual)
+        {
+            //using interpolation of several days. 3 or x. start with three days.
+            int SPCount = IObstRef1st.Length;
+            Ispecular_annual = new double[SPCount][];
+
+            int dayStart, dayEnd;
+            int dayIntervals = EndDays[0] - StartDays[0];
+            double maxPi = 2 * Math.PI / Convert.ToDouble(IObstRef1st[0].Length);
+
+            int daysUsed = StartDays.Length;
+
+            for (int i = 0; i < SPCount; i++)
+            {
+                Ispecular_annual[i] = new double[8760];
+
+                int dd;
+                for (int d = 0; d < daysUsed; d++)
+                {
+                    if (d == daysUsed - 1)
+                        dd = 0;
+                    else
+                        dd = d + 1;
+                    dayStart = StartDays[d];
+                    dayEnd = EndDays[d];
+                    for (int n = dayStart; n < dayEnd; n++)
+                    {
+                        double dist1 = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - n)) / Convert.ToDouble(dayIntervals);
+                        if (d < (daysUsed / 4))
+                        {
+                            dist1 = 1 - dist1;
+                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((daysUsed / 4) * 2) && d >= ((daysUsed / 4) * 1))
+                        {
+                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((daysUsed / 4) * 3) && d >= ((daysUsed / 4) * 2))
+                        {
+                            dist1 = 1 - dist1;
+                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                        }
+                        else if (d < ((daysUsed / 4) * 4) && d >= ((daysUsed / 4) * 3))
+                        {
+                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                        }
+
+                        double dist2 = 1 - dist1;
+
+                        //converting arrays which may contain nulls to 0/1 arrays:
+                        bool[] day_d = new bool[24];
+                        bool[] day_dd = new bool[24];
+                        for (int t = 0; t < 24; t++)
+                        {
+                            if (Misc.IsNullOrEmpty(Inormals[i][d][t]))
+                                day_d[t] = false;
+                            else
+                                day_d[t] = true;
+
+                            if (Misc.IsNullOrEmpty(Inormals[i][dd][t]))
+                                day_dd[t] = false;
+                            else
+                            day_dd[t] = true;
+                        }
+
+                        for (int h = 0; h < 24; h++)
+                        {
+                            double factor1 = Convert.ToDouble(day_d[h]) * dist1;
+                            double factor2 = Convert.ToDouble(day_dd[h]) * dist2;
+                            int HOY = (n - 1) * 24 + h;
+                            double Irefl_d = 0.0;
+                            double Irefl_dd = 0.0;
+                            for (int m = 0; m < Inormals[i][d][h].Length; m++)
+                            {
+                                //first order always. otherwise there would be no normal vector
+                                double coeff = obstacles[IObstRef1st[i][d][h][m]].specCoeff[HOY];
+                                //but second order, check if it exists. -1 means, there is no 2nd order reflection.
+                                if (IObstRef2nd[i][d][h][m] >= 0)
+                                {
+                                    coeff *= obstacles[IObstRef2nd[i][d][h][m]].specCoeff[HOY];
+                                }
+                                double DNI_t = DNI[HOY] * coeff;
+                                Irefl_d += DNI_t * Math.Sin((90 * Math.PI / 180.0) - Vector3d.VectorAngle(origNormal[i], Vector3d.Negate(Inormals[i][d][h][m])));
+                            }
+
+                            for (int m = 0; m < Inormals[i][dd][h].Length; m++)
+                            {
+                                //first order always. otherwise there would be no normal vector
+                                double coeff = obstacles[IObstRef1st[i][dd][h][m]].specCoeff[HOY];
+                                //but second order, check if it exists. -1 means, there is no 2nd order reflection.
+                                if (IObstRef2nd[i][dd][h][m] >= 0)
+                                {
+                                    coeff *= obstacles[IObstRef2nd[i][dd][h][m]].specCoeff[HOY];
+                                }
+                                double DNI_t = DNI[HOY] * coeff;
+                                Irefl_dd += DNI_t * Math.Sin((90 * Math.PI / 180.0) - Vector3d.VectorAngle(origNormal[i], Vector3d.Negate(Inormals[i][dd][h][m])));
+                            }
+
+                            Ispecular_annual[i][HOY] = Irefl_d * factor1 + Irefl_dd * factor2;
+                        }
+                    }
+                }
+            }
+        }
 
 
         /// <summary>
@@ -3446,10 +3563,10 @@ namespace GHSolar
         /// <param name="diffSP_psi_list">List of secondary sensor point azimuth angles, requested for diffuse interreflection for each main sensor point. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="diffSP_normal_list">List of secondary sensor point normals, requested for diffuse interreflection for each main sensor point. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="diffSP_coord_list">List of secondary sensor point 3d coordinates, requested for diffuse interreflection for each main sensor point. [i][ii], i = each SP, ii = each secondary SP.</param>
-        /// <param name="difDomeRes">Resolution for secondary sky dome.</param>
         /// <param name="Idiff_obst">For each main SP, an array of indices of diffuse obstacles on which secondary SP lie on. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="Idiff_domevert">For each main SP, an array of indices of skydome vertices, which are used for secondary SP calculations. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="Idiff_dome">For each main SP, one SkyDome. [i] = each SP.</param>
+        /// <param name="SecondarydifDomeRes">Resolution of skydome spanned over secondary SP.</param>
         /// <param name="year">Year of calculation.</param>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">8760 sunvectors, [t] = for each hour of the year.</param>
@@ -3461,8 +3578,8 @@ namespace GHSolar
         /// <param name="groundalbedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
         /// <param name="Idiffuse">Time series of diffuse interreflection. [i][t], i=each sensor point, t=each hour of the year 1-8760.</param>
         internal static void CalcDiffuse_Annual(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
-            List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
-            int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
+            List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, 
+            int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int SecondarydifDomeRes, 
             int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles, List<cPermObject> permeables,
             double tolerance, double snow_threshold, double tilt_treshold, double [] groundalbedo,
             out double[][] Idiffuse)
@@ -3502,13 +3619,15 @@ namespace GHSolar
 
             for (int i = 0; i < SPiicount; i++)
             {
+                Idiffuse[i] = new double[8760];
+
                 List<bool[]> ShdwBeam_equinox = new List<bool[]>();
                 List<bool[]> ShdwBeam_summer = new List<bool[]>();
                 List<bool[]> ShdwBeam_winter = new List<bool[]>();
 
                 List<bool[]> ShdwSky = new List<bool[]>();
 
-                Sensorpoints SPdiff = new Sensorpoints(diffSP_beta_list[i].ToArray(), diffSP_psi_list[i].ToArray(), diffSP_coord_list[i].ToArray(), diffSP_normal_list[i].ToArray(), difDomeRes);
+                Sensorpoints SPdiff = new Sensorpoints(diffSP_beta_list[i].ToArray(), diffSP_psi_list[i].ToArray(), diffSP_coord_list[i].ToArray(), diffSP_normal_list[i].ToArray(), SecondarydifDomeRes);
                 for (int ii = 0; ii < SPdiff.SPCount; ii++)
                 {
                     Point3d orig = new Point3d(SPdiff.coord[ii].X, SPdiff.coord[ii].Y, SPdiff.coord[ii].Z);
@@ -3622,10 +3741,10 @@ namespace GHSolar
         /// <param name="diffSP_psi_list">List of secondary sensor point azimuth angles, requested for diffuse interreflection for each main sensor point. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="diffSP_normal_list">List of secondary sensor point normals, requested for diffuse interreflection for each main sensor point. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="diffSP_coord_list">List of secondary sensor point 3d coordinates, requested for diffuse interreflection for each main sensor point. [i][ii], i = each SP, ii = each secondary SP.</param>
-        /// <param name="difDomeRes">Resolution for secondary sky dome.</param>
         /// <param name="Idiff_obst">For each main SP, an array of indices of diffuse obstacles on which secondary SP lie on. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="Idiff_domevert">For each main SP, an array of indices of skydome vertices, which are used for secondary SP calculations. [i][ii], i = each SP, ii = each secondary SP.</param>
         /// <param name="Idiff_dome">For each main SP, one SkyDome. [i] = each SP.</param>
+        /// <param name="difDomeRes">Resolution of skydome spanned over secondary SP.</param>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">8760 sunvectors, [t] = for each hour of the year.</param>
         /// <param name="obstacles">List of obstacle objects.</param>
@@ -3634,8 +3753,8 @@ namespace GHSolar
         /// <param name="groundalbedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
         /// <param name="Idiffuse">Time series of diffuse interreflection. [i][t], i=each sensor point, t=each hour of the year 1-8760.</param>
         internal static void CalcDiffuse_AnnualSimple(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
-            List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
-            int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
+            List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
+            int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int difDomeRes,
             Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles,
             double snow_threshold, double tilt_treshold, double[] groundalbedo,
             out double[][] Idiffuse)
