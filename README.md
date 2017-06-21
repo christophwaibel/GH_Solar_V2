@@ -9,13 +9,15 @@ To Do:
 - [x] annual interpolation trees
 - [x] specular inter-reflections max 2 bounces
 - [x] annual interpolation specular inter-reflections
-- [ ] specular inter-reflections refraction coefficients
 - [x] diffuse inter-reflections max 1 bounce
 - [x] annual interpolation diffuse inter-reflections
-- [ ] multi-threading
+- [ ] specular inter-reflections refraction coefficients
+- [x] multi-threading annual
+- [ ] multi-threading hourly
 - [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
 
 
 Bugs:
 - [ ] values underestimated for geometries close to origin (0,0,0)
 - [ ] Out of Memory in Rhino... write results into .txt file, reather than into Rhino directly
+- [ ] rhino geometry intersection class not thread safe
