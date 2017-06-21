@@ -83,7 +83,7 @@ namespace GHSolar
             pManager[20].Optional = true;
             pManager.AddIntegerParameter("SpecBounces", "SpecBounces", "Number of specular bounces for inter-reflections. 0 (min) - 2 (max). Default is (1).", GH_ParamAccess.item);
             pManager[21].Optional = true;
-            pManager.AddIntegerParameter("DiffIReflSkyRes", "DiffIReflSkyRes", "SkyDome resolution for diffuse shading mask, i.e. rays leaving maing sensor point. (0): 10 rays; (1): 29 rays; (2): 97 rays. Default is (0).", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("DiffIReflSkyRes", "DiffIReflSkyRes", "SkyDome resolution for diffuse shading mask, i.e. rays leaving maing sensor point. (0): 10 rays; (1): 29 rays; (2): 97 rays. Default is (0). (-1): simple unobstructed ground reflection only. ", GH_ParamAccess.item);
             pManager[22].Optional = true;
             pManager.AddIntegerParameter("DiffIReflSkyRes2nd", "DiffIReflSkyRes2nd", "SkyDome resolution for diffuse shading mask of secondary sensor points, i.e. rays leaving secondary sensor points. (0): 10 rays; (1): 29 rays; (2): 97 rays. Default is (0).", GH_ParamAccess.item);
             pManager[23].Optional = true;

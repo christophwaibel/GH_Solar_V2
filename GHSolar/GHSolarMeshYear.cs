@@ -212,21 +212,6 @@ namespace GHSolar
 
 
 
-            //___________________________________________________________________
-            /////////////////////////////////////////////////////////////////////
-            //Status?
-            //double status = (100 / Convert.ToDouble(mshvrt.Length)) * Convert.ToDouble(i + 1);
-            //Rhino.RhinoApp.WriteLine("SOLAR_V2: (1/6) Shadow calculation... " + Convert.ToString(Math.Round(status,2) + "%"));
-            //Rhino.RhinoApp.WriteLine("SOLAR_V2: (2/6) Setting interpolated shadows...");
-            //Rhino.RhinoApp.WriteLine("SOLAR_V2: (3/6) Setting snow cover...");
-            //Rhino.RhinoApp.WriteLine("SOLAR_V2: (4/6) Calculating inter-reflections...");
-            //Rhino.RhinoApp.WriteLine("SOLAR_V2: (5/6) Calculating irradiation...");
-            //Rhino.RhinoApp.WriteLine("SOLAR_V2: (6/6) Writing data to Rhino...");
-            /////////////////////////////////////////////////////////////////////
-            //___________________________________________________________________
-
-
-
             #region SIMULATE
             //______________________________________________________________________________________________
             ////////////////////////////////        S I M U L A T E      ///////////////////////////////////
@@ -235,12 +220,12 @@ namespace GHSolar
                 year, null, mt, solarAzimuth, solarAltitude);
             if (mt)
             {
-                calc.RunAnnualSimulation_3Days(0.01,
+                calc.RunAnnualSimulation_3Days_MT(mshobj.tolerance,
                     MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
             }
             else
             {
-                calc.RunAnnualSimulation_3Days(0.01,
+                calc.RunAnnualSimulation_3Days(mshobj.tolerance,
                     MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
             }
             cResults results = calc.getResults();
@@ -265,7 +250,7 @@ namespace GHSolar
 
 
 
-            Rhino.RhinoApp.WriteLine("SOLAR_V2... Done");
+            Rhino.RhinoApp.WriteLine("SOLAR MODEL... Done");
         }
 
 
