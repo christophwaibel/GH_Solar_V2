@@ -14,6 +14,7 @@ To Do:
 - [ ] specular inter-reflections refraction coefficients
 - [x] multi-threading annual
 - [ ] multi-threading hourly
+- [ ] Input points and normals, instead of analysis surface mesh... more control on where to place sensor points
 - [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
 
 
