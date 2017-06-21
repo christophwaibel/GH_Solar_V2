@@ -18,3 +18,4 @@ To Do:
 
 Bugs:
 - [ ] values underestimated for geometries close to origin (0,0,0)
+- [ ] Out of Memory in Rhino... write results into .txt file, reather than into Rhino directly
