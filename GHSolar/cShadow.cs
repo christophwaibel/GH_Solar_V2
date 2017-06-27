@@ -41,7 +41,7 @@ namespace GHSolar
             for (int t = 0; t < vec.Length; t++)
             {
                 //double test = Math.Round(Vector3d.VectorAngle(SPnormal, vec[t]) * rad2deg, 1);
-                if (Math.Round(Vector3d.VectorAngle(SPnormal, vec[t]) * rad2deg, 0) >= 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
+                if (Math.Round(Vector3d.VectorAngle(SPnormal, vec[t]) * rad2deg, 0) > 90)  //assumes a surface. a globe in space could of course get a ray from "behind" 
                 {
                     shadow[t] = true;
                 }
@@ -60,10 +60,11 @@ namespace GHSolar
                 }
                 //if (shdw[t] == false)
                 //{
-                //    Line ln = new Line(origOffset, Vector3d.Multiply(1000, vec[t]));
-                //    var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
-                //    attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
-                //    doc.Objects.AddLine(ln, attribs);
+                //Line ln = new Line(origOffset, Vector3d.Multiply(1000, vec[t]));
+                //var attribs = Rhino.RhinoDoc.ActiveDoc.CreateDefaultAttributes();
+                //attribs.ObjectDecoration = Rhino.DocObjects.ObjectDecoration.BothArrowhead;
+                //doc.Objects.AddLine(ln, attribs);
+                
                 //}
             }
         }

@@ -220,12 +220,12 @@ namespace GHSolar
                 year, null, mt, solarAzimuth, solarAltitude);
             if (mt)
             {
-                calc.RunAnnualSimulation_3Days_MT(mshobj.tolerance,
+                calc.RunAnnualSimulation_MT(mshobj.tolerance,
                     MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
             }
             else
             {
-                calc.RunAnnualSimulation_3Days(mshobj.tolerance,
+                calc.RunAnnualSimulation(mshobj.tolerance,
                     MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
             }
             cResults results = calc.getResults();

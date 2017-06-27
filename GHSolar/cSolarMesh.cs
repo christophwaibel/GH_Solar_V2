@@ -9,7 +9,7 @@ using SolarModel;
 using System.Diagnostics;
 
 /*
- * cSolarMeshHour.cs
+ * cSolarMesh.cs
  * Copyright 2017 Christoph Waibel <chwaibel@student.ethz.ch>
  * 
  * This work is licensed under the GNU GPL license version 3.
@@ -303,7 +303,7 @@ namespace GHSolar
                     //if (!mt)
                     cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, obst, ref shdw_sky);
                     //else
-                    //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
+                    //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], tolerance, vec_sky, obst, ref shdw_sky);
                     if (objTrees.Count > 0)
                     {
                         double[] shdw_sky_dbl = shdw_sky.Select<bool, double>(s => Convert.ToDouble(s)).ToArray<double>();
@@ -327,7 +327,7 @@ namespace GHSolar
                     //if (!mt)
                     cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam, obst, ref shdw_beam);
                     //else
-                    //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], 0.01, vec_beam, obst, ref shdw_beam);
+                    //    cShadow.CalcShadowMT(orig, mshvrtnorm[i], mshobj.tolerance, vec_beam, obst, ref shdw_beam);
 
                     if (objTrees.Count > 0)
                     {
@@ -405,12 +405,12 @@ namespace GHSolar
                     //cShadow.CalcDiffuse(Idiffuse_SPs, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, 0.01, snow_threshold, tilt_treshold, out _Idiffuse);
                     cShadow.CalcDiffuse2(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list,
                         diffIReflSkyRes, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors,
-                        obst, objObst, 0.01, snow_threshold, tilt_treshold, groundalbedo.ToArray(), out _Idiffuse);
+                        obst, objObst, mshobj.tolerance, snow_threshold, tilt_treshold, groundalbedo.ToArray(), out _Idiffuse);
                     cShadow.CalcSpecularIncident(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
                 }
                 else
                 {
-                    cShadow.CalcDiffuse2MT(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list, diffIReflSkyRes, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, 0.01, snow_threshold, tilt_treshold, out _Idiffuse);
+                    cShadow.CalcDiffuse2MT(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list, diffIReflSkyRes, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, mshobj.tolerance, snow_threshold, tilt_treshold, out _Idiffuse);
                     cShadow.CalcSpecularIncidentMT(mshvrtnorm, Ispecular2, Inormals2, weather.DNI[HOY], ref Ispec_onehour);
                 }
             }
@@ -427,13 +427,13 @@ namespace GHSolar
                             out Idiff_obstacles, out Idiff_domevertices, out Idiff_domes);
                         cShadow.CalcDiffuse2(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list,
                             diffIReflSkyRes2nd, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors,
-                            obst, objObst, 0.01, snow_threshold, tilt_treshold, groundalbedo.ToArray(), out _Idiffuse);
+                            obst, objObst, mshobj.tolerance, snow_threshold, tilt_treshold, groundalbedo.ToArray(), out _Idiffuse);
                     }
                     else
                     {
-                        cShadow.CalcIReflDiff_GetSPs2MT(mshobj, mshvrt, mshvrtnorm, objObst, objTrees, diffIReflSkyRes, out diffSP_beta_list, out diffSP_psi_list, out diffSP_normal_list, out diffSP_coord_list,
+                        cShadow.CalcIReflDiff_GetSPs2(mshobj, mshvrt, mshvrtnorm, objObst, objTrees, diffIReflSkyRes, out diffSP_beta_list, out diffSP_psi_list, out diffSP_normal_list, out diffSP_coord_list,
                             out Idiff_obstacles, out Idiff_domevertices, out Idiff_domes);
-                        cShadow.CalcDiffuse2MT(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list, diffIReflSkyRes, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, 0.01, snow_threshold, tilt_treshold, out _Idiffuse);
+                        cShadow.CalcDiffuse2MT(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list, diffIReflSkyRes, Idiff_obstacles, Idiff_domevertices, Idiff_domes, DOY, hour, weather, sunvectors, obst, objObst, mshobj.tolerance, snow_threshold, tilt_treshold, out _Idiffuse);
                     }
                 }
                 else
@@ -705,7 +705,7 @@ namespace GHSolar
                     sunshinesky[u] = true;
                 }
                 bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
-                cShadow.CalcShadow(coords[i], mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
+                cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, obst, ref shdw_sky);
                 ShdwSky[i] = shdw_sky;
                 if (this.objTrees.Count > 0)
                 {
@@ -780,7 +780,7 @@ namespace GHSolar
                     out Idiff_obstacles, out Idiff_domevertices, out Idiff_domes);
                 cShadow.CalcDiffuse_Annual(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list,
                     Idiff_obstacles, Idiff_domevertices, Idiff_domes, 0,
-                    year, weather, sunvectors, objObst, objTrees, tolerance, snow_threshold, tilt_treshold, groundalbedo.ToArray(),
+                    year, weather, sunvectors, objObst, objTrees, mshobj.tolerance, snow_threshold, tilt_treshold, groundalbedo.ToArray(),
                     out _Idiffuse);
 
                 //!!!!!!!!!!!!!!!!!!!!!!!!    12 days missing
@@ -1109,7 +1109,7 @@ namespace GHSolar
                     sunshinesky[u] = true;
                 }
                 bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
-                cShadow.CalcShadow(coords[i], mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
+                cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, obst, ref shdw_sky);
                 ShdwSky[i] = shdw_sky;
                 if (this.objTrees.Count > 0)
                 {
@@ -1326,7 +1326,7 @@ namespace GHSolar
         /// Run annual irradiation simulation, with some simplifications like interpolation.
         /// </summary>
         /// <param name="tolerance"></param>
-        internal void RunAnnualSimulation_3Days(double tolerance,
+        internal void RunAnnualSimulation(double tolerance,
             int mainSkyRes, int mainInterpMode, int specBounces, int specInterpMode, 
             int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode)
         {
@@ -1567,7 +1567,7 @@ namespace GHSolar
                     sunshinesky[u] = true;
                 }
                 bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
-                cShadow.CalcShadow(coords[i], mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
+                cShadow.CalcShadow(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, obst, ref shdw_sky);
                 ShdwSky[i] = shdw_sky;
                 if (this.objTrees.Count > 0)
                 {
@@ -1882,7 +1882,7 @@ namespace GHSolar
         /// Run annual irradiation simulation, with some simplifications like interpolation. Multi-threading version.
         /// </summary>
         /// <param name="tolerance"></param>
-        internal void RunAnnualSimulation_3Days_MT(double tolerance,
+        internal void RunAnnualSimulation_MT(double tolerance,
             int mainSkyRes, int mainInterpMode, int specBounces, int specInterpMode,
             int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode)
         {
@@ -2123,7 +2123,7 @@ namespace GHSolar
                     sunshinesky[u] = true;
                 });
                 bool[] shdw_sky = new bool[p.sky[i].VerticesHemisphere.Count];
-                cShadow.CalcShadow(coords[i], mshvrtnorm[i], 0.01, vec_sky, obst, ref shdw_sky);
+                cShadow.CalcShadow(coords[i], mshvrtnorm[i], tolerance, vec_sky, obst, ref shdw_sky);
                 ShdwSky[i] = shdw_sky;
                 if (this.objTrees.Count > 0)
                 {
