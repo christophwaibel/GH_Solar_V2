@@ -190,7 +190,7 @@ namespace SolarModel
             double weights = 0.0;
             for (int i = 0; i < this.VerticesHorizon.Count; i++)
             {
-                weights += (1.0 - this.VertexShadowSphere[this.VerticesHorizon[i]]) * this.HorizonSegments[i];
+                weights += (this.VertexShadowSphere[this.VerticesHorizon[i]]) * this.HorizonSegments[i];
             }
             double val = weights / 720.0;//720 is 2 circles : the sum angle of all horizon segments
             for (int t = 0; t < 8760; t++)

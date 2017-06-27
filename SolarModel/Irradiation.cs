@@ -150,29 +150,28 @@ namespace SolarModel
             double D = 0.0;
             if (θZ > 90.0)    //after sunset, could still be an hour of diffuse light. assume isotropic sky
             {
-                D = DHI * (1.0 - domeshdw);
+                return D = DHI * (1.0 - domeshdw);
             }
-            else
+
+            //relative optical air mass
+            double m = 1.0 / Math.Cos(rad * θZ);
+            if (m > 40.0) m = 40.0; //because the simple model is too simple. value could become too high with high zenith angles
+
+            //extraterrestrial irradiance
+            //double I0 = 1353.0;           //constant assumed by energyplus
+            double b = 2.0 * pi * (Convert.ToDouble(DOY) / 365.0);// *rad;
+            double I0 = Isc * (1.00011 + 0.034221 * Math.Cos(b) + 0.00128 * Math.Sin(b) + 0.000719 * Math.Cos(2.0 * b) + 0.000077 * Math.Sin(2.0 * b));
+
+            //Sky Brightness factor
+            double Δ = DHI * m / I0;
+
+            //Sky clearness factor (ε)
+            double ε = ((DHI + DNI) / DHI + 1.041 * Math.Pow((θZ * rad), 3)) / (1 + 1.041 * Math.Pow((θZ * rad), 3));
+
+            Func<int, double, double> Fij = (ij, εcheck) =>
             {
-                //relative optical air mass
-                double m = 1.0 / Math.Cos(rad * θZ);
-                if (m > 40.0) m = 40.0; //because the simple model is too simple. value could become too high with high zenith angles
-
-                //extraterrestrial irradiance
-                //double I0 = 1353.0;           //constant assumed by energyplus
-                double b = 2.0 * pi * (Convert.ToDouble(DOY) / 365.0);// *rad;
-                double I0 = Isc * (1.00011 + 0.034221 * Math.Cos(b) + 0.00128 * Math.Sin(b) + 0.000719 * Math.Cos(2.0 * b) + 0.000077 * Math.Sin(2.0 * b));
-
-                //Sky Brightness factor
-                double Δ = DHI * m / I0;
-
-                //Sky clearness factor (ε)
-                double ε = ((DHI + DNI) / DHI + 1.041 * Math.Pow((θZ * rad), 3)) / (1 + 1.041 * Math.Pow((θZ * rad), 3));
-
-                Func<int, double, double> Fij = (ij, εcheck) =>
-                {
-                    //Perez coefficients, from EnergyPlus 6.5 Engineering Documentation p.185. More precise than in Perez 1990.
-                    double[,] Fijmatrix = new double[,] 
+                //Perez coefficients, from EnergyPlus 6.5 Engineering Documentation p.185. More precise than in Perez 1990.
+                double[,] Fijmatrix = new double[,] 
                 { 
                 { -0.0083117, 0.1299457, 0.3296958, 0.5682053, 0.8730280, 1.1326077, 1.0601591, 0.6777470},             //F11
                 { 0.5877285, 0.6825954, 0.4868735, 0.1874525, -0.3920403, -1.2367284, -1.5999137, -0.3272588},          //F12
@@ -181,33 +180,40 @@ namespace SolarModel
                 { 0.0721249, 0.0659650, -0.0639588, -0.1519229, -0.4620442, -0.8230357, -1.1272340, -1.3765031},        //F22
                 { -0.0220216, -0.0288748, -0.0260542, -0.0139754, 0.0012448, 0.0558651, 0.1310694, 0.2506212}           //F23
                 };
-                    double Fijvalue = 0.0;
-                    if (εcheck < 1.065) Fijvalue = Fijmatrix[ij, 0];
-                    else if (εcheck >= 1.065 && εcheck < 1.230) Fijvalue = Fijmatrix[ij, 1];
-                    else if (εcheck >= 1.230 && εcheck < 1.500) Fijvalue = Fijmatrix[ij, 2];
-                    else if (εcheck >= 1.500 && εcheck < 1.950) Fijvalue = Fijmatrix[ij, 3];
-                    else if (εcheck >= 1.950 && εcheck < 2.800) Fijvalue = Fijmatrix[ij, 4];
-                    else if (εcheck >= 2.800 && εcheck < 4.500) Fijvalue = Fijmatrix[ij, 5];
-                    else if (εcheck >= 4.500 && εcheck < 6.200) Fijvalue = Fijmatrix[ij, 6];
-                    else Fijvalue = Fijmatrix[ij, 7];//(ε >= 6.200)
-                    return Fijvalue;
-                };
+                double Fijvalue = 0.0;
+                if (εcheck < 1.065) Fijvalue = Fijmatrix[ij, 0];
+                else if (εcheck >= 1.065 && εcheck < 1.230) Fijvalue = Fijmatrix[ij, 1];
+                else if (εcheck >= 1.230 && εcheck < 1.500) Fijvalue = Fijmatrix[ij, 2];
+                else if (εcheck >= 1.500 && εcheck < 1.950) Fijvalue = Fijmatrix[ij, 3];
+                else if (εcheck >= 1.950 && εcheck < 2.800) Fijvalue = Fijmatrix[ij, 4];
+                else if (εcheck >= 2.800 && εcheck < 4.500) Fijvalue = Fijmatrix[ij, 5];
+                else if (εcheck >= 4.500 && εcheck < 6.200) Fijvalue = Fijmatrix[ij, 6];
+                else Fijvalue = Fijmatrix[ij, 7];//(ε >= 6.200)
+                return Fijvalue;
+            };
 
-                double F1 = Math.Max(0, Fij(0, ε) + Fij(1, ε) * Δ + Fij(2, ε) * (θZ * rad));
-                double F2 = Fij(3, ε) + Fij(4, ε) * Δ + Fij(5, ε) * (θZ * rad);
+            //double F1 = Math.Max(0, Fij(0, ε) + Fij(1, ε) * Δ + Fij(2, ε) * (θZ * rad));
+            double F1 = Fij(0, ε) + Fij(1, ε) * Δ + Fij(2, ε) * (θZ * rad);
+            double F2 = Fij(3, ε) + Fij(4, ε) * Δ + Fij(5, ε) * (θZ * rad);
 
-                //angle of incidence
-                double AOI = Math.Acos(Math.Cos(θZ * rad) * Math.Cos(θβ * rad) + Math.Sin(θZ * rad) * Math.Sin(θβ * rad) * Math.Cos((θA - θAsrf) * rad));
-                double a = Math.Max(0, Math.Cos(AOI));
-                b = Math.Max(Math.Cos(85 * rad), Math.Cos(θZ * rad));
+            //angle of incidence
+            double AOI = Math.Acos(Math.Cos(θZ * rad) * Math.Cos(θβ * rad) + Math.Sin(θZ * rad) * Math.Sin(θβ * rad) * Math.Cos((θA - θAsrf) * rad));
+            double a = Math.Max(0, Math.Cos(AOI));
+            b = Math.Max(Math.Cos(85 * rad), Math.Cos(θZ * rad));
 
-                // Dhorizon + Ddome + Dcircumsolar
-                //double D = DHI * ((1 - F1) * ((1 + Math.Cos(θβ * rad)) / 2) + F1 * (a / b) + F2 * Math.Sin(θβ * rad));
-                double Dhorizon = (DHI * F2 * Math.Sin(θβ * rad)) * (1.0 - horizonshdw);
-                double Ddome = (DHI * (1 - F1) * (1 + Math.Cos(θβ * rad)) / 2.0) * (1.0 - domeshdw);
-                double Dcircum = (DHI * F1 * (a / b)) * (1.0 - circumsolshdw);
-                D = Dhorizon + Ddome + Dcircum;
+            // Dhorizon + Ddome + Dcircumsolar
+            //double D = DHI * ((1 - F1) * ((1 + Math.Cos(θβ * rad)) / 2) + F1 * (a / b) + F2 * Math.Sin(θβ * rad));
+            //double Dhorizon = (DHI * F2 * Math.Sin(θβ * rad)) * (1.0 - horizonshdw);
+            double Dhorizon = (DHI * F2 * Math.Sin(θβ * rad));
+            if (Dhorizon > 0)
+            {
+                Dhorizon *= (1.0 - horizonshdw);
             }
+            //double Ddome = (DHI * (1 - F1) * (1 + Math.Cos(θβ * rad)) / 2.0);// *(1.0 - domeshdw);
+            double Ddome = DHI * (1 - F1) * (1.0 - domeshdw);
+            double Dcircum = (DHI * F1 * (a / b)) * (1.0 - circumsolshdw);
+            D = Dhorizon + Ddome + Dcircum;
+
             return Math.Max(0.0, D);
         }
 
@@ -275,7 +281,7 @@ namespace SolarModel
         public static double Beam(double DNI, double θZ, double θA, double θβ, double θAsrf, double shadow)
         {
             double B = DNI * (Math.Cos(θZ * rad) * Math.Cos(θβ * rad) + Math.Sin(θZ * rad) * Math.Sin(θβ * rad) * Math.Cos((θA - θAsrf) * rad));
-            return Math.Max(0, B * (1.0 - shadow)); 
+            return Math.Max(0, B * (1.0 - shadow));
         }
 
 
