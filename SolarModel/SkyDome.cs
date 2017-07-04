@@ -230,6 +230,7 @@ namespace SolarModel
                         {
                             extCoeffSum[this.VerticesHemisphere[u]][t] += permObjLen[u][k] * extCoeff[permObjInd[u][k]][t];
                         }
+                        if (extCoeffSum[this.VerticesHemisphere[u]][t] > 1.0) extCoeffSum[this.VerticesHemisphere[u]][t] = 1.0;
                     }
                 }
             }
