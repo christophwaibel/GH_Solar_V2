@@ -65,7 +65,7 @@ namespace GHSolar
             pManager.AddNumberParameter("DHI", "DHI", "Diffuse horizontal irradiation 8760-time series.", GH_ParamAccess.list);
             pManager.AddNumberParameter("Snow", "Snow", "Snow coverage 8760-time series. Default is 0 throughout the year. Used for coverage of analysis surfaces. Surfaces with an inclination angle higher than the specified threshold are not affected.", GH_ParamAccess.list);
             pManager[15].Optional = true;
-            pManager.AddNumberParameter("GrndAlb", "GrndAlb", "Ground albedo, 8760 time series. Default is 0.3 throughout the year.", GH_ParamAccess.list);
+            pManager.AddNumberParameter("GrndAlb", "GrndAlb", "Ground albedo, 8760 time series. Default is 0.2 throughout the year.", GH_ParamAccess.list);
             pManager[16].Optional = true;
             pManager.AddNumberParameter("Azimuth", "Azimuth", "Solar Azimuth 8760-time series. Optional. If not data is provided, the solar vectors are calculated according to latitude, longitude, timezone and year.", GH_ParamAccess.list);
             pManager[17].Optional = true;
@@ -161,7 +161,7 @@ namespace GHSolar
             List<double> SNOW = new List<double>();
             if (!DA.GetDataList(15, SNOW)) { for (int t = 0; t < 8760; t++) SNOW.Add(0.0); }
             List<double> groundalbedo = new List<double>();
-            if (!DA.GetDataList(16, groundalbedo)) { for (int t = 0; t < 8760; t++) groundalbedo.Add(0.3); }
+            if (!DA.GetDataList(16, groundalbedo)) { for (int t = 0; t < 8760; t++) groundalbedo.Add(0.2); }
             List<double> solarAzimuth = new List<double>();
             DA.GetDataList(17, solarAzimuth);
             List<double> solarAltitude = new List<double>();

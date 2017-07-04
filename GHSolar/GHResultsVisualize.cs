@@ -44,7 +44,7 @@ namespace GHSolar
             pManager[4].Optional = true;
             pManager.AddNumberParameter("max", "max", "Maximum value for color gradient", GH_ParamAccess.item);
             pManager[5].Optional = true;
-            pManager.AddIntegerParameter("clr", "clr", "colour sheme. 0: Blue (min) - Red - Yellow (max); 1: Blue (min) - Red - Yellow (max); 1: Blue (min) - Green - Red (max); 2: Black (min) - White (max).", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("clr", "clr", "colour sheme. [0]: Blue (min) - Red - Yellow (max); [1]: Blue (min) - Green - Red (max); [2]: Black (min) - White (max).", GH_ParamAccess.item);
             pManager[6].Optional = true;
         }
 
