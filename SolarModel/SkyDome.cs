@@ -246,24 +246,23 @@ namespace SolarModel
 
             for (int i = 0; i < this.Faces.Count; i++)
             {
-                double[] w = new double[8760];
                 int wl = this.Faces[i].Length;
                 for (int t = 0; t < 8760; t++)
                 {
-                    w[t] = 0.0;
+                    double w = 0.0;
                     for (int u = 0; u < wl; u++)
                     {
                         if (permObjSphere[this.Faces[i][u]])
                         {
-                            w[t] += (this.VertexShadowSphere[this.Faces[i][u]] * extCoeffSum[this.Faces[i][u]][t]);
+                            w += extCoeffSum[this.Faces[i][u]][t];
                         }
                         else
                         {
-                            w[t] += this.VertexShadowSphere[this.Faces[i][u]];
+                            w += this.VertexShadowSphere[this.Faces[i][u]];
                         }
                     }
-                    w[t] = w[t] / Convert.ToDouble(wl);
-                    weights[t] += w[t] * this.FaceAreas[i];
+                    w = w / Convert.ToDouble(wl);
+                    weights[t] += w * this.FaceAreas[i];
                 }
                 totalArea += this.FaceAreas[i];
             }
@@ -274,15 +273,16 @@ namespace SolarModel
             {
                 for (int t = 0; t < 8760; t++)
                 {
+                    double wh = 0.0;
                     if (permObjSphere[this.VerticesHorizon[i]])
                     {
-                        weightsHorizon[t] = (this.VertexShadowSphere[this.VerticesHorizon[i]] * extCoeffSum[this.VerticesHorizon[i]][t]);
+                        wh =  extCoeffSum[this.VerticesHorizon[i]][t];
                     }
                     else
                     {
-                        weightsHorizon[t] = this.VertexShadowSphere[this.VerticesHorizon[i]];
+                        wh = this.VertexShadowSphere[this.VerticesHorizon[i]];
                     }
-                    weightsHorizon[t] += weightsHorizon[t] * this.HorizonSegments[i];
+                    weightsHorizon[t] += wh * this.HorizonSegments[i];
                 }
             }
 
