@@ -2860,7 +2860,6 @@ namespace GHSolar
             Ispecular_annual = new double[SPCount][];
 
             int dayStart, dayEnd;
-            int dayIntervals = EndDays[0] - StartDays[0];
             double maxPi = 2 * Math.PI / Convert.ToDouble(IObstRef1st.Length);
 
             int daysUsed = StartDays.Length;
@@ -2880,27 +2879,65 @@ namespace GHSolar
                     dayEnd = EndDays[d];
                     for (int n = dayStart; n < dayEnd; n++)
                     {
-                        double dist1 = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - n)) / Convert.ToDouble(dayIntervals);
-                        if (d < (daysUsed / 4))
+                        double xprime = 0;
+                        if (n < (365 / 4))
                         {
-                            dist1 = 1 - dist1;
-                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 1;
+                            int dayEnd_qrt = 365 / 4;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = Math.Sin(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = Math.Sin(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = Math.Sin(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
-                        else if (d < ((daysUsed / 4) * 2) && d >= ((daysUsed / 4) * 1))
+                        else if (n < ((365 / 4) * 2) && n >= ((365 / 4) * 1))
                         {
-                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 365 / 4;
+                            int dayEnd_qrt = 365 / 4 * 2;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = 1 - Math.Cos(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = 1 - Math.Cos(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = 1 - Math.Cos(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
-                        else if (d < ((daysUsed / 4) * 3) && d >= ((daysUsed / 4) * 2))
+                        else if (n < ((365 / 4) * 3) && n >= ((365 / 4) * 2))
                         {
-                            dist1 = 1 - dist1;
-                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 365 / 4 * 2;
+                            int dayEnd_qrt = 365 / 4 * 3;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = Math.Sin(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = Math.Sin(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = Math.Sin(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
-                        else if (d < ((daysUsed / 4) * 4) && d >= ((daysUsed / 4) * 3))
+                        else if (n >= ((365 / 4) * 3))
                         {
-                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 365 / 4 * 3;
+                            int dayEnd_qrt = 365;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = 1 - Math.Cos(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = 1 - Math.Cos(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = 1 - Math.Cos(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
 
-                        double dist2 = 1 - dist1;
+                        double xprime2 = 1 - xprime;
 
                         //converting arrays which may contain nulls to 0/1 arrays:
                         bool[] day_d = new bool[24];
@@ -2920,8 +2957,8 @@ namespace GHSolar
 
                         for (int h = 0; h < 24; h++)
                         {
-                            double factor1 = Convert.ToDouble(day_d[h]) * dist1;
-                            double factor2 = Convert.ToDouble(day_dd[h]) * dist2;
+                            double factor1 = Convert.ToDouble(day_d[h]) * xprime;
+                            double factor2 = Convert.ToDouble(day_dd[h]) * xprime2;
                             int HOY = (n - 1) * 24 + h;
                             double Irefl_d = 0.0;
                             double Irefl_dd = 0.0;
@@ -2977,7 +3014,6 @@ namespace GHSolar
             int SPCount = IObstRef1st[0].Length;
             Ispecular_annual = new double[SPCount][];
 
-            int dayIntervals = EndDays[0] - StartDays[0];
             double maxPi = 2 * Math.PI / Convert.ToDouble(IObstRef1st.Length);
             int daysUsed = StartDays.Length;
 
@@ -2998,27 +3034,65 @@ namespace GHSolar
                     dayEnd = EndDays[d];
                     for (int n = dayStart; n < dayEnd; n++)
                     {
-                        double dist1 = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - n)) / Convert.ToDouble(dayIntervals);
-                        if (d < (daysUsed / 4))
+                        double xprime = 0;
+                        if (n < (365 / 4))
                         {
-                            dist1 = 1 - dist1;
-                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 1;
+                            int dayEnd_qrt = 365 / 4;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = Math.Sin(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = Math.Sin(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = Math.Sin(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
-                        else if (d < ((daysUsed / 4) * 2) && d >= ((daysUsed / 4) * 1))
+                        else if (n < ((365 / 4) * 2) && n >= ((365 / 4) * 1))
                         {
-                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 365 / 4;
+                            int dayEnd_qrt = 365 / 4 * 2;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = 1 - Math.Cos(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = 1 - Math.Cos(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = 1 - Math.Cos(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
-                        else if (d < ((daysUsed / 4) * 3) && d >= ((daysUsed / 4) * 2))
+                        else if (n < ((365 / 4) * 3) && n >= ((365 / 4) * 2))
                         {
-                            dist1 = 1 - dist1;
-                            dist1 = Math.Cos(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 365 / 4 * 2;
+                            int dayEnd_qrt = 365 / 4 * 3;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = Math.Sin(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = Math.Sin(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = Math.Sin(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
-                        else if (d < ((daysUsed / 4) * 4) && d >= ((daysUsed / 4) * 3))
+                        else if (n >= ((365 / 4) * 3))
                         {
-                            dist1 = Math.Sin(dist1 * (0.5 * Math.PI));
+                            int dayStart_qrt = 365 / 4 * 3;
+                            int dayEnd_qrt = 365;
+                            int dayIntervals = dayEnd_qrt - dayStart_qrt;
+                            double dist_qrt = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart_qrt - n)) / Convert.ToDouble(dayIntervals);
+                            double xprime_qrt = 1 - Math.Cos(dist_qrt * (0.5 * Math.PI));
+                            double dist1_max = (Convert.ToDouble(dayIntervals) - Math.Abs(dayStart - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double dist1_min = (Convert.ToDouble(dayIntervals) - Math.Abs(dayEnd - 1 - dayStart_qrt)) / Convert.ToDouble(dayIntervals);
+                            double xpr_min = 1 - Math.Cos(dist1_min * (0.5 * Math.PI));
+                            double xpr_max = 1 - Math.Cos(dist1_max * (0.5 * Math.PI));
+                            double dist1 = dist_qrt;
+                            xprime = (xprime_qrt - xpr_min) / (xpr_max - xpr_min);
                         }
 
-                        double dist2 = 1 - dist1;
+                        double xprime2 = 1 - xprime;
 
                         //converting arrays which may contain nulls to 0/1 arrays:
                         bool[] day_d = new bool[24];
@@ -3038,8 +3112,8 @@ namespace GHSolar
 
                         for (int h = 0; h < 24; h++)
                         {
-                            double factor1 = Convert.ToDouble(day_d[h]) * dist1;
-                            double factor2 = Convert.ToDouble(day_dd[h]) * dist2;
+                            double factor1 = Convert.ToDouble(day_d[h]) * xprime;
+                            double factor2 = Convert.ToDouble(day_dd[h]) * xprime2;
                             int HOY = (n - 1) * 24 + h;
                             double Irefl_d = 0.0;
                             double Irefl_dd = 0.0;
