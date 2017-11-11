@@ -1,6 +1,8 @@
 # GH_Solar_V2
 Solar irradiation model plug-in for Rhinoceros Grasshopper. Version 2.
 
+Please refer to this publication for citation: [Waibel et al. (2017)](http://www.sciencedirect.com/science/article/pii/S0038092X17309349)
+
 To Do:
 - [x] Perez diffuse sky model
 - [x] skydome with equal patches
