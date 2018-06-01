@@ -83,6 +83,16 @@ namespace GHSolar.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap pic_graph_avg {
+            get {
+                object obj = ResourceManager.GetObject("pic_graph_avg", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap pic_irrad_h {
             get {
                 object obj = ResourceManager.GetObject("pic_irrad_h", resourceCulture);

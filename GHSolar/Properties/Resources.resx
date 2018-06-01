@@ -124,6 +124,9 @@
   <data name="pic_graph" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\pic_graph.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="pic_graph_avg" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\pic_graph_avg.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="pic_irrad_h" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\pic_irrad_h.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
