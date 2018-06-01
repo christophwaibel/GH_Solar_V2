@@ -1,0 +1,10 @@
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\bin\Release\Tester.exe.config
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\bin\Release\Tester.exe
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\bin\Release\Tester.pdb
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\bin\Release\RhinoCommon.dll
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\bin\Release\SolarModel.dll
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\bin\Release\SolarModel.pdb
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\bin\Release\RhinoCommon.xml
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\obj\Release\Tester.csprojResolveAssemblyReference.cache
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\obj\Release\Tester.exe
+C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\Tester\obj\Release\Tester.pdb
