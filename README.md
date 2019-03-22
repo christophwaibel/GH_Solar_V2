@@ -25,4 +25,4 @@ Bugs:
 - [ ] values underestimated for geometries close to origin (0,0,0)
 - [ ] Out of Memory in Rhino... write results into .txt file, reather than into Rhino directly
 - [ ] rhino geometry intersection class not thread safe
-- [ ] only works in meter as workspace unit in Rhino
+- [ ] only works properly in meter as workspace unit in Rhino
