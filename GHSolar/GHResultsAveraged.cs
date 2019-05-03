@@ -72,6 +72,13 @@ namespace GHSolar
                 int spB = fc.B;
                 int spC = fc.C;
                 int spD = fc.D;
+                int intvert = 3;
+                double quadmulti = 0;
+                if (fc.IsQuad)
+                {
+                    intvert = 4;
+                    quadmulti = 1;
+                }
 
                 Grasshopper.Kernel.Data.GH_Path ghpath = new Grasshopper.Kernel.Data.GH_Path(m);
 
@@ -80,25 +87,25 @@ namespace GHSolar
                 switch (outputType)
                 {
                     case 0:
-                        avgI.Add((results.I_total[spA] + results.I_total[spB] + results.I_total[spC] + results.I_total[spD]) / 4, ghpath);
+                        avgI.Add((results.I_total[spA] + results.I_total[spB] + results.I_total[spC] + (results.I_total[spD] * quadmulti)) / intvert, ghpath);
                         break;
                     case 1:
-                        avgI.Add((results.Ib_total[spA] + results.Ib_total[spB] + results.Ib_total[spC] + results.Ib_total[spD]) / 4, ghpath);
+                        avgI.Add((results.Ib_total[spA] + results.Ib_total[spB] + results.Ib_total[spC] + (results.Ib_total[spD] * quadmulti)) / intvert, ghpath);
                         break;
                     case 2:
-                        avgI.Add((results.Id_total[spA] + results.Id_total[spB] + results.Id_total[spC] + results.Id_total[spD]) / 4, ghpath);
+                        avgI.Add((results.Id_total[spA] + results.Id_total[spB] + results.Id_total[spC] + (results.Id_total[spD] * quadmulti)) / intvert, ghpath);
                         break;
                     case 3:
                         for (int t = 0; t < results.I_hourly.ColumnCount; t++)
-                            avgI.Add((results.I_hourly[spA, t] + results.I_hourly[spB, t] + results.I_hourly[spC, t] + results.I_hourly[spD, t]) / 4, ghpath);
+                            avgI.Add((results.I_hourly[spA, t] + results.I_hourly[spB, t] + results.I_hourly[spC, t] + (results.I_hourly[spD, t] * quadmulti)) / intvert, ghpath);
                         break;
                     case 4:
                         for (int t = 0; t < results.Ib_hourly.ColumnCount; t++)
-                            avgI.Add((results.Ib_hourly[spA, t] + results.Ib_hourly[spB, t] + results.Ib_hourly[spC, t] + results.Ib_hourly[spD, t]) / 4, ghpath);
+                            avgI.Add((results.Ib_hourly[spA, t] + results.Ib_hourly[spB, t] + results.Ib_hourly[spC, t] + (results.Ib_hourly[spD, t] * quadmulti)) / intvert, ghpath);
                         break;
                     case 5:
                         for (int t = 0; t < results.Id_hourly.ColumnCount; t++)
-                            avgI.Add((results.Id_hourly[spA, t] + results.Id_hourly[spB, t] + results.Id_hourly[spC, t] + results.Id_hourly[spD, t]) / 4, ghpath);
+                            avgI.Add((results.Id_hourly[spA, t] + results.Id_hourly[spB, t] + results.Id_hourly[spC, t] + (results.Id_hourly[spD, t] * quadmulti)) / intvert, ghpath);
                         break;
                     case 6:
                         for (int t = 0; t < results.Ib_hourly.ColumnCount; t++)
