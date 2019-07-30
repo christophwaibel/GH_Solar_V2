@@ -21,6 +21,7 @@ To Do:
 
 
 Bugs:
+- [ ] Memory build up over time... get's slower over time... 
 - [ ] mesh surfaces far away from the origin become crumpled when used as analysis surface 
 - [ ] values underestimated for geometries close to origin (0,0,0)
 - [ ] Out of Memory in Rhino... write results into .txt file, reather than into Rhino directly
