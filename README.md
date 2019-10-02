@@ -19,6 +19,7 @@ To Do:
 - [ ] Input points and normals, instead of analysis surface mesh... more control on where to place sensor points
 - [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
 - [ ] replace rhino libraries for geometry operations with open source libraries (https://doc.cgal.org/ ?). solar.dll should have no rhino dependency. ghsolar.gha should be the rhino wrapper
+- [ ] multi-threading ray-mesh intersection (rhino library not thread-safe)
 
 
 Bugs:
