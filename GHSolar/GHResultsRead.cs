@@ -61,7 +61,7 @@ namespace GHSolar
             Mesh mshin = new Mesh();
             if (!DA.GetData(0, ref mshin)) { return; }
 
-            cResults results = null;
+            CResults results = null;
             if (!DA.GetData(1, ref results)) { return; }
 
             int outputType = 0;

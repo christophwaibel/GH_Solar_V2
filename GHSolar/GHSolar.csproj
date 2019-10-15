@@ -65,12 +65,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="cMisc.cs" />
-    <Compile Include="cObstacleObject.cs" />
-    <Compile Include="cResults.cs" />
-    <Compile Include="cShadow.cs" />
-    <Compile Include="cSolarMesh.cs" />
-    <Compile Include="cSemiPermObject.cs" />
+    <Compile Include="CMisc.cs" />
+    <Compile Include="CObstacleObject.cs" />
+    <Compile Include="CResults.cs" />
+    <Compile Include="CShadow.cs" />
+    <Compile Include="CSolarMesh.cs" />
+    <Compile Include="CSemiPermObject.cs" />
     <Compile Include="GHReadTxt.cs" />
     <Compile Include="GHResultsAveraged.cs" />
     <Compile Include="GHResultsRead.cs" />

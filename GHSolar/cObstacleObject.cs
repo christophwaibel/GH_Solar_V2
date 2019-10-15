@@ -11,7 +11,7 @@ using Rhino.Geometry;
 
 namespace GHSolar
 {
-    public class cObstacleObject
+    public class CObstacleObject
     {
         public Mesh mesh;
         public List<double> albedos;  //8760 values for diffuse
@@ -34,7 +34,7 @@ namespace GHSolar
         /// <param name="_tolerance">Tolerance, used to offset point from actual face center point, to avoid self obstruction.</param>
         /// <param name="_name">Name of the obstacle. E.g. use to indicate an analysis surface.</param>
         /// <param name="mt">Multi-threading.</param>
-        public cObstacleObject(Mesh _mesh, List<double> _albedos, List<double> _specCoeff, int _reflType, double _tolerance, string _name, bool mt)
+        public CObstacleObject(Mesh _mesh, List<double> _albedos, List<double> _specCoeff, int _reflType, double _tolerance, string _name, bool mt)
         {
             mesh = _mesh;
             albedos = new List<double>(_albedos);

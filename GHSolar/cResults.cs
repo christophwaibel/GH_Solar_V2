@@ -4,7 +4,7 @@ using SolarModel;
 
 namespace GHSolar
 {
-    public class cResults
+    public class CResults
     {
         public Matrix I_hourly;
         public Matrix Ib_hourly;
@@ -14,7 +14,7 @@ namespace GHSolar
         public List<double> Id_total = new List<double>();
         public List<Point3d> coords = new List<Point3d>();
 
-        public cResults(List<double> I_total, List<double> Ib_total, List<double> Id_total,
+        public CResults(List<double> I_total, List<double> Ib_total, List<double> Id_total,
             Matrix I_hourly, Matrix Ib_hourly, Matrix Id_hourly, 
             List<Point3d> coords) 
         {

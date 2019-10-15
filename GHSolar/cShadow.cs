@@ -15,7 +15,7 @@ using SolarModel;
 namespace GHSolar
 {
 
-    public static class cShadow
+    public static class CShadow
     {
         const double rad2deg = 180.0 / Math.PI;
         const double deg2rad = Math.PI / 180.0;
@@ -3856,7 +3856,7 @@ namespace GHSolar
                     Vector3d[] vec_beam = new Vector3d[1];
                     vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
                     bool[] shdw_beam = new bool[1];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
                     ShdwBeam_hour.Add(shdw_beam[0]);
                     /////////////////////////////////////////////////////////////////////
 
@@ -3872,7 +3872,7 @@ namespace GHSolar
                             SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][2]);
                     }
                     bool[] shdw_sky = new bool[SPdiff.sky[ii].VerticesHemisphere.Count];
-                    cShadow.CalcShadow(orig, mshvrtnorm, 0.01, vec_sky, obst, ref shdw_sky);
+                    CShadow.CalcShadow(orig, mshvrtnorm, 0.01, vec_sky, obst, ref shdw_sky);
                     ShdwSky.Add(shdw_sky);
                     /////////////////////////////////////////////////////////////////////
                 }
@@ -3975,7 +3975,7 @@ namespace GHSolar
                     Vector3d[] vec_beam = new Vector3d[1];
                     vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
                     bool[] shdw_beam = new bool[1];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
                     ShdwBeam_hour.Add(shdw_beam[0]);
                     /////////////////////////////////////////////////////////////////////
 
@@ -3991,7 +3991,7 @@ namespace GHSolar
                             SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][2]);
                     }
                     bool[] shdw_sky = new bool[SPdiff.sky[ii].VerticesHemisphere.Count];
-                    cShadow.CalcShadow(orig, mshvrtnorm, 0.01, vec_sky, obst, ref shdw_sky);
+                    CShadow.CalcShadow(orig, mshvrtnorm, 0.01, vec_sky, obst, ref shdw_sky);
                     ShdwSky.Add(shdw_sky);
                     /////////////////////////////////////////////////////////////////////
                 }
@@ -4088,7 +4088,7 @@ namespace GHSolar
                     Vector3d[] vec_beam = new Vector3d[1];
                     vec_beam[0] = new Vector3d(sunvectors[HOY].udtCoordXYZ.x, sunvectors[HOY].udtCoordXYZ.y, sunvectors[HOY].udtCoordXYZ.z);
                     bool[] shdw_beam = new bool[1];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam, obst, ref shdw_beam);
                     ShdwBeam_hour.Add(shdw_beam[0]);
                     /////////////////////////////////////////////////////////////////////
 
@@ -4104,7 +4104,7 @@ namespace GHSolar
                             Idiff_SP[i].sky[ii].VertexVectorsSphere[Idiff_SP[i].sky[ii].VerticesHemisphere[u]][2]);
                     }
                     bool[] shdw_sky = new bool[Idiff_SP[i].sky[ii].VerticesHemisphere.Count];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_sky, obst, ref shdw_sky);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_sky, obst, ref shdw_sky);
                     ShdwSky.Add(shdw_sky);
                     /////////////////////////////////////////////////////////////////////
                 }
@@ -4256,9 +4256,9 @@ namespace GHSolar
                     bool[] shdw_beam_equ = new bool[24];
                     bool[] shdw_beam_sum = new bool[24];
                     bool[] shdw_beam_win = new bool[24];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
                     ShdwBeam_equinox.Add(shdw_beam_equ);
                     ShdwBeam_summer.Add(shdw_beam_sum);
                     ShdwBeam_winter.Add(shdw_beam_win);
@@ -4276,7 +4276,7 @@ namespace GHSolar
                             SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][2]);
                     }
                     bool[] shdw_sky = new bool[SPdiff.sky[ii].VerticesHemisphere.Count];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_sky, obst, ref shdw_sky);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_sky, obst, ref shdw_sky);
                     ShdwSky.Add(shdw_sky);
                     /////////////////////////////////////////////////////////////////////
                 }
@@ -4434,9 +4434,9 @@ namespace GHSolar
                     bool[] shdw_beam_equ = new bool[24];
                     bool[] shdw_beam_sum = new bool[24];
                     bool[] shdw_beam_win = new bool[24];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_equ, sunshine_equ, obst, ref shdw_beam_equ);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_sum, sunshine_sum, obst, ref shdw_beam_sum);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_beam_win, sunshine_win, obst, ref shdw_beam_win);
                     ShdwBeam_equinox.Add(shdw_beam_equ);
                     ShdwBeam_summer.Add(shdw_beam_sum);
                     ShdwBeam_winter.Add(shdw_beam_win);
@@ -4454,7 +4454,7 @@ namespace GHSolar
                             SPdiff.sky[ii].VertexVectorsSphere[SPdiff.sky[ii].VerticesHemisphere[u]][2]);
                     }
                     bool[] shdw_sky = new bool[SPdiff.sky[ii].VerticesHemisphere.Count];
-                    cShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_sky, obst, ref shdw_sky);
+                    CShadow.CalcShadow(orig, mshvrtnorm, tolerance, vec_sky, obst, ref shdw_sky);
                     ShdwSky.Add(shdw_sky);
                     /////////////////////////////////////////////////////////////////////
                 }
