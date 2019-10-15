@@ -14,7 +14,7 @@ namespace GHSolar
     /// <summary>
     /// 
     /// </summary>
-    public static class cMisc
+    public static class CMisc
     {
 
         /// <summary>

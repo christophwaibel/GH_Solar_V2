@@ -203,7 +203,7 @@ namespace GHSolar
         /// <param name="obstacles">Semi-permeable obstacle objects.</param>
         /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
         /// <param name="shadow">Indicates for each input vector, how much it permeates through the obstacles. 1.0 : no obstruction, 0.0 : full obstruction.</param>
-        public static void CalcPermBeam(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, List<cPermObject> obstacles, int HOY, ref double[] shadow)
+        public static void CalcPermBeam(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, List<CPermObject> obstacles, int HOY, ref double[] shadow)
         {
             Point3d origOffset = new Point3d(Point3d.Add(SP, Vector3d.Multiply(Vector3d.Divide(SPnormal, SPnormal.Length), offset)));
 
@@ -259,7 +259,7 @@ namespace GHSolar
         ///<param name="permObstruction">[t] indicates for each input vector, if it is obstructed by a permeable object ONLY.</param>
         ///<param name="permInd">[t][u] for each vector, an array of indices to the permeable obstacles.</param>
         ///<param name="permLength">[t][u] for each vector, an array of length values of object penetration.</param>
-        public static void CalcPerm(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<cPermObject> permObst,
+        public static void CalcPerm(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<CPermObject> permObst,
             bool[] shadow, out bool[] permObstruction,
             out int[][] permInd, out double[][] permLength)
         {
@@ -331,7 +331,7 @@ namespace GHSolar
         ///<param name="permObstruction">[t] indicates for each input vector, if it is obstructed by a permeable object ONLY.</param>
         ///<param name="permInd">[t][u] for each vector, an array of indices to the permeable obstacles.</param>
         ///<param name="permLength">[t][u] for each vector, an array of length values of object penetration.</param>
-        public static void CalcPermMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<cPermObject> permObst,
+        public static void CalcPermMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<CPermObject> permObst,
             bool[] shadow, out bool[] permObstruction,
             out int[][] permInd, out double[][] permLength)
         {
@@ -419,7 +419,7 @@ namespace GHSolar
         /// <param name="Ispecular">Normal irradiation values [t][m] for each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [t][m] for each solar vector t and each reflected ray m.</param>
         public static void CalcSpecularNormal1(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
-            List<cObstacleObject> obstacles, double[][] albedo, int[] reflType, int bounces,
+            List<CObstacleObject> obstacles, double[][] albedo, int[] reflType, int bounces,
             ref double[][] Ispecular, ref Vector3d[][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -548,9 +548,9 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        public static void CalcSpecularNormal2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcSpecularNormal2(CObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
-            List<cObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
+            List<CObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -752,9 +752,9 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        public static void CalcSpecularNormal3_old(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcSpecularNormal3_old(CObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
-            List<cObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
+            List<CObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -859,7 +859,7 @@ namespace GHSolar
                         if (vAngle >= 90) continue;
 
                         //compute reflected ray
-                        Vector3d solarvec_ref = cMisc.ReflectVec(obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
+                        Vector3d solarvec_ref = CMisc.ReflectVec(obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
                         //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 1000));
                         //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec_ref, 1000));
 
@@ -924,8 +924,8 @@ namespace GHSolar
                                 vAngle = Vector3d.VectorAngle(pXnormal, Vector3d.Negate(solarvec_ref)) * (180.0 / Math.PI);
                                 if (vAngle >= 90.0) continue;
 
-                                Vector3d solarvec_refl2nd = cMisc.ReflectVec(pXnormal, solarvec_ref);
-                                Point3d pXoffset = cMisc.OffsetPt(pX, pXnormal, obstacles[refl_index].tolerance);
+                                Vector3d solarvec_refl2nd = CMisc.ReflectVec(pXnormal, solarvec_ref);
+                                Point3d pXoffset = CMisc.OffsetPt(pX, pXnormal, obstacles[refl_index].tolerance);
                                 Ray3d rObstSun_refl2nd = new Ray3d(pXoffset, solarvec_refl2nd);
 
                                 //doc.Objects.AddLine(new Line(obstacles[u].faceCen[k], solarvec[t], 100));
@@ -961,7 +961,7 @@ namespace GHSolar
                                     Point3d pX2nd = r2ndReflSP.PointAt(inters2nd);
                                     MeshPoint mshpX2nd = obstacles[refl_index].mesh.ClosestMeshPoint(pX2nd, 0.0);
                                     Vector3d pX2ndnormal = obstacles[refl_index].mesh.NormalAt(mshpX2nd);
-                                    Point3d pX2ndOffset = cMisc.OffsetPt(pX2nd, pX2ndnormal, obstacles[refl_index].tolerance);
+                                    Point3d pX2ndOffset = CMisc.OffsetPt(pX2nd, pX2ndnormal, obstacles[refl_index].tolerance);
                                     Ray3d r1stRefl2ndRefl = new Ray3d(pX2ndOffset, Vector3d.Negate(solarvec_ref));
                                     double inters1st = Rhino.Geometry.Intersect.Intersection.MeshRay(mshface, r1stRefl2ndRefl);
                                     if (inters1st < 0) continue;
@@ -972,7 +972,7 @@ namespace GHSolar
                                     MeshPoint mshpX1st = mshface.ClosestMeshPoint(pX1st, 0.0);
                                     mshface.Normals.ComputeNormals();
                                     Vector3d pXnormal1st = mshface.NormalAt(mshpX1st);
-                                    Point3d pXoff1st = cMisc.OffsetPt(pX1st, pXnormal1st, obstacles[u].tolerance);
+                                    Point3d pXoff1st = CMisc.OffsetPt(pX1st, pXnormal1st, obstacles[u].tolerance);
                                     Ray3d rObstSun1st = new Ray3d(pXoff1st, solarvec[t]);
                                     //doc.Objects.AddLine(new Line(pX2ndOffset, pX1st));
                                     //doc.Objects.AddLine(new Line(pX2ndOffset, solarvec[t]));
@@ -1063,13 +1063,13 @@ namespace GHSolar
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         public static void CalcSpecularNormal3(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine, int HOY,
-            List<cObstacleObject> obstacles, List<cPermObject> permeables, int bounces,
+            List<CObstacleObject> obstacles, List<CPermObject> permeables, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
             if (bounces < 1) return;
 
             //add permeables to normal obstacles
-            List<cObstacleObject> _obstacles = new List<cObstacleObject>();
+            List<CObstacleObject> _obstacles = new List<CObstacleObject>();
             _obstacles = obstacles;
 
             List<double> _alb = new List<double>();
@@ -1080,9 +1080,9 @@ namespace GHSolar
                 _spec.Add(0);
             }
             double _tol = (obstacles.Count > 0) ? obstacles[0].tolerance : 0.01;
-            foreach (cPermObject perm in permeables)
+            foreach (CPermObject perm in permeables)
             {
-                cObstacleObject obst = new cObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
+                CObstacleObject obst = new CObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
                 _obstacles.Add(obst);
             }
 
@@ -1148,7 +1148,7 @@ namespace GHSolar
                     Point3d pX = rObstFace.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, _obstacles[_uObst].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, _obstacles[_uObst].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < _obstacles.Count; n++)
                     {
@@ -1198,7 +1198,7 @@ namespace GHSolar
                     Point3d pX = rPt2Face.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, _obstacles[_u2nd].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, _obstacles[_u2nd].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < _obstacles.Count; n++)
                     {
@@ -1271,7 +1271,7 @@ namespace GHSolar
                         if (vAngle_1 >= 90) continue;
 
                         //1st order reflection
-                        Vector3d refl_1 = cMisc.ReflectVec(_obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
+                        Vector3d refl_1 = CMisc.ReflectVec(_obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
 
                         for (int i = 0; i < SP.Length; i++)
                         {
@@ -1295,7 +1295,7 @@ namespace GHSolar
                                     if (vAngle_2 >= 90) continue;
 
                                     //2nd order reflection
-                                    Vector3d refl_2 = cMisc.ReflectVec(_obstacles[n].normals[q], refl_1);
+                                    Vector3d refl_2 = CMisc.ReflectVec(_obstacles[n].normals[q], refl_1);
 
                                     for (int i = 0; i < SP.Length; i++)
                                     {
@@ -1346,7 +1346,7 @@ namespace GHSolar
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         public static void CalcSpecularNormal3MT(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine, int HOY,
-            List<cObstacleObject> obstacles, List<cPermObject> permeables, int bounces,
+            List<CObstacleObject> obstacles, List<CPermObject> permeables, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -1355,7 +1355,7 @@ namespace GHSolar
             if (bounces < 1) return;
 
             //add permeables to normal obstacles
-            List<cObstacleObject> _obstacles = new List<cObstacleObject>();
+            List<CObstacleObject> _obstacles = new List<CObstacleObject>();
             _obstacles = obstacles;
 
             List<double> _alb = new List<double>();
@@ -1366,9 +1366,9 @@ namespace GHSolar
                 _spec.Add(0);
             }
             double _tol = (obstacles.Count > 0) ? obstacles[0].tolerance : 0.01;
-            foreach (cPermObject perm in permeables)
+            foreach (CPermObject perm in permeables)
             {
-                cObstacleObject obst = new cObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", true);
+                CObstacleObject obst = new CObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", true);
                 _obstacles.Add(obst);
             }
 
@@ -1447,7 +1447,7 @@ namespace GHSolar
                     Point3d pX = rObstFace.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, _obstacles[_uObst].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, _obstacles[_uObst].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < _obstacles.Count; n++)
                     {
@@ -1501,7 +1501,7 @@ namespace GHSolar
                     Point3d pX = rPt2Face.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, _obstacles[_u2nd].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, _obstacles[_u2nd].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < _obstacles.Count; n++)
                     {
@@ -1542,7 +1542,7 @@ namespace GHSolar
                         if (vAngle_1 >= 90) continue;
 
                         //1st order reflection
-                        Vector3d refl_1 = cMisc.ReflectVec(_obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
+                        Vector3d refl_1 = CMisc.ReflectVec(_obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
 
                         object sync = new object();
                         Parallel.For(0, SP.Length, i =>
@@ -1569,7 +1569,7 @@ namespace GHSolar
                                     if (vAngle_2 >= 90) continue;
 
                                     //2nd order reflection
-                                    Vector3d refl_2 = cMisc.ReflectVec(_obstacles[n].normals[q], refl_1);
+                                    Vector3d refl_2 = CMisc.ReflectVec(_obstacles[n].normals[q], refl_1);
 
                                     Parallel.For(0, SP.Length, i =>
                                     {
@@ -1616,7 +1616,7 @@ namespace GHSolar
         /// <param name="bounces"></param>
         /// <param name="reflected_1st"></param>
         /// <param name="reflected_2nd"></param>
-        public static void CalcSpecularVectors(List<cObstacleObject> obstacles, Vector3d solarvec, int bounces,
+        public static void CalcSpecularVectors(List<CObstacleObject> obstacles, Vector3d solarvec, int bounces,
             out Vector3d[] reflected_1st, out int[] refl1_index, out int[] refl1_ind_face,
             out Vector3d[][] reflected_2nd, out int[][] refl2_index, out int[][] refl2_ind_face)
         {
@@ -1648,7 +1648,7 @@ namespace GHSolar
                     if (vAngle_1 >= 90) continue;
 
                     //1st order reflection
-                    Vector3d refl_1 = cMisc.ReflectVec(obstacles[u].normals[k], Vector3d.Negate(solarvec));
+                    Vector3d refl_1 = CMisc.ReflectVec(obstacles[u].normals[k], Vector3d.Negate(solarvec));
                     refl_1st_list.Add(refl_1);
                     refl1_index_list.Add(u);
                     refl1_face_list.Add(k);
@@ -1671,7 +1671,7 @@ namespace GHSolar
                                 if (vAngle_2 >= 90) continue;
 
                                 //2nd order reflection
-                                Vector3d refl_2 = cMisc.ReflectVec(obstacles[n].normals[q], refl_1);
+                                Vector3d refl_2 = CMisc.ReflectVec(obstacles[n].normals[q], refl_1);
                                 refl_2nd_list[u].Add(refl_2);
                                 refl2_index_list[u].Add(n);
                                 refl2_face_list[u].Add(q);
@@ -1713,7 +1713,7 @@ namespace GHSolar
         /// <param name="Inormals">Normal vectors [t][m] for one sensor point, each solar vector t and each reflected ray m.</param>
         public static void CalcSpecularNormal4(Point3d SP, Vector3d SPnormal,
             Vector3d solarvec, bool sunshine, int HOY,
-            List<cObstacleObject> obstacles, int bounces,
+            List<CObstacleObject> obstacles, int bounces,
             Vector3d[] refl_1, int[] refl1_ind, int[] refl1_face_ind,
             Vector3d[][] refl_2, int[][] refl2_ind, int[][] refl2_face_ind,
             ref double[] Ispecular, ref Vector3d[] Inormals)
@@ -1785,7 +1785,7 @@ namespace GHSolar
                     Point3d pX = rObstFace.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, obstacles[_uObst].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, obstacles[_uObst].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < obstacles.Count; n++)
                     {
@@ -1835,7 +1835,7 @@ namespace GHSolar
                     Point3d pX = rPt2Face.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, obstacles[_u2nd].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, obstacles[_u2nd].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < obstacles.Count; n++)
                     {
@@ -1905,7 +1905,7 @@ namespace GHSolar
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         public static void CalcSpecularNormal5(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
-            List<cObstacleObject> obstacles, List<cPermObject> permeables, int bounces,
+            List<CObstacleObject> obstacles, List<CPermObject> permeables, int bounces,
             out int[][][] IObstRef1stOrder, out int[][][] IObstRef2ndOrder, out Vector3d[][][] Inormals)
         {
             if (bounces < 1) 
@@ -1917,7 +1917,7 @@ namespace GHSolar
             }
 
             //add permeables to normal obstacles
-            List<cObstacleObject> _obstacles = new List<cObstacleObject>();
+            List<CObstacleObject> _obstacles = new List<CObstacleObject>();
             _obstacles = obstacles;
 
             List<double> _alb = new List<double>();
@@ -1928,9 +1928,9 @@ namespace GHSolar
                 _spec.Add(0);
             }
             double _tol = (obstacles.Count > 0) ? obstacles[0].tolerance : 0.01;
-            foreach (cPermObject perm in permeables)
+            foreach (CPermObject perm in permeables)
             {
-                cObstacleObject obst = new cObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
+                CObstacleObject obst = new CObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
                 _obstacles.Add(obst);
             }
 
@@ -1996,7 +1996,7 @@ namespace GHSolar
                     Point3d pX = rObstFace.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, _obstacles[_uObst].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, _obstacles[_uObst].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < _obstacles.Count; n++)
                     {
@@ -2046,7 +2046,7 @@ namespace GHSolar
                     Point3d pX = rPt2Face.PointAt(inters);
                     MeshPoint mshp = mshface.ClosestMeshPoint(pX, 0.0);
                     Vector3d pNormal = mshface.NormalAt(mshp);
-                    Point3d pXoffset = cMisc.OffsetPt(pX, pNormal, _obstacles[_u2nd].tolerance);
+                    Point3d pXoffset = CMisc.OffsetPt(pX, pNormal, _obstacles[_u2nd].tolerance);
                     bool bln_inters = false;
                     for (int n = 0; n < _obstacles.Count; n++)
                     {
@@ -2130,7 +2130,7 @@ namespace GHSolar
                         if (vAngle_1 >= 90) continue;
 
                         //1st order reflection
-                        Vector3d refl_1 = cMisc.ReflectVec(_obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
+                        Vector3d refl_1 = CMisc.ReflectVec(_obstacles[u].normals[k], Vector3d.Negate(solarvec[t]));
 
                         for (int i = 0; i < SP.Length; i++)
                         {
@@ -2155,7 +2155,7 @@ namespace GHSolar
                                     if (vAngle_2 >= 90) continue;
 
                                     //2nd order reflection
-                                    Vector3d refl_2 = cMisc.ReflectVec(_obstacles[n].normals[q], refl_1);
+                                    Vector3d refl_2 = CMisc.ReflectVec(_obstacles[n].normals[q], refl_1);
 
                                     for (int i = 0; i < SP.Length; i++)
                                     {
@@ -2210,7 +2210,7 @@ namespace GHSolar
             int[][][] IObstRef1st_equ, int[][][] IObstRef2nd_equ, Vector3d[][][] Inormals_equ,
             int[][][] IObstRef1st_win, int[][][] IObstRef2nd_win, Vector3d[][][] Inormals_win,
             int[][][] IObstRef1st_sum, int[][][] IObstRef2nd_sum, Vector3d[][][] Inormals_sum,
-            List<cObstacleObject> obstacles, double[] DNI, Vector3d [] origNormal,
+            List<CObstacleObject> obstacles, double[] DNI, Vector3d [] origNormal,
             out double [][] Ispecular_annual)
         {
             //using interpolation of several days. 3 or x. start with three days.
@@ -2531,7 +2531,7 @@ namespace GHSolar
             int[][][] IObstRef1st_equ, int[][][] IObstRef2nd_equ, Vector3d[][][] Inormals_equ,
             int[][][] IObstRef1st_win, int[][][] IObstRef2nd_win, Vector3d[][][] Inormals_win,
             int[][][] IObstRef1st_sum, int[][][] IObstRef2nd_sum, Vector3d[][][] Inormals_sum,
-            List<cObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
+            List<CObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
             out double[][] Ispecular_annual)
         {
             //using interpolation of several days. 3 or x. start with three days.
@@ -2849,7 +2849,7 @@ namespace GHSolar
         /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
         public static void CalcSpecularIncident_Annual(int[] StartDays, int[] EndDays,
             int[][][][] IObstRef1st, int[][][][] IObstRef2nd, Vector3d[][][][] Inormals,
-            List<cObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
+            List<CObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
             out double[][] Ispecular_annual)
         {
             //using interpolation of several days. 3 or x. start with three days.
@@ -3004,7 +3004,7 @@ namespace GHSolar
         /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
         public static void CalcSpecularIncident_AnnualMT(int[] StartDays, int[] EndDays,
             int[][][][] IObstRef1st, int[][][][] IObstRef2nd, Vector3d[][][][] Inormals,
-            List<cObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
+            List<CObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
             out double[][] Ispecular_annual)
         {
             //using interpolation of several days. 3 or x. start with three days.
@@ -3325,8 +3325,8 @@ namespace GHSolar
         /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
-        public static void CalcIReflDiff_GetSPs(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
-            List<cObstacleObject> obstacles, int difDomeRes,
+        public static void CalcIReflDiff_GetSPs(CObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            List<CObstacleObject> obstacles, int difDomeRes,
             out Sensorpoints[] Idiffuse_SPs, out int[][] Idiff_obstacles, out int[][] Idiff_domevertexindex, out SkyDome[] Idiff_domes)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
@@ -3378,12 +3378,12 @@ namespace GHSolar
             for (int i = 0; i < SP.Length; i++)
             {
                 //offset SP, otherwise there is self-intersection 
-                Point3d SPoffset = cMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
+                Point3d SPoffset = CMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
 
                 //create a dome, rotate to SP normal
                 SkyDome dome = new SkyDome(difDomeRes);
                 Idiff_domes[i] = dome;
-                double[,] R = cMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
+                double[,] R = CMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
                 dome.RotateVertexVectors(R);
 
                 //totAreas_temp[i] = 0;
@@ -3467,8 +3467,8 @@ namespace GHSolar
         /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
-        public static void CalcIReflDiff_GetSPs2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
-            List<cObstacleObject> obstacles, List<cPermObject> permeables, int difDomeRes,
+        public static void CalcIReflDiff_GetSPs2(CObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            List<CObstacleObject> obstacles, List<CPermObject> permeables, int difDomeRes,
             out List<List<double>> diffSP_beta_list,
             out List<List<double>> diffSP_psi_list,
             out List<List<Sensorpoints.v3d>> diffSP_normal_list,
@@ -3481,7 +3481,7 @@ namespace GHSolar
 
 
             //add permeables to normal obstacles
-            List<cObstacleObject> _obstacles = new List<cObstacleObject>();
+            List<CObstacleObject> _obstacles = new List<CObstacleObject>();
             _obstacles = obstacles;
 
             List<double> _alb = new List<double>();
@@ -3492,9 +3492,9 @@ namespace GHSolar
                 _spec.Add(0);
             }
             double _tol = (obstacles.Count > 0) ? obstacles[0].tolerance : 0.01;
-            foreach (cPermObject perm in permeables)
+            foreach (CPermObject perm in permeables)
             {
-                cObstacleObject obst = new cObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
+                CObstacleObject obst = new CObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
                 _obstacles.Add(obst);
             }
 
@@ -3544,7 +3544,7 @@ namespace GHSolar
             for (int i = 0; i < SP.Length; i++)
             {
                 //offset SP, otherwise there is self-intersection 
-                Point3d SPoffset = cMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
+                Point3d SPoffset = CMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
 
                 //create a dome, rotate to SP normal
                 SkyDome dome = new SkyDome(difDomeRes);
@@ -3554,7 +3554,7 @@ namespace GHSolar
                 //    Line l = new Line(SPoffset, v);
                 //    doc.Objects.AddLine(l);
                 //}
-                double[,] R = cMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
+                double[,] R = CMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
                 dome.RotateVertexVectors(R);
                 Idiff_domes[i] = dome;
                 //for (int j = 0; j < dome.VerticesHemisphere.Count; j++)
@@ -3651,8 +3651,8 @@ namespace GHSolar
         /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
-        public static void CalcIReflDiff_GetSPs2MT(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
-            List<cObstacleObject> obstacles, List<cPermObject> permeables, int difDomeRes,
+        public static void CalcIReflDiff_GetSPs2MT(CObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+            List<CObstacleObject> obstacles, List<CPermObject> permeables, int difDomeRes,
             out List<List<double>> diffSP_beta_list,
             out List<List<double>> diffSP_psi_list,
             out List<List<Sensorpoints.v3d>> diffSP_normal_list,
@@ -3662,7 +3662,7 @@ namespace GHSolar
             out SkyDome[] Idiff_domes)
         {
             //add permeables to normal obstacles
-            List<cObstacleObject> _obstacles = new List<cObstacleObject>();
+            List<CObstacleObject> _obstacles = new List<CObstacleObject>();
             _obstacles = obstacles;
 
             List<double> _alb = new List<double>();
@@ -3673,9 +3673,9 @@ namespace GHSolar
                 _spec.Add(0);
             }
             double _tol = (obstacles.Count > 0) ? obstacles[0].tolerance : 0.01;
-            foreach (cPermObject perm in permeables)
+            foreach (CPermObject perm in permeables)
             {
-                cObstacleObject obst = new cObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
+                CObstacleObject obst = new CObstacleObject(perm.mesh, _alb, _spec, 3, _tol, "perm", false);
                 _obstacles.Add(obst);
             }
 
@@ -3728,11 +3728,11 @@ namespace GHSolar
             Parallel.For(0, SP.Length, i =>
             {
                 //offset SP, otherwise there is self-intersection 
-                Point3d SPoffset = cMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
+                Point3d SPoffset = CMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
 
                 //create a dome, rotate to SP normal
                 SkyDome dome = new SkyDome(difDomeRes);
-                double[,] R = cMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
+                double[,] R = CMisc.RotationMatrix(new Vector3d(0, 0, 1), SPnormal[i]);
                 dome.RotateVertexVectors(R);
                 Idiff_domes_temp[i] = dome;
 
@@ -3818,7 +3818,7 @@ namespace GHSolar
         public static void CalcDiffuse2(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
-            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
+            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<CObstacleObject> obstacles,
             double tolerance, double snow_threshold, double tilt_treshold, double [] groundalbedo,
             out double[] Idiffuse)
         {
@@ -3936,7 +3936,7 @@ namespace GHSolar
         public static void CalcDiffuse2MT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
-            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
+            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<CObstacleObject> obstacles,
             double tolerance, double snow_threshold, double tilt_treshold,
             out double[] Idiffuse)
         {
@@ -4053,7 +4053,7 @@ namespace GHSolar
         /// <param name="obstacles"></param>
         /// <param name="Idiffuse"></param>
         public static void CalcDiffuse_OLD(Sensorpoints[] Idiff_SP, int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
-            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
+            int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<CObstacleObject> obstacles,
             double tolerance, double snow_threshold, double tilt_treshold,
             out double[] Idiffuse)
         {
@@ -4177,17 +4177,17 @@ namespace GHSolar
         public static void CalcDiffuse_Annual(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, 
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int SecondarydifDomeRes, 
-            int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles, List<cPermObject> permeables,
+            int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<CObstacleObject> obstacles, List<CPermObject> permeables,
             double tolerance, double snow_threshold, double tilt_treshold, double [] groundalbedo,
             out double[][] Idiffuse)
         {
             //using 3 day interpolation of beam radiation. and no interreflections. and no trees.
             List<Mesh> obstlist = new List<Mesh>();
-            foreach (cObstacleObject obstobj in obstacles)
+            foreach (CObstacleObject obstobj in obstacles)
             {
                 obstlist.Add(obstobj.mesh);
             }
-            foreach (cPermObject perm in permeables)
+            foreach (CPermObject perm in permeables)
             {
                 obstlist.Add(perm.mesh);
             }
@@ -4355,17 +4355,17 @@ namespace GHSolar
         public static void CalcDiffuse_AnnualMT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int SecondarydifDomeRes,
-            int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles, List<cPermObject> permeables,
+            int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<CObstacleObject> obstacles, List<CPermObject> permeables,
             double tolerance, double snow_threshold, double tilt_treshold, double[] groundalbedo,
             out double[][] Idiffuse)
         {
             //using 3 day interpolation of beam radiation. and no interreflections. and no trees.
             List<Mesh> obstlist = new List<Mesh>();
-            foreach (cObstacleObject obstobj in obstacles)
+            foreach (CObstacleObject obstobj in obstacles)
             {
                 obstlist.Add(obstobj.mesh);
             }
-            foreach (cPermObject perm in permeables)
+            foreach (CPermObject perm in permeables)
             {
                 obstlist.Add(perm.mesh);
             }
@@ -4530,7 +4530,7 @@ namespace GHSolar
         public static void CalcDiffuse_AnnualSimple(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int difDomeRes,
-            Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles,
+            Context.cWeatherdata weather, SunVector[] sunvectors, List<CObstacleObject> obstacles,
             double snow_threshold, double tilt_treshold, double[] groundalbedo,
             out double[][] Idiffuse)
         {
@@ -4620,7 +4620,7 @@ namespace GHSolar
         public static void CalcDiffuse_AnnualSimpleMT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int difDomeRes,
-            Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles,
+            Context.cWeatherdata weather, SunVector[] sunvectors, List<CObstacleObject> obstacles,
             double snow_threshold, double tilt_treshold, double[] groundalbedo,
             out double[][] Idiffuse)
         {

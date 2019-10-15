@@ -117,7 +117,7 @@ namespace GHSolar
                 double totVal = 0;
                 for (int i = 0; i < mshin.Faces.Count; i++)
                 {
-                    mshFaceAreas[i] = cMisc.getMeshFaceArea(i, mshin);
+                    mshFaceAreas[i] = CMisc.getMeshFaceArea(i, mshin);
 
                     double FaceVal;
                     double valVertex1 = valin[mshin.Faces[i].A];
@@ -126,11 +126,11 @@ namespace GHSolar
                     if (mshin.Faces[i].IsQuad)
                     {
                         double valVertex4 = valin[mshin.Faces[i].D];
-                        FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * cMisc.getMeshFaceArea(i, mshin);
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * CMisc.getMeshFaceArea(i, mshin);
                     }
                     else
                     {
-                        FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * cMisc.getMeshFaceArea(i, mshin);
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * CMisc.getMeshFaceArea(i, mshin);
                     }
                     totVal += FaceVal;
                 }
@@ -148,7 +148,7 @@ namespace GHSolar
                     double totVal = 0;
                     for (int i = 0; i < mshin.Faces.Count; i++)
                     {
-                        mshFaceAreas[i] = cMisc.getMeshFaceArea(i, mshin);
+                        mshFaceAreas[i] = CMisc.getMeshFaceArea(i, mshin);
 
                         double FaceVal;
                         double valVertex1 = valin2[mshin.Faces[i].A][t];
@@ -157,11 +157,11 @@ namespace GHSolar
                         if (mshin.Faces[i].IsQuad)
                         {
                             double valVertex4 = valin2[mshin.Faces[i].D][t];
-                            FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * cMisc.getMeshFaceArea(i, mshin);
+                            FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * CMisc.getMeshFaceArea(i, mshin);
                         }
                         else
                         {
-                            FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * cMisc.getMeshFaceArea(i, mshin);
+                            FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * CMisc.getMeshFaceArea(i, mshin);
                         }
                         totVal += FaceVal;
                     }

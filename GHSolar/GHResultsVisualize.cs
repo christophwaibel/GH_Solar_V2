@@ -67,7 +67,7 @@ namespace GHSolar
 
             List<double> valin = new List<double>();
             //if (!DA.GetDataList(1, valin)) { return; }
-            cResults results = null;
+            CResults results = null;
             if (!DA.GetData(1, ref results)) { return; }
 
             int outputType = 0;
@@ -125,21 +125,21 @@ namespace GHSolar
             {
                 for (int i = 0; i < mshin.Faces.Count; i++)
                 {
-                    c = cMisc.GetRGB(clr, valin[mshin.Faces[i].A], max, min);
+                    c = CMisc.GetRGB(clr, valin[mshin.Faces[i].A], max, min);
                     mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].A]);
                     mshcol.VertexColors.SetColor(count, c);
 
-                    c = cMisc.GetRGB(clr, valin[mshin.Faces[i].B], max, min);
+                    c = CMisc.GetRGB(clr, valin[mshin.Faces[i].B], max, min);
                     mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].B]);
                     mshcol.VertexColors.SetColor(count + 1, c);
 
-                    c = cMisc.GetRGB(clr, valin[mshin.Faces[i].C], max, min);
+                    c = CMisc.GetRGB(clr, valin[mshin.Faces[i].C], max, min);
                     mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].C]);
                     mshcol.VertexColors.SetColor(count + 2, c);
 
                     if (mshin.Faces[i].IsQuad)
                     {
-                        c = cMisc.GetRGB(clr, valin[mshin.Faces[i].D], max, min);
+                        c = CMisc.GetRGB(clr, valin[mshin.Faces[i].D], max, min);
                         mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].D]);
                         mshcol.VertexColors.SetColor(count + 3, c);
                         mshcol.Faces.AddFace(count, count + 1, count + 2, count + 3);
@@ -159,7 +159,7 @@ namespace GHSolar
                 double totVal = 0;
                 for (int i = 0; i < mshin.Faces.Count; i++)
                 {
-                    mshFaceAreas[i] = cMisc.getMeshFaceArea(i, mshin);
+                    mshFaceAreas[i] = CMisc.getMeshFaceArea(i, mshin);
 
                     double FaceVal;
                     double valVertex1 = valin[mshin.Faces[i].A];
@@ -168,18 +168,18 @@ namespace GHSolar
                     if (mshin.Faces[i].IsQuad)
                     {
                         double valVertex4 = valin[mshin.Faces[i].D];
-                        FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * cMisc.getMeshFaceArea(i, mshin);
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3 + valVertex4) / 4) * CMisc.getMeshFaceArea(i, mshin);
                     }
                     else
                     {
-                        FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * cMisc.getMeshFaceArea(i, mshin);
+                        FaceVal = ((valVertex1 + valVertex2 + valVertex3) / 3) * CMisc.getMeshFaceArea(i, mshin);
                     }
                     totVal += FaceVal;
                 }
                 count = 0;
                 for (int i = 0; i < mshin.Faces.Count; i++)
                 {
-                    c = cMisc.GetRGB(clr, totVal, max, min);
+                    c = CMisc.GetRGB(clr, totVal, max, min);
                     mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].A]);
                     mshcol.VertexColors.SetColor(count, c);
                     mshcol.Vertices.Add(mshin.Vertices[mshin.Faces[i].B]);

@@ -69,7 +69,7 @@ namespace GHSolar
             bool mt = false;
             if (!DA.GetData(6, ref mt)) { mt = false; }
 
-            cObstacleObject obst = new cObstacleObject(mesh, alb, spec, refl, tolerance, name, mt);
+            CObstacleObject obst = new CObstacleObject(mesh, alb, spec, refl, tolerance, name, mt);
 
             DA.SetData(0, obst);
         }

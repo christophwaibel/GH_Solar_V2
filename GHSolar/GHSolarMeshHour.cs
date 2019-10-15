@@ -123,15 +123,15 @@ namespace GHSolar
             /////////////////////////////////////////////////////////////////////
             //INPUTS
             Mesh msh = new Mesh();
-            cObstacleObject mshobj = null;
+            CObstacleObject mshobj = null;
             if (!DA.GetData(0, ref mshobj)) { return; }
             msh = mshobj.mesh;
 
             //should containt analysis surface itself
-            List<cObstacleObject> objObst = new List<cObstacleObject>();
+            List<CObstacleObject> objObst = new List<CObstacleObject>();
             if (!DA.GetDataList(1, objObst)) { return; }
 
-            List<cPermObject> treeObst = new List<cPermObject>();
+            List<CPermObject> treeObst = new List<CPermObject>();
             DA.GetDataList(2, treeObst);
 
             double latitude = 0.0;
@@ -194,12 +194,12 @@ namespace GHSolar
             #region SIMULATE
             //______________________________________________________________________________________________
             ////////////////////////////////        S I M U L A T E      ///////////////////////////////////
-            cCalculateSolarMesh calc = new cCalculateSolarMesh(
+            CCalculateSolarMesh calc = new CCalculateSolarMesh(
                 mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
                 year, null, mt, solarAzimuth, solarAltitude);
             calc.RunHourSimulation(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd);
             Line ln = calc.getSolarVec();
-            cResults results = calc.getResults();
+            CResults results = calc.getResults();
             cResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();
             ////////////////////////////////////////////////////////////////////////////////////////////////
             //______________________________________________________________________________________________
