@@ -1,5 +1,5 @@
 # GH_Solar_V2
-Solar irradiation model plug-in for Rhinoceros Grasshopper. Version 2.
+Solar irradiation model plug-in for Rhinoceros Grasshopper. Version 2 with better physics than [version 1](https://github.com/christophwaibel/GH_Solar_V1).
 
 Please refer to this publication for citation: [Waibel et al. (2017)](http://www.sciencedirect.com/science/article/pii/S0038092X17309349)
 
