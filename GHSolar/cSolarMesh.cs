@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-
 using Rhino.Geometry;
 using SolarModel;
 using System.Diagnostics;
@@ -21,7 +19,7 @@ namespace GHSolar
     /// <summary>
     /// Handles the calculations with all the necessary different classes (SunVector, Irradiation, cShadow, ...).
     /// </summary>
-    internal class cCalculateSolarMesh
+    public class cCalculateSolarMesh
     {
         private cObstacleObject mshobj;
         private List<cObstacleObject> objObst = new List<cObstacleObject>();
@@ -54,7 +52,7 @@ namespace GHSolar
         private List<SunVector> sunvectors_list;
         private SunVector[] sunvectors;
 
-        internal cCalculateSolarMesh(cObstacleObject _mshobj, List<cObstacleObject> _objObst, List<cPermObject> _objTrees,
+        public cCalculateSolarMesh(cObstacleObject _mshobj, List<cObstacleObject> _objObst, List<cPermObject> _objTrees,
             double _latitude, double _longitude, List<double> _DNI, List<double> _DHI,
             List<double> _SNOW, List<double> _groundalbedo, double _snow_threshold, double _tilt_threshold,
             int _year, cResultsInterreflections _ResultsIreflIn,
@@ -111,7 +109,7 @@ namespace GHSolar
         /// <param name="specBounces">Specular bounces (0-2).</param>
         /// <param name="diffIReflSkyRes">Skydome resolution for diffuse inter-reflection.</param>
         /// <param name="diffIReflSkyRes2nd">Skydome resolution at secondary sensorpoints of diffuse inter-reflection (0 - 2).</param>
-        internal void RunHourSimulation(int month, int day, int hour,
+        public void RunHourSimulation(int month, int day, int hour,
             int mainSkyRes, int specBounces, int diffIReflSkyRes, int diffIReflSkyRes2nd)
         {
             //________________________________________________________________________________________________________________________________________
@@ -541,7 +539,7 @@ namespace GHSolar
         /// Run annual irradiation simulation, with some simplifications like interpolation.
         /// </summary>
         /// <param name="tolerance"></param>
-        internal void RunAnnualSimulation_3Days_OLDOLD(double tolerance,
+        public void RunAnnualSimulation_3Days_OLDOLD(double tolerance,
             int mainSkyRes, int specBounces, int diffIReflSkyRes, int diffIReflSkyRes2nd)
         {
             //________________________________________________________________________________________________________________________________________
@@ -921,7 +919,7 @@ namespace GHSolar
         /// Run annual irradiation simulation, with some simplifications like interpolation.
         /// </summary>
         /// <param name="tolerance"></param>
-        internal void RunAnnualSimulation_3Days_OLD(double tolerance,
+        public void RunAnnualSimulation_3Days_OLD(double tolerance,
             int mainSkyRes, int mainInterpMode, int specBounces, int specInterpMode, int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode)
         {
             //________________________________________________________________________________________________________________________________________
@@ -1326,7 +1324,7 @@ namespace GHSolar
         /// Run annual irradiation simulation, with some simplifications like interpolation.
         /// </summary>
         /// <param name="tolerance"></param>
-        internal void RunAnnualSimulation(double tolerance,
+        public void RunAnnualSimulation(double tolerance,
             int mainSkyRes, int mainInterpMode, int specBounces, int specInterpMode, 
             int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode)
         {
@@ -1882,7 +1880,7 @@ namespace GHSolar
         /// Run annual irradiation simulation, with some simplifications like interpolation. Multi-threading version.
         /// </summary>
         /// <param name="tolerance"></param>
-        internal void RunAnnualSimulation_MT(double tolerance,
+        public void RunAnnualSimulation_MT(double tolerance,
             int mainSkyRes, int mainInterpMode, int specBounces, int specInterpMode,
             int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode)
         {
@@ -2432,17 +2430,17 @@ namespace GHSolar
 
 
 
-        internal Line getSolarVec()
+        public Line getSolarVec()
         {
             return ln;
         }
 
-        internal cResults getResults()
+        public cResults getResults()
         {
             return results;
         }
 
-        internal cResultsInterreflections getResultsInterreflections()
+        public cResultsInterreflections getResultsInterreflections()
         {
             return resultsIreflOut;
         }

@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-
 using Rhino.Geometry;
-
 using SolarModel;
 
 /*
@@ -18,7 +15,7 @@ using SolarModel;
 namespace GHSolar
 {
 
-    internal static class cShadow
+    public static class cShadow
     {
         const double rad2deg = 180.0 / Math.PI;
         const double deg2rad = Math.PI / 180.0;
@@ -32,7 +29,7 @@ namespace GHSolar
         /// <param name="vec">Vectors to be checked for obstruction to sensor point.</param>
         /// <param name="obstacles">Obstacles.</param>
         /// <param name="shadow">Indicates for each input vector, if it is obstructed (true) or if it reaches the sensor point (false).</param>
-        internal static void CalcShadow(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, Mesh[] obstacles, ref bool[] shadow)
+        public static void CalcShadow(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, Mesh[] obstacles, ref bool[] shadow)
         {
             //Rhino.RhinoDoc doc = Rhino.RhinoDoc.ActiveDoc;
 
@@ -78,7 +75,7 @@ namespace GHSolar
         /// <param name="vec">Vectors to be checked for obstruction to sensor point.</param>
         /// <param name="obstacles">Obstacles.</param>
         /// <param name="shadow">Indicates for each input vector, if it is obstructed (true) or if it reaches the sensor point (false).</param>
-        internal static void CalcShadowMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, Mesh[] obstacles, ref bool[] shadow)
+        public static void CalcShadowMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, Mesh[] obstacles, ref bool[] shadow)
         {
             shadow = new bool[vec.Length];        //by default all elements false. true means it's obstructed
             bool[] shdw_mt = new bool[vec.Length];
@@ -116,7 +113,7 @@ namespace GHSolar
         /// <param name="sunshine">Indicates, if a vector is during daytime (true) or not (false).</param>
         /// <param name="obstacles">Obstacles.</param>
         /// <param name="shadow">Indicates for each input vector, if it is obstructed (true) or if it reaches the sensor point (false).</param>
-        internal static void CalcShadow(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] solarVec, bool[] sunshine, Mesh[] obstacles, ref bool[] shadow)
+        public static void CalcShadow(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] solarVec, bool[] sunshine, Mesh[] obstacles, ref bool[] shadow)
         {
             shadow = new bool[solarVec.Length];        //by default all elements false. true means it's obstructed
             Point3d origOffset = new Point3d(Point3d.Add(SP, Vector3d.Multiply(Vector3d.Divide(SPnormal, SPnormal.Length), offset)));
@@ -159,7 +156,7 @@ namespace GHSolar
         /// <param name="sunshine">Indicates, if a vector is during daytime (true) or not (false).</param>
         /// <param name="obstacles">Obstacles.</param>
         /// <param name="shadow">Indicates for each input vector, if it is obstructed (true) or if it reaches the sensor point (false).</param>
-        internal static void CalcShadowMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, Mesh[] obstacles, ref bool[] shadow)
+        public static void CalcShadowMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, Mesh[] obstacles, ref bool[] shadow)
         {
             shadow = new bool[vec.Length];        //by default all elements false. true means it's obstructed
             bool[] shdw_mt = new bool[vec.Length];
@@ -206,7 +203,7 @@ namespace GHSolar
         /// <param name="obstacles">Semi-permeable obstacle objects.</param>
         /// <param name="HOY">Hour of the year ∈ [0, 8759].</param>
         /// <param name="shadow">Indicates for each input vector, how much it permeates through the obstacles. 1.0 : no obstruction, 0.0 : full obstruction.</param>
-        internal static void CalcPermBeam(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, List<cPermObject> obstacles, int HOY, ref double[] shadow)
+        public static void CalcPermBeam(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, List<cPermObject> obstacles, int HOY, ref double[] shadow)
         {
             Point3d origOffset = new Point3d(Point3d.Add(SP, Vector3d.Multiply(Vector3d.Divide(SPnormal, SPnormal.Length), offset)));
 
@@ -247,7 +244,7 @@ namespace GHSolar
             }
         }
 
- 
+
         /// <summary>
         /// Calculates obstruction of vectors via semi-permeable objects to a sensor point. 
         /// </summary>
@@ -262,7 +259,7 @@ namespace GHSolar
         ///<param name="permObstruction">[t] indicates for each input vector, if it is obstructed by a permeable object ONLY.</param>
         ///<param name="permInd">[t][u] for each vector, an array of indices to the permeable obstacles.</param>
         ///<param name="permLength">[t][u] for each vector, an array of length values of object penetration.</param>
-        internal static void CalcPerm(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<cPermObject> permObst,
+        public static void CalcPerm(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<cPermObject> permObst,
             bool[] shadow, out bool[] permObstruction,
             out int[][] permInd, out double[][] permLength)
         {
@@ -319,7 +316,7 @@ namespace GHSolar
                 }
             }
         }
-        
+
         /// <summary>
         /// Calculates obstruction of vectors via semi-permeable objects to a sensor point. Multi-threading version.
         /// </summary>
@@ -334,7 +331,7 @@ namespace GHSolar
         ///<param name="permObstruction">[t] indicates for each input vector, if it is obstructed by a permeable object ONLY.</param>
         ///<param name="permInd">[t][u] for each vector, an array of indices to the permeable obstacles.</param>
         ///<param name="permLength">[t][u] for each vector, an array of length values of object penetration.</param>
-        internal static void CalcPermMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<cPermObject> permObst,
+        public static void CalcPermMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<cPermObject> permObst,
             bool[] shadow, out bool[] permObstruction,
             out int[][] permInd, out double[][] permLength)
         {
@@ -421,7 +418,7 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Currently only max 1.</param>
         /// <param name="Ispecular">Normal irradiation values [t][m] for each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [t][m] for each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal1(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
+        public static void CalcSpecularNormal1(Point3d origin, Vector3d origNormal, double tolerance, Vector3d[] solarvec, bool[] sunshine,
             List<cObstacleObject> obstacles, double[][] albedo, int[] reflType, int bounces,
             ref double[][] Ispecular, ref Vector3d[][] Inormals)
         {
@@ -551,7 +548,7 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcSpecularNormal2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
             List<cObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
@@ -755,7 +752,7 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal3_old(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcSpecularNormal3_old(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
             List<cObstacleObject> obstacles, double[][] albedo, int[] refltype, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
@@ -1064,7 +1061,7 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation reflection coefficient values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal3(Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcSpecularNormal3(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine, int HOY,
             List<cObstacleObject> obstacles, List<cPermObject> permeables, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
@@ -1347,7 +1344,7 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal3MT(Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcSpecularNormal3MT(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine, int HOY,
             List<cObstacleObject> obstacles, List<cPermObject> permeables, int bounces,
             ref double[][][] Ispecular, ref Vector3d[][][] Inormals)
@@ -1619,7 +1616,7 @@ namespace GHSolar
         /// <param name="bounces"></param>
         /// <param name="reflected_1st"></param>
         /// <param name="reflected_2nd"></param>
-        internal static void CalcSpecularVectors(List<cObstacleObject> obstacles, Vector3d solarvec, int bounces,
+        public static void CalcSpecularVectors(List<cObstacleObject> obstacles, Vector3d solarvec, int bounces,
             out Vector3d[] reflected_1st, out int[] refl1_index, out int[] refl1_ind_face,
             out Vector3d[][] reflected_2nd, out int[][] refl2_index, out int[][] refl2_ind_face)
         {
@@ -1714,7 +1711,7 @@ namespace GHSolar
         /// <param name="bounces">Number of bounces. Max 2 recommended.</param>
         /// <param name="Ispecular">Normal irradiation values [t][m] for one sensor point, each solar vector t and each reflected ray m.</param>
         /// <param name="Inormals">Normal vectors [t][m] for one sensor point, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal4(Point3d SP, Vector3d SPnormal,
+        public static void CalcSpecularNormal4(Point3d SP, Vector3d SPnormal,
             Vector3d solarvec, bool sunshine, int HOY,
             List<cObstacleObject> obstacles, int bounces,
             Vector3d[] refl_1, int[] refl1_ind, int[] refl1_face_ind,
@@ -1906,7 +1903,7 @@ namespace GHSolar
         /// <param name="IObstRef1stOrder">Normal irradiation reflection coefficient values [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
         /// <param name="IObstRef2ndOrder"></param>
         /// <param name="Inormals">Normal vectors [i][t][m] for each sensor point i, each solar vector t and each reflected ray m.</param>
-        internal static void CalcSpecularNormal5(Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcSpecularNormal5(Point3d[] SP, Vector3d[] SPnormal,
             Vector3d[] solarvec, bool[] sunshine,
             List<cObstacleObject> obstacles, List<cPermObject> permeables, int bounces,
             out int[][][] IObstRef1stOrder, out int[][][] IObstRef2ndOrder, out Vector3d[][][] Inormals)
@@ -2192,7 +2189,7 @@ namespace GHSolar
             //___________________________________________________________________
         }
 
-      
+
         /// <summary>
         /// Calculates incident beam radiation on each SP based on interpolation of interreflected rays of three days: summer solstice, winter solstice and equinox.
         /// </summary>
@@ -2209,7 +2206,7 @@ namespace GHSolar
         /// <param name="DNI">[t] 8760 DNI values, for each hour of the year.</param>
         /// <param name="origNormal">[i] Normal vectors for each sensor point.</param>
         /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
-        internal static void CalcSpecularIncident_Annual(
+        public static void CalcSpecularIncident_Annual(
             int[][][] IObstRef1st_equ, int[][][] IObstRef2nd_equ, Vector3d[][][] Inormals_equ,
             int[][][] IObstRef1st_win, int[][][] IObstRef2nd_win, Vector3d[][][] Inormals_win,
             int[][][] IObstRef1st_sum, int[][][] IObstRef2nd_sum, Vector3d[][][] Inormals_sum,
@@ -2530,7 +2527,7 @@ namespace GHSolar
         /// <param name="DNI">[t] 8760 DNI values, for each hour of the year.</param>
         /// <param name="origNormal">[i] Normal vectors for each sensor point.</param>
         /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
-        internal static void CalcSpecularIncident_AnnualMT(
+        public static void CalcSpecularIncident_AnnualMT(
             int[][][] IObstRef1st_equ, int[][][] IObstRef2nd_equ, Vector3d[][][] Inormals_equ,
             int[][][] IObstRef1st_win, int[][][] IObstRef2nd_win, Vector3d[][][] Inormals_win,
             int[][][] IObstRef1st_sum, int[][][] IObstRef2nd_sum, Vector3d[][][] Inormals_sum,
@@ -2850,7 +2847,7 @@ namespace GHSolar
         /// <param name="DNI">[t] 8760 DNI values, for each hour of the year.</param>
         /// <param name="origNormal">[i] Normal vectors for each sensor point.</param>
         /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
-        internal static void CalcSpecularIncident_Annual(int[] StartDays, int[] EndDays,
+        public static void CalcSpecularIncident_Annual(int[] StartDays, int[] EndDays,
             int[][][][] IObstRef1st, int[][][][] IObstRef2nd, Vector3d[][][][] Inormals,
             List<cObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
             out double[][] Ispecular_annual)
@@ -3005,7 +3002,7 @@ namespace GHSolar
         /// <param name="DNI">[t] 8760 DNI values, for each hour of the year.</param>
         /// <param name="origNormal">[i] Normal vectors for each sensor point.</param>
         /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
-        internal static void CalcSpecularIncident_AnnualMT(int[] StartDays, int[] EndDays,
+        public static void CalcSpecularIncident_AnnualMT(int[] StartDays, int[] EndDays,
             int[][][][] IObstRef1st, int[][][][] IObstRef2nd, Vector3d[][][][] Inormals,
             List<cObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
             out double[][] Ispecular_annual)
@@ -3160,7 +3157,7 @@ namespace GHSolar
         /// <param name="Inormals">Normals for each specular irradiation value [t][i].</param>
         /// <param name="DNI">Direct normal irradiation values for each time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [t] incident on the sensor point, for each time step t.</param>
-        internal static void CalcSpecularIncident(Vector3d origNormal, double[][] Ispecular, Vector3d[][] Inormals,
+        public static void CalcSpecularIncident(Vector3d origNormal, double[][] Ispecular, Vector3d[][] Inormals,
             double[] DNI, ref double[] IspecularIncident)
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
@@ -3190,7 +3187,7 @@ namespace GHSolar
         /// <param name="Inormals">Normals [m] for each specular irradiation value m.</param>
         /// <param name="DNI">Direct normal irradiation value for one time step.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation incident on the sensor point, for one time step.</param>
-        internal static void CalcSpecularIncident(Vector3d SPNormal, double[] Ispecular, Vector3d[] Inormals,
+        public static void CalcSpecularIncident(Vector3d SPNormal, double[] Ispecular, Vector3d[] Inormals,
             double DNI, ref double IspecularIncident)
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
@@ -3221,7 +3218,7 @@ namespace GHSolar
         /// <param name="Inormals">Normals for each specular irradiation value [i][t][m].</param>
         /// <param name="DNI">Direct normal irradiation values for each time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [i][t] incident on the sensor point i, for each time step t.</param>
-        internal static void CalcSpecularIncident(Vector3d[] SPNormal, double[][][] Ispecular, Vector3d[][][] Inormals,
+        public static void CalcSpecularIncident(Vector3d[] SPNormal, double[][][] Ispecular, Vector3d[][][] Inormals,
             double[] DNI, ref double[][] IspecularIncident)
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
@@ -3256,7 +3253,7 @@ namespace GHSolar
         /// <param name="Inormals">Normals for each specular irradiation value [i][t][m].</param>
         /// <param name="DNI">Direct normal irradiation values for one time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [i] incident on the sensor point i, for one time step t.</param>
-        internal static void CalcSpecularIncident(Vector3d[] SPNormal, double[][][] Ispecular, Vector3d[][][] Inormals,
+        public static void CalcSpecularIncident(Vector3d[] SPNormal, double[][][] Ispecular, Vector3d[][][] Inormals,
             double DNI, ref double[] IspecularIncident)
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
@@ -3286,7 +3283,7 @@ namespace GHSolar
         /// <param name="Inormals">Normals for each specular irradiation value [i][t][m].</param>
         /// <param name="DNI">Direct normal irradiation values for one time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [i] incident on the sensor point i, for one time step t.</param>
-        internal static void CalcSpecularIncidentMT(Vector3d[] SPNormal, double[][][] Ispecular, Vector3d[][][] Inormals,
+        public static void CalcSpecularIncidentMT(Vector3d[] SPNormal, double[][][] Ispecular, Vector3d[][][] Inormals,
             double DNI, ref double[] IspecularIncident)
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
@@ -3328,7 +3325,7 @@ namespace GHSolar
         /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
-        internal static void CalcIReflDiff_GetSPs(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcIReflDiff_GetSPs(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             List<cObstacleObject> obstacles, int difDomeRes,
             out Sensorpoints[] Idiffuse_SPs, out int[][] Idiff_obstacles, out int[][] Idiff_domevertexindex, out SkyDome[] Idiff_domes)
         {
@@ -3470,7 +3467,7 @@ namespace GHSolar
         /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
-        internal static void CalcIReflDiff_GetSPs2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcIReflDiff_GetSPs2(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             List<cObstacleObject> obstacles, List<cPermObject> permeables, int difDomeRes,
             out List<List<double>> diffSP_beta_list,
             out List<List<double>> diffSP_psi_list,
@@ -3654,7 +3651,7 @@ namespace GHSolar
         /// <param name="Idiff_obstacles">For each sensor point i, indices of obstacles that are hit by interreflected diffuse rays.</param>
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
-        internal static void CalcIReflDiff_GetSPs2MT(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
+        public static void CalcIReflDiff_GetSPs2MT(cObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
             List<cObstacleObject> obstacles, List<cPermObject> permeables, int difDomeRes,
             out List<List<double>> diffSP_beta_list,
             out List<List<double>> diffSP_psi_list,
@@ -3818,7 +3815,7 @@ namespace GHSolar
         /// <param name="sunvectors"></param>
         /// <param name="obstacles"></param>
         /// <param name="Idiffuse"></param>
-        internal static void CalcDiffuse2(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+        public static void CalcDiffuse2(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
             int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
@@ -3936,7 +3933,7 @@ namespace GHSolar
         /// <param name="sunvectors"></param>
         /// <param name="obstacles"></param>
         /// <param name="Idiffuse"></param>
-        internal static void CalcDiffuse2MT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+        public static void CalcDiffuse2MT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
             int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
@@ -4055,7 +4052,7 @@ namespace GHSolar
         /// <param name="sunvectors"></param>
         /// <param name="obstacles"></param>
         /// <param name="Idiffuse"></param>
-        internal static void CalcDiffuse_OLD(Sensorpoints[] Idiff_SP, int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
+        public static void CalcDiffuse_OLD(Sensorpoints[] Idiff_SP, int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
             int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<cObstacleObject> obstacles,
             double tolerance, double snow_threshold, double tilt_treshold,
             out double[] Idiffuse)
@@ -4177,7 +4174,7 @@ namespace GHSolar
         /// <param name="tilt_treshold">Tilt angle threshold, after which snow does not remain on surface.</param>
         /// <param name="groundalbedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
         /// <param name="Idiffuse">Time series of diffuse interreflection. [i][t], i=each sensor point, t=each hour of the year 1-8760.</param>
-        internal static void CalcDiffuse_Annual(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+        public static void CalcDiffuse_Annual(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, 
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int SecondarydifDomeRes, 
             int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles, List<cPermObject> permeables,
@@ -4355,7 +4352,7 @@ namespace GHSolar
         /// <param name="tilt_treshold">Tilt angle threshold, after which snow does not remain on surface.</param>
         /// <param name="groundalbedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
         /// <param name="Idiffuse">Time series of diffuse interreflection. [i][t], i=each sensor point, t=each hour of the year 1-8760.</param>
-        internal static void CalcDiffuse_AnnualMT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+        public static void CalcDiffuse_AnnualMT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int SecondarydifDomeRes,
             int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles, List<cPermObject> permeables,
@@ -4530,7 +4527,7 @@ namespace GHSolar
         /// <param name="tilt_treshold">Tilt angle threshold, after which snow does not remain on surface.</param>
         /// <param name="groundalbedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
         /// <param name="Idiffuse">Time series of diffuse interreflection. [i][t], i=each sensor point, t=each hour of the year 1-8760.</param>
-        internal static void CalcDiffuse_AnnualSimple(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+        public static void CalcDiffuse_AnnualSimple(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int difDomeRes,
             Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles,
@@ -4620,7 +4617,7 @@ namespace GHSolar
         /// <param name="tilt_treshold">Tilt angle threshold, after which snow does not remain on surface.</param>
         /// <param name="groundalbedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
         /// <param name="Idiffuse">Time series of diffuse interreflection. [i][t], i=each sensor point, t=each hour of the year 1-8760.</param>
-        internal static void CalcDiffuse_AnnualSimpleMT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
+        public static void CalcDiffuse_AnnualSimpleMT(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list,
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int difDomeRes,
             Context.cWeatherdata weather, SunVector[] sunvectors, List<cObstacleObject> obstacles,

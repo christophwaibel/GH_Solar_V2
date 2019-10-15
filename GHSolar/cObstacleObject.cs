@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-
 using Rhino.Geometry;
 
 /*
@@ -15,18 +11,18 @@ using Rhino.Geometry;
 
 namespace GHSolar
 {
-    internal class cObstacleObject
+    public class cObstacleObject
     {
-        internal Mesh mesh;
-        internal List<double> albedos;  //8760 values for diffuse
-        internal List<double> specCoeff; //8760 values for specular
-        internal int reflType;
-        internal Vector3d[] normals;
-        internal Vector3d[] normalsRev;
-        internal Point3d[] faceCen;
+        public Mesh mesh;
+        public List<double> albedos;  //8760 values for diffuse
+        public List<double> specCoeff; //8760 values for specular
+        public int reflType;
+        public Vector3d[] normals;
+        public Vector3d[] normalsRev;
+        public Point3d[] faceCen;
 
-        internal double tolerance;
-        internal string name;
+        public double tolerance;
+        public string name;
 
         /// <summary>
         /// Create an obstacle object, used for solar calculations.
@@ -38,7 +34,7 @@ namespace GHSolar
         /// <param name="_tolerance">Tolerance, used to offset point from actual face center point, to avoid self obstruction.</param>
         /// <param name="_name">Name of the obstacle. E.g. use to indicate an analysis surface.</param>
         /// <param name="mt">Multi-threading.</param>
-        internal cObstacleObject(Mesh _mesh, List<double> _albedos, List<double> _specCoeff, int _reflType, double _tolerance, string _name, bool mt)
+        public cObstacleObject(Mesh _mesh, List<double> _albedos, List<double> _specCoeff, int _reflType, double _tolerance, string _name, bool mt)
         {
             mesh = _mesh;
             albedos = new List<double>(_albedos);

@@ -9,3 +9,14 @@ C:\Users\Christoph\Documents\Visual Studio 2012\Projects\GH_Solar_V2-master\GHSo
 C:\Users\Christoph\Documents\Visual Studio 2012\Projects\GH_Solar_V2-master\GHSolar\bin\RhinoCommon.xml
 C:\Users\Christoph\Documents\Visual Studio 2012\Projects\GH_Solar_V2-master\GHSolar\obj\Debug64\GHSolar.dll
 C:\Users\Christoph\Documents\Visual Studio 2012\Projects\GH_Solar_V2-master\GHSolar\obj\Debug64\GHSolar.pdb
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.csprojAssemblyReference.cache
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.Properties.Resources.resources
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.csproj.GenerateResource.cache
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.csproj.CoreCompileInputs.cache
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.dll
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.pdb
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\GHSolar.dll
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\GHSolar.pdb
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\SolarModel.dll
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\SolarModel.pdb
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.csproj.CopyComplete

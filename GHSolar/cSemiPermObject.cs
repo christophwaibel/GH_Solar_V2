@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Rhino.Geometry;
-using SolarModel;
+﻿using Rhino.Geometry;
 
 /*
  * cSemiPermObject.cs
@@ -16,17 +9,17 @@ using SolarModel;
 
 namespace GHSolar
 {
-    internal class cPermObject
+    public class cPermObject
     {
-        internal Mesh mesh;
-        internal double[] permeability = new double[8760];
+        public Mesh mesh;
+        public double[] permeability = new double[8760];
 
         /// <summary>
         /// Permeable object (e.g. a tree).
         /// </summary>
         /// <param name="_mesh">Geometry.</param>
         /// <param name="_permeability">8760 coefficients for each hour of the year, 1.0 : non-permeable, 0.0 : fully permeable.</param>
-        internal cPermObject(Mesh _mesh, double[] _permeability)
+        public cPermObject(Mesh _mesh, double[] _permeability)
         {
             mesh = _mesh;
             _permeability.CopyTo(permeability,0);

@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Drawing;
-
 using Rhino.Geometry;
 
 /*
@@ -19,7 +14,7 @@ namespace GHSolar
     /// <summary>
     /// 
     /// </summary>
-    internal static class cMisc
+    public static class cMisc
     {
 
         /// <summary>
@@ -29,7 +24,7 @@ namespace GHSolar
         /// <param name="meshfaceindex"></param>
         /// <param name="m"></param>
         /// <returns></returns>
-        internal static double getMeshFaceArea(int meshfaceindex, Mesh m)
+        public static double getMeshFaceArea(int meshfaceindex, Mesh m)
         {
             //get points into a nice, concise format
             Point3d[] pts = new Point3d[4];
@@ -70,7 +65,7 @@ namespace GHSolar
         /// <param name="top"></param>
         /// <param name="low"></param>
         /// <returns></returns>
-        internal static Color GetRGB(int colourSheme, double quantity, double top, double low)
+        public static Color GetRGB(int colourSheme, double quantity, double top, double low)
         {
             double RR = 0.0;
             double GG = 0.0;
@@ -147,7 +142,7 @@ namespace GHSolar
         /// <param name="srf_normal">Normal vector (must be a unit vector).</param>
         /// <param name="incident_vector">Incident vector.</param>
         /// <returns>Reflected vector.</returns>
-        internal static Vector3d ReflectVec(Vector3d srf_normal, Vector3d incident_vector)
+        public static Vector3d ReflectVec(Vector3d srf_normal, Vector3d incident_vector)
         {
             return Vector3d.Subtract(incident_vector, Vector3d.Multiply(Vector3d.Multiply(incident_vector, srf_normal) * 2.0, srf_normal));
         }
@@ -158,7 +153,7 @@ namespace GHSolar
         /// <param name="a">Vector a.</param>
         /// <param name="b">Vector b.</param>
         /// <returns></returns>
-        internal static double [,] RotationMatrix(Vector3d a, Vector3d b)
+        public static double [,] RotationMatrix(Vector3d a, Vector3d b)
         {
             a.Unitize();
             b.Unitize();
@@ -203,7 +198,7 @@ namespace GHSolar
         /// <param name="vec">Direction of offset.</param>
         /// <param name="offset">Distance of offset.</param>
         /// <returns>Offset point.</returns>
-        internal static Point3d OffsetPt(Point3d pt, Vector3d vec, double offset)
+        public static Point3d OffsetPt(Point3d pt, Vector3d vec, double offset)
         {
             return Point3d.Add(pt, Vector3d.Multiply(Vector3d.Divide(vec, vec.Length), offset));
         }

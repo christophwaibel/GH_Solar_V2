@@ -3,3 +3,9 @@ c:\Users\wach\documents\visual studio 2012\Projects\GHSolar\SolarModel\bin\Debug
 c:\Users\wach\documents\visual studio 2012\Projects\GHSolar\SolarModel\obj\Debug\SolarModel.dll
 c:\Users\wach\documents\visual studio 2012\Projects\GHSolar\SolarModel\obj\Debug\SolarModel.pdb
 C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\SolarModel\obj\Debug\SolarModel.csprojResolveAssemblyReference.cache
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\bin\Debug\SolarModel.dll
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\bin\Debug\SolarModel.pdb
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\obj\Debug\SolarModel.csproj.CoreCompileInputs.cache
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\obj\Debug\SolarModel.dll
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\obj\Debug\SolarModel.pdb
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\obj\Debug\SolarModel.csprojAssemblyReference.cache
