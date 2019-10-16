@@ -178,7 +178,7 @@ namespace GHSolar
             int DiffIReflSkyRes2nd = 0;
             if (!DA.GetData(23, ref DiffIReflSkyRes2nd)) { DiffIReflSkyRes2nd = 0; }
             
-            cResultsInterreflections ResultsIreflIn = null;
+            CResultsInterreflections ResultsIreflIn = null;
             DA.GetData(25, ref ResultsIreflIn);
 
             bool mt = false;
@@ -200,7 +200,7 @@ namespace GHSolar
             calc.RunHourSimulation(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd);
             Line ln = calc.getSolarVec();
             CResults results = calc.getResults();
-            cResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();
+            CResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();
             ////////////////////////////////////////////////////////////////////////////////////////////////
             //______________________________________________________________________________________________
             #endregion

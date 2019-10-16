@@ -200,7 +200,7 @@ namespace GHSolar
             int DiffIReflMode = 1;
             if (!DA.GetData(25, ref DiffIReflMode)) { DiffIReflMode = 1; }
             
-            cResultsInterreflections ResultsIreflIn = null;
+            CResultsInterreflections ResultsIreflIn = null;
             DA.GetData(27, ref ResultsIreflIn);
 
             bool mt = false;

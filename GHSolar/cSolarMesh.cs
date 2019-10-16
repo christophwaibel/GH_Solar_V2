@@ -36,7 +36,7 @@ namespace GHSolar
         private List<double> SNOW = new List<double>();
         private List<double> groundalbedo;
 
-        private cResultsInterreflections ResultsIreflIn;
+        private CResultsInterreflections ResultsIreflIn;
 
         private bool mt;
 
@@ -45,7 +45,7 @@ namespace GHSolar
 
         private Line ln = new Line();
         private CResults results;
-        private cResultsInterreflections resultsIreflOut;
+        private CResultsInterreflections resultsIreflOut;
 
         private Context.cWeatherdata weather;
         private Context.cLocation location;
@@ -55,7 +55,7 @@ namespace GHSolar
         public CCalculateSolarMesh(CObstacleObject _mshobj, List<CObstacleObject> _objObst, List<CPermObject> _objTrees,
             double _latitude, double _longitude, List<double> _DNI, List<double> _DHI,
             List<double> _SNOW, List<double> _groundalbedo, double _snow_threshold, double _tilt_threshold,
-            int _year, cResultsInterreflections _ResultsIreflIn,
+            int _year, CResultsInterreflections _ResultsIreflIn,
             bool _mt, List<double> solarAzimuth, List<double> solarAltitude)
         {
             mshobj = _mshobj;
@@ -518,7 +518,7 @@ namespace GHSolar
             }
             results = new CResults(I, Ib, Ih, I_hourly, Ib_hourly, Id_hourly, coords);
             //resultsIreflOut = new cResultsInterreflections(Idiffuse_SPs, Idiff_obstacles, Idiff_domevertices, Idiff_domes, Ispecular2, Inormals2);
-            resultsIreflOut = new cResultsInterreflections(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list, Idiff_obstacles, Idiff_domevertices, Idiff_domes, Ispecular2, Inormals2);
+            resultsIreflOut = new CResultsInterreflections(diffSP_beta_list, diffSP_psi_list, diffSP_normal_list, diffSP_coord_list, Idiff_obstacles, Idiff_domevertices, Idiff_domes, Ispecular2, Inormals2);
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
@@ -2440,7 +2440,7 @@ namespace GHSolar
             return results;
         }
 
-        public cResultsInterreflections getResultsInterreflections()
+        public CResultsInterreflections getResultsInterreflections()
         {
             return resultsIreflOut;
         }

@@ -35,7 +35,7 @@ namespace GHSolar
     }
 
 
-    public class cResultsInterreflections
+    public class CResultsInterreflections
     {
         //variables for diffuse inter-reflection
         //internal Sensorpoints[] Idiffuse_SPs;
@@ -54,7 +54,7 @@ namespace GHSolar
         public double[][][] Ispecular2;// = new double[mshvrt.Length][][];
         public Vector3d[][][] Inormals2;// = new Vector3d[mshvrt.Length][][];
 
-        public cResultsInterreflections(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list, 
+        public CResultsInterreflections(List<List<double>> diffSP_beta_list, List<List<double>> diffSP_psi_list, 
             List<List<Sensorpoints.v3d>> diffSP_normal_list,List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obstacles, int[][] Idiff_domevertices, SkyDome[] Idiff_domes,
             double[][][] Ispecular2, Vector3d[][][] Inormals2)
