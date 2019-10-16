@@ -14,7 +14,6 @@ C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\bin\Debug\Tester.pdb
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\bin\Debug\SolarModel.dll
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\bin\Debug\SolarModel.pdb
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\obj\Debug\Tester.csprojAssemblyReference.cache
-C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\obj\Debug\Tester.csproj.CoreCompileInputs.cache
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\obj\Debug\Tester.csproj.CopyComplete
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\obj\Debug\Tester.exe
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\Tester\obj\Debug\Tester.pdb

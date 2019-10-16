@@ -33,7 +33,7 @@ namespace GHSolar
             pManager.AddMeshParameter("Mesh", "Mesh", "Analysis mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("I", "I", "Results data from solar irradiation calculation.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Value", "Value",
-                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], [3] = Total annual irradiation per mesh [kWh/a], [4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], [7] = Total hourly per mesh [Wh].",
+                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], [3] = Total annual irradiation per mesh [kWh/a], [4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], [7] = Total hourly per mesh [W].",
                 GH_ParamAccess.item);
             pManager[2].Optional = true;
             pManager.AddIntegerParameter("SP", "SP", "Select sensor point to read values from (not for Value type 3 or 7).", GH_ParamAccess.item);
@@ -69,35 +69,38 @@ namespace GHSolar
 
             int sp = 0; //sensor point, or mesh vertex
             if (!DA.GetData(3, ref sp)) { sp = 0; }
-            
 
+            double copyval;
             switch (outputType)
             {
-                case 0:
-                    valin.Add(results.I_total[sp]);
+                case 0: // [kWh/m^2a] total
+                    copyval = results.I_total[sp];
+                    valin.Add(copyval);
                     break;
-                case 1:
-                    valin.Add(results.Ib_total[sp]);
+                case 1: // [kWh/m^2a] beam
+                    copyval = results.Ib_total[sp];
+                    valin.Add(copyval);
                     break;
-                case 2:
-                    valin.Add(results.Id_total[sp]);
+                case 2: // [kWh/m^2a] diffuse
+                    copyval = results.Id_total[sp];
+                    valin.Add(copyval);
                     break;
-                case 3:
-                    valin = results.I_total;
+                case 3: // [kWh/a] total
+                    valin = new List<double>(results.I_total);
                     break;
-                case 4:
+                case 4: // [W/m^2] total
                     for (int t = 0; t < results.I_hourly.ColumnCount; t++)
                         valin.Add(results.I_hourly[sp, t]);
                     break;
-                case 5:
+                case 5: // [W/m^2] beam
                     for (int t = 0; t < results.Ib_hourly.ColumnCount; t++)
                         valin.Add(results.Ib_hourly[sp, t]);
                     break;
-                case 6:
+                case 6: // [W/m^2] diffuse
                     for (int t = 0; t < results.Id_hourly.ColumnCount; t++)
                         valin.Add(results.Id_hourly[sp, t]);
                     break;
-                case 7:
+                case 7: // [W] total
                     for (int i = 0; i < results.I_hourly.RowCount; i++)
                     {
                         double[] val_t = new double[results.I_hourly.ColumnCount];
@@ -172,7 +175,15 @@ namespace GHSolar
                 valin = valout;
             }
 
-
+            if (outputType == 0 || outputType == 1 || outputType == 2 || outputType == 3)
+            {
+                List<double> valin_copy = new List<double>(valin);
+                for (int i = 0; i < valin.Count; i++)
+                {
+                    valin_copy[i] *= 0.001;
+                }
+                valin = new List<double>(valin_copy);
+            }
 
             DA.SetDataList(0, valin);
             DA.SetData(1, results.coords[sp]);

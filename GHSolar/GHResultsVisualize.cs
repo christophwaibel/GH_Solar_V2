@@ -35,7 +35,7 @@ namespace GHSolar
             pManager.AddMeshParameter("Mesh", "Mesh", "Analysis mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("I", "I", "Results data from solar irradiation calculation.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Value", "Value",
-                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], [3] = Total annual irradiation per mesh [kWh/a], [4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], [7] = Total hourly per mesh [Wh].",
+                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], [3] = Total annual irradiation per mesh [kWh/a], [4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], [7] = Total hourly per mesh [W].",
                 GH_ParamAccess.item);
             pManager[2].Optional = true;
             pManager.AddIntegerParameter("hour", "hour", "Select hour of the year (integer between 0 and 8759) for visualization (only if Value type 4, 5, 6 or 7).", GH_ParamAccess.item);
@@ -79,31 +79,51 @@ namespace GHSolar
 
             switch (outputType)
             {
-                case 0:
-                case 3:
-                    valin = results.I_total;
+                case 0: // [kWh/m^2a] total
+                    valin = new List<double>(results.I_total);
                     break;
-                case 1:
-                    valin = results.Ib_total;
+                case 1: // [kWh/m^2a] beam
+                    valin = new List<double>(results.Ib_total);
                     break;
-                case 2:
-                    valin = results.Id_total;
+                case 2: // [kWh/m^2a] diffuse
+                    valin = new List<double>(results.Id_total);
                     break;
-                case 4:
-                case 7:
-                    for (int i = 0; i < results.I_hourly.RowCount; i++)
-                        valin.Add(results.I_hourly[i, t]);
+                case 3: // [kWh/a] total
+                    valin = new List<double>(results.I_total);
                     break;
-                case 5:
+                case 4: // [W/m^2] total
                     for (int i = 0; i < results.Ib_hourly.RowCount; i++)
-                        valin.Add(results.Ib_hourly[i, t]);
+                    {
+                        valin.Add(results.I_hourly[i, t]);
+                    }
                     break;
-                case 6:
+                case 5: // [W/m^2] beam
+                    for (int i = 0; i < results.Ib_hourly.RowCount; i++)
+                    {
+                        valin.Add(results.Ib_hourly[i, t]);
+                    }
+                    break;
+                case 6: // [W/m^2] diffuse
                     for (int i = 0; i < results.Id_hourly.RowCount; i++)
+                    {
                         valin.Add(results.Id_hourly[i, t]);
+                    }
+                    break;
+                case 7: // [W] total
+                    for (int i = 0; i < results.I_hourly.RowCount; i++)
+                    {
+                        valin.Add(results.I_hourly[i, t]);
+                    }
                     break;
             }
 
+            if (outputType == 0 || outputType == 1 || outputType == 2 || outputType == 3 )
+            {
+                for (int i = 0; i < valin.Count; i++)
+                {
+                    valin[i] *= 0.001;      // in kW, not W
+                }
+            }
 
 
 

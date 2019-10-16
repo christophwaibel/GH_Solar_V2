@@ -20,3 +20,5 @@ C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\GHSolar.pdb
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\SolarModel.dll
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\SolarModel.pdb
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\obj\Debug64\GHSolar.csproj.CopyComplete
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\rhinocommon.dll
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\GHSolar\bin\rhinocommon.xml
