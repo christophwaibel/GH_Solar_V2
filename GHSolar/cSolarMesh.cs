@@ -1882,8 +1882,12 @@ namespace GHSolar
         /// <param name="tolerance"></param>
         public void RunAnnualSimulation_MT(double tolerance,
             int mainSkyRes, int mainInterpMode, int specBounces, int specInterpMode,
-            int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode)
+            int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode, bool mt)
         {
+            int tasks = 1;
+            if (mt) tasks = Environment.ProcessorCount;
+            ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
+
             Rhino.RhinoApp.WriteLine("SOLAR MODEL. https://github.com/christophwaibel/GH_Solar_V2");
             Stopwatch stopwatch = Stopwatch.StartNew(); //creates and start the instance of Stopwatch
             Rhino.RhinoApp.WriteLine("(1/4): Preparing Data...");
@@ -1914,7 +1918,7 @@ namespace GHSolar
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             double[][] albedos = new double[objObst.Count][];
             int[] reflType = new int[objObst.Count];
-            Parallel.For(0, objObst.Count, i =>
+            Parallel.For(0, objObst.Count, paropts, i =>
             {
                 reflType[i] = objObst[i].reflType;
                 albedos[i] = new double[8760];
@@ -2056,7 +2060,7 @@ namespace GHSolar
             bool[] sunshine_equ = new bool[24];
             bool[] sunshine_sum = new bool[24];
             bool[] sunshine_win = new bool[24];
-            Parallel.For(0, 24, t =>
+            Parallel.For(0, 24, paropts, t =>
             {
                 if (sunvectors_list[HOYequ + t].Sunshine)
                     sunshine_equ[t] = true;
@@ -2083,7 +2087,7 @@ namespace GHSolar
                 endDays[d] = dm + dmcount;
                 dmcount += dm;
                 int HOY = (startDays[d] - 1) * 24;
-                Parallel.For(0, 24, t =>
+                Parallel.For(0, 24, paropts, t =>
                 {
                     if (sunvectors_list[HOY + t].Sunshine)
                         sunshine_12d[d][t] = true;
@@ -2112,7 +2116,7 @@ namespace GHSolar
                 //sky dome diffuse
                 Vector3d[] vec_sky = new Vector3d[p.sky[i].VerticesHemisphere.Count];
                 bool[] sunshinesky = new bool[vec_sky.Length];
-                Parallel.For(0, vec_sky.Length, u =>
+                Parallel.For(0, vec_sky.Length, paropts, u =>
                 {
                     vec_sky[u] = new Vector3d(
                         p.sky[i].VertexVectorsSphere[p.sky[i].VerticesHemisphere[u]][0],

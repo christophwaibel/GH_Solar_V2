@@ -218,16 +218,9 @@ namespace GHSolar
             CCalculateSolarMesh calc = new CCalculateSolarMesh(
                 mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
                 year, null, mt, solarAzimuth, solarAltitude);
-            if (mt)
-            {
-                calc.RunAnnualSimulation_MT(mshobj.tolerance,
-                    MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
-            }
-            else
-            {
-                calc.RunAnnualSimulation(mshobj.tolerance,
-                    MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
-            }
+            calc.RunAnnualSimulation_MT(mshobj.tolerance,
+                    MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode, mt);
+
             CResults results = calc.getResults();
             //cResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();
             ////////////////////////////////////////////////////////////////////////////////////////////////
