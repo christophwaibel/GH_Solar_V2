@@ -7,3 +7,4 @@ C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\bin\Debug\SolarModel.d
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\bin\Debug\SolarModel.pdb
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\obj\Debug\SolarModel.dll
 C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\obj\Debug\SolarModel.pdb
+C:\Users\chwaibel\Documents\GitHub\GH_Solar_V2\SolarModel\obj\Debug\SolarModel.csprojAssemblyReference.cache
