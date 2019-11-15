@@ -317,6 +317,7 @@ namespace GHSolar
             }
         }
 
+
         /// <summary>
         /// Calculates obstruction of vectors via semi-permeable objects to a sensor point. Multi-threading version.
         /// </summary>
@@ -332,8 +333,8 @@ namespace GHSolar
         ///<param name="permInd">[t][u] for each vector, an array of indices to the permeable obstacles.</param>
         ///<param name="permLength">[t][u] for each vector, an array of length values of object penetration.</param>
         public static void CalcPermMT(Point3d SP, Vector3d SPnormal, double offset, Vector3d[] vec, bool[] sunshine, List<CPermObject> permObst,
-            bool[] shadow, out bool[] permObstruction,
-            out int[][] permInd, out double[][] permLength)
+            bool[] shadow, ParallelOptions paropts,
+            out bool[] permObstruction, out int[][] permInd, out double[][] permLength)
         {
             //out bool[] solidObstruction,
             Point3d origOffset = new Point3d(Point3d.Add(SP, Vector3d.Multiply(Vector3d.Divide(SPnormal, SPnormal.Length), offset)));
@@ -347,7 +348,7 @@ namespace GHSolar
             int[][] permIndPar = new int[vec.Length][];
             double[][] permLengthPar = new double[vec.Length][];
 
-            Parallel.For(0, vec.Length, t =>
+            Parallel.For(0, vec.Length, paropts, t =>
             {
                 if (sunshine[t] == false || shadow[t] == true) return;
 
@@ -398,7 +399,6 @@ namespace GHSolar
                 permLength[t] = permLengthPar[t];
             }
         }
-
 
 
         /// <summary>
@@ -1606,8 +1606,6 @@ namespace GHSolar
         }
 
 
-
-
         /// <summary>
         /// Calculates 1st and 2nd order specular reflections for each specular obstacle object. Output vectors can be projected to each sensor point to check for specular inter-relections.
         /// </summary>
@@ -2511,6 +2509,7 @@ namespace GHSolar
 
         }
 
+
         /// <summary>
         /// Calculates incident beam radiation on each SP based on interpolation of interreflected rays of three days: summer solstice, winter solstice and equinox. Multi-threading version.
         /// </summary>
@@ -2531,7 +2530,7 @@ namespace GHSolar
             int[][][] IObstRef1st_equ, int[][][] IObstRef2nd_equ, Vector3d[][][] Inormals_equ,
             int[][][] IObstRef1st_win, int[][][] IObstRef2nd_win, Vector3d[][][] Inormals_win,
             int[][][] IObstRef1st_sum, int[][][] IObstRef2nd_sum, Vector3d[][][] Inormals_sum,
-            List<CObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
+            List<CObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal, ParallelOptions paropts,
             out double[][] Ispecular_annual)
         {
             //using interpolation of several days. 3 or x. start with three days.
@@ -2565,7 +2564,7 @@ namespace GHSolar
                 bool[] dayWin = new bool[24];
                 bool[] daySum = new bool[24];
                 bool[] dayEqu = new bool[24];
-                Parallel.For(0, 24, t =>
+                Parallel.For(0, 24, paropts, t =>
                 {
                     if (Misc.IsNullOrEmpty(Inormals_win[i][t]))
                         dayWin[t] = false;
@@ -2587,7 +2586,7 @@ namespace GHSolar
                 fullF1 = y1;    //100% shadowwinter on this day
                 fullF2 = y2;    //100% shadowequinox on this day
                 InterpolInterv = y2 + y1 * -1;
-                Parallel.For(0, y2, d =>  //from 0.Jan to 19.March
+                Parallel.For(0, y2, paropts, d =>  //from 0.Jan to 19.March
                 {
                     double dist1, dist2, factor1, factor2;
                     dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
@@ -2640,7 +2639,7 @@ namespace GHSolar
                 fullF1 = y2;        // 100% shadowequinox on this day
                 fullF2 = y3;        // 100% shadowsummer on this day
                 InterpolInterv = y3 - y2;
-                Parallel.For(y2, y3, d => //from 20.March to 20.june
+                Parallel.For(y2, y3, paropts, d => //from 20.March to 20.june
                 {
                     double dist1, dist2, factor1, factor2;
                     dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
@@ -2690,7 +2689,7 @@ namespace GHSolar
                 fullF2 = y4;        //100% shadowequinox on this day
                 InterpolInterv = y4 - y3;
                 //    For i = y3 To y4 - 1            'from 21.June to 22.Sept
-                Parallel.For(y3, y4, d =>
+                Parallel.For(y3, y4, paropts, d =>
                 {
                     double dist1, dist2, factor1, factor2;
                     dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
@@ -2740,7 +2739,7 @@ namespace GHSolar
                 fullF1 = y4;    //100% shadowequinox on this day
                 fullF2 = y5;    //100% shadowwinter on this day
                 InterpolInterv = y5 - y4;
-                Parallel.For(y4, y5, d => // from 23.Sept to 21.Dec
+                Parallel.For(y4, y5, paropts, d => // from 23.Sept to 21.Dec
                 {
                     double dist1, dist2, factor1, factor2;
                     dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
@@ -2788,7 +2787,7 @@ namespace GHSolar
                 fullF1 = y5;   // 100% shadowwinter on this day
                 fullF2 = y6;   // 100% shadowequinox spring on this day
                 InterpolInterv = y6 - y5;
-                Parallel.For(y5, 365, d =>    //from 22.Dec to 31.Dec
+                Parallel.For(y5, 365, paropts, d =>    //from 22.Dec to 31.Dec
                 {
                     double dist1, dist2, factor1, factor2;
                     dist1 = Convert.ToDouble((InterpolInterv - Math.Abs(fullF1 - d))) / Convert.ToDouble(InterpolInterv);
@@ -2836,6 +2835,7 @@ namespace GHSolar
                 Ispecular_annual[i] = Ispecular_annual_Par;
             }
         }
+
 
         /// <summary>
         /// Calculates incident beam radiation on each SP based on interpolation of interreflected rays of multiple days.
@@ -2992,6 +2992,7 @@ namespace GHSolar
             }
         }
 
+
         /// <summary>
         /// Calculates incident beam radiation on each SP based on interpolation of interreflected rays of multiple days. Multi-threading version.
         /// </summary>
@@ -3004,7 +3005,7 @@ namespace GHSolar
         /// <param name="Ispecular_annual">Interreflected beam irradiation values on each sensor point, for each hour of the year. [i][t], i=each SP, t=8760 hours</param>
         public static void CalcSpecularIncident_AnnualMT(int[] StartDays, int[] EndDays,
             int[][][][] IObstRef1st, int[][][][] IObstRef2nd, Vector3d[][][][] Inormals,
-            List<CObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal,
+            List<CObstacleObject> obstacles, double[] DNI, Vector3d[] origNormal, ParallelOptions paropts,
             out double[][] Ispecular_annual)
         {
             //using interpolation of several days. 3 or x. start with three days.
@@ -3019,7 +3020,7 @@ namespace GHSolar
                 Ispecular_annual[i] = new double[8760];
                 double [] Ispecular_annual_Par = new double[8760];
 
-                Parallel.For(0, daysUsed, d =>
+                Parallel.For(0, daysUsed, paropts, d =>
                 {
                     int dayStart, dayEnd;
                     int dd;
@@ -3149,6 +3150,7 @@ namespace GHSolar
             }
         }
 
+
         /// <summary>
         /// Calculate beam irradiation incident on one sensor point for multiple time steps, considering incidence angles.
         /// </summary>
@@ -3206,8 +3208,6 @@ namespace GHSolar
             }
 
         }
-
-
 
 
         /// <summary>
@@ -3284,14 +3284,14 @@ namespace GHSolar
         /// <param name="DNI">Direct normal irradiation values for one time step t.</param>
         /// <param name="IspecularIncident">Effective specular reflected irradiation [i] incident on the sensor point i, for one time step t.</param>
         public static void CalcSpecularIncidentMT(Vector3d[] SPNormal, double[][][] Ispecular, Vector3d[][][] Inormals,
-            double DNI, ref double[] IspecularIncident)
+            double DNI, ParallelOptions paropts, ref double[] IspecularIncident)
         {
             //convert Inormals vectors into solar zenith and solar azimuth. coz thats basically my sun.
             //DNI = DNI * Ispecular (here are my albedos)
             if (Misc.IsNullOrEmpty(Ispecular)) return;
 
             double[] Ispec_ = new double[SPNormal.Length];
-            Parallel.For(0, SPNormal.Length, i =>
+            Parallel.For(0, SPNormal.Length, paropts, i =>
             {
                 if (Misc.IsNullOrEmpty(Ispecular[i])) return;
                 Ispec_[i] = 0.0;
@@ -3652,7 +3652,7 @@ namespace GHSolar
         /// <param name="Idiff_domevertexindex">For each sensor point i, indices of dome faces that are will emit diffuse interreflected radiation.</param>
         /// <param name="Idiff_domes">For each sensorpoint i, dome objects which are spanned to calculate itnerreflected diffuse radiation.</param>
         public static void CalcIReflDiff_GetSPs2MT(CObstacleObject SPmesh, Point3d[] SP, Vector3d[] SPnormal,
-            List<CObstacleObject> obstacles, List<CPermObject> permeables, int difDomeRes,
+            List<CObstacleObject> obstacles, List<CPermObject> permeables, int difDomeRes, ParallelOptions paropts,
             out List<List<double>> diffSP_beta_list,
             out List<List<double>> diffSP_psi_list,
             out List<List<Sensorpoints.v3d>> diffSP_normal_list,
@@ -3725,7 +3725,7 @@ namespace GHSolar
 
             //foreach SP
             Vector3d vecZ = new Vector3d(0, 0, 1);
-            Parallel.For(0, SP.Length, i =>
+            Parallel.For(0, SP.Length, paropts, i =>
             {
                 //offset SP, otherwise there is self-intersection 
                 Point3d SPoffset = CMisc.OffsetPt(SP[i], SPnormal[i], SPmesh.tolerance);
@@ -3937,7 +3937,7 @@ namespace GHSolar
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list, int difDomeRes,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome,
             int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, Mesh[] obst, List<CObstacleObject> obstacles,
-            double tolerance, double snow_threshold, double tilt_treshold,
+            double tolerance, double snow_threshold, double tilt_treshold, ParallelOptions paropts,
             out double[] Idiffuse)
         {
             int SPiicount = diffSP_beta_list.Count;
@@ -3958,7 +3958,7 @@ namespace GHSolar
             }
 
 
-            Parallel.For(0, SPiicount, i =>
+            Parallel.For(0, SPiicount, paropts, i =>
             {
                 List<bool> ShdwBeam_hour = new List<bool>();
                 List<bool[]> ShdwSky = new List<bool[]>();
@@ -4356,7 +4356,7 @@ namespace GHSolar
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int SecondarydifDomeRes,
             int year, Context.cWeatherdata weather, SunVector[] sunvectors, List<CObstacleObject> obstacles, List<CPermObject> permeables,
-            double tolerance, double snow_threshold, double tilt_treshold, double[] groundalbedo,
+            double tolerance, double snow_threshold, double tilt_treshold, double[] groundalbedo, ParallelOptions paropts,
             out double[][] Idiffuse)
         {
             //using 3 day interpolation of beam radiation. and no interreflections. and no trees.
@@ -4459,10 +4459,10 @@ namespace GHSolar
                     /////////////////////////////////////////////////////////////////////
                 }
 
-                SPdiff.SetShadowsInterpolatedMT(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky);
-                SPdiff.SetSimpleGroundReflectionMT(diffSP_beta_list[i].ToArray(), groundalbedo, weather, sunvectors);
-                SPdiff.SetSnowcoverMT(snow_threshold, tilt_treshold, weather);
-                SPdiff.CalcIrradiationMT(weather, sunvectors);
+                SPdiff.SetShadowsInterpolatedMT(ShdwBeam_equinox, ShdwBeam_summer, ShdwBeam_winter, ShdwSky, paropts);
+                SPdiff.SetSimpleGroundReflectionMT(diffSP_beta_list[i].ToArray(), groundalbedo, weather, sunvectors, paropts);
+                SPdiff.SetSnowcoverMT(snow_threshold, tilt_treshold, weather, paropts);
+                SPdiff.CalcIrradiationMT(weather, sunvectors, paropts);
 
 
                 double totarea = 0.0;
@@ -4621,7 +4621,7 @@ namespace GHSolar
             List<List<Sensorpoints.v3d>> diffSP_normal_list, List<List<Sensorpoints.p3d>> diffSP_coord_list,
             int[][] Idiff_obst, int[][] Idiff_domevert, SkyDome[] Idiff_dome, int difDomeRes,
             Context.cWeatherdata weather, SunVector[] sunvectors, List<CObstacleObject> obstacles,
-            double snow_threshold, double tilt_treshold, double[] groundalbedo,
+            double snow_threshold, double tilt_treshold, double[] groundalbedo, ParallelOptions paropts,
             out double[][] Idiffuse)
         {
             int SPiicount = diffSP_beta_list.Count;
@@ -4629,7 +4629,7 @@ namespace GHSolar
             Idiffuse = new double[SPiicount][];
 
             double[] Idiff_domearea = new double[SPiicount];
-            Parallel.For(0, Idiff_dome.Length, i =>
+            Parallel.For(0, Idiff_dome.Length, paropts, i =>
             {
                 Idiff_domearea[i] = 0.0;
                 for (int l = 0; l < Idiff_dome[i].Faces.Count; l++)
@@ -4644,10 +4644,10 @@ namespace GHSolar
                 Idiffuse[i] = new double[8760];
 
                 Sensorpoints SPdiff = new Sensorpoints(diffSP_beta_list[i].ToArray(), diffSP_psi_list[i].ToArray(), diffSP_coord_list[i].ToArray(), diffSP_normal_list[i].ToArray(), difDomeRes);
-                SPdiff.SetSimpleSkyMT(diffSP_beta_list[i].ToArray());                //Simplified version: no obstruction calculations for seconardy sensor points.
-                SPdiff.SetSimpleGroundReflectionMT(diffSP_beta_list[i].ToArray(), groundalbedo, weather, sunvectors);
-                SPdiff.SetSnowcoverMT(snow_threshold, tilt_treshold, weather);
-                SPdiff.CalcIrradiationMT(weather, sunvectors);
+                SPdiff.SetSimpleSkyMT(diffSP_beta_list[i].ToArray(), paropts);                //Simplified version: no obstruction calculations for seconardy sensor points.
+                SPdiff.SetSimpleGroundReflectionMT(diffSP_beta_list[i].ToArray(), groundalbedo, weather, sunvectors, paropts);
+                SPdiff.SetSnowcoverMT(snow_threshold, tilt_treshold, weather, paropts);
+                SPdiff.CalcIrradiationMT(weather, sunvectors, paropts);
 
                 double totarea = 0.0;
                 for (int f = 0; f < Idiff_dome[i].Faces.Count; f++)
@@ -4656,7 +4656,7 @@ namespace GHSolar
                 }
 
                 double[][] domevertfilled = new double[Idiff_dome[i].VertexVectorsSphere.Count][];
-                Parallel.For(0, Idiff_dome[i].VertexVectorsSphere.Count, vi =>
+                Parallel.For(0, Idiff_dome[i].VertexVectorsSphere.Count, paropts, vi =>
                 {
                     domevertfilled[vi] = new double[8760];
                     for (int t = 0; t < 8760; t++)
@@ -4664,7 +4664,7 @@ namespace GHSolar
                         domevertfilled[vi][t] = 0.0;
                     }
                 });
-                Parallel.For(0, SPdiff.SPCount, ii =>
+                Parallel.For(0, SPdiff.SPCount, paropts, ii =>
                 {
                     int v = Idiff_domevert[i][ii];
                     for (int t = 0; t < 8760; t++)

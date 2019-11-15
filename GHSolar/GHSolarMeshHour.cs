@@ -197,7 +197,7 @@ namespace GHSolar
             CCalculateSolarMesh calc = new CCalculateSolarMesh(
                 mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
                 year, null, mt, solarAzimuth, solarAltitude);
-            calc.RunHourSimulation(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd);
+            calc.RunHourSimulation(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd, mt);
             Line ln = calc.getSolarVec();
             CResults results = calc.getResults();
             CResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();

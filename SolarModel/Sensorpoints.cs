@@ -163,14 +163,14 @@ namespace SolarModel
         /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        public void CalcIrradiationMT(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
+        public void CalcIrradiationMT(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
             int HOY = (DOY - 1) * 24 + LT;
 
             CalcIbeam_MT(HOY, weather, sunvectors);
             CalcIdiff_MT(DOY, HOY, weather, sunvectors);
 
-            Parallel.For(0, this.I.Length, i =>
+            Parallel.For(0, this.I.Length, paropts, i =>
             {
                 if (this.snowcovered[i][HOY])
                 {
@@ -215,11 +215,11 @@ namespace SolarModel
         /// </summary>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        public void CalcIrradiationMT(Context.cWeatherdata weather, SunVector[] sunvectors)
+        public void CalcIrradiationMT(Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
             CalcIbeam_MT(weather, sunvectors);
             CalcIdiff_MT(weather, sunvectors);
-            Parallel.For(0, this.I.Length, i =>
+            Parallel.For(0, this.I.Length, paropts, i =>
             {
                 for (int t = 0; t < 8760; t++)
                 {
@@ -252,13 +252,14 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Set simple sky dome obstruction by taking into account the sensor points tilt angles. Multi-threading version.
         /// </summary>
         /// <param name="tiltangle">Sensor points tilt angles, in degree.</param>
-        public void SetSimpleSkyMT(double[] tiltangle)
+        public void SetSimpleSkyMT(double[] tiltangle, ParallelOptions paropts)
         {
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 double visibleHemisphere = (1 + Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2;
                 for (int HOY = 0; HOY < 8760; HOY++)
@@ -267,6 +268,7 @@ namespace SolarModel
                 }
             });
         }
+
 
         /// <summary>
         /// Set simplified ground reflection values, based on albedo value of the ground.
@@ -289,6 +291,7 @@ namespace SolarModel
             }
         }
         
+
         /// <summary>
         /// Set simplified ground reflection values, based on albedo value of the ground. Multi-threading version.
         /// </summary>
@@ -297,9 +300,9 @@ namespace SolarModel
         /// <param name="albedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">8760 sunvectors, [t] = for each hour of the year.</param>
-        public void SetSimpleGroundReflectionMT(double[] tiltangle, double[] albedo, Context.cWeatherdata weather, SunVector[] sunvectors)
+        public void SetSimpleGroundReflectionMT(double[] tiltangle, double[] albedo, Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 for (int HOY = 0; HOY < 8760; HOY++)
                 {
@@ -826,9 +829,10 @@ namespace SolarModel
         ///<param name="extinctCoeff">For each permeable object, 8760 time series of extinction coefficients. List [p] = each permeable object, [hoy] = hour of the year 1-8760.</param>
         public void SetShadows_Annual_PermeablesMT(int[] StartDays, int[] EndDays,
             List<bool[][]> ShdwBeam, bool[][][] BeamPermIs, int[][][][] BeamPermRefs, double[][][][] BeamPermLength,
-            List<bool[]> ShdwSky, bool[][] SkyPermIs, int[][][] SkyPermRefs, double[][][] SkyPermLength, List<double[]> extinctCoeff)
+            List<bool[]> ShdwSky, bool[][] SkyPermIs, int[][][] SkyPermRefs, double[][][] SkyPermLength, List<double[]> extinctCoeff,
+            ParallelOptions paropts)
         {
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
@@ -842,7 +846,7 @@ namespace SolarModel
 
             int daysUsed = StartDays.Length;
 
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 for (int d = 0; d < daysUsed; d++)
                 {
@@ -1422,9 +1426,10 @@ namespace SolarModel
             bool[][] BeamPermIs_Equ, int[][][] BeamPermRefs_Equ, double[][][] BeamPermLength_Equ,
             bool[][] BeamPermIs_Sum, int[][][] BeamPermRefs_Sum, double[][][] BeamPermLength_Sum,
             bool[][] BeamPermIs_Win, int[][][] BeamPermRefs_Win, double[][][] BeamPermLength_Win,
-            List<bool[]> ShdwSky, bool[][] SkyPermIs, int[][][] SkyPermRefs, double[][][] SkyPermLength, List<double[]> extinctCoeff)
+            List<bool[]> ShdwSky, bool[][] SkyPermIs, int[][][] SkyPermRefs, double[][][] SkyPermLength, List<double[]> extinctCoeff,
+            ParallelOptions paropts)
         {
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
@@ -1447,7 +1452,7 @@ namespace SolarModel
 
 
 
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 double dist1, dist2;
                 int InterpolInterv;
@@ -2064,10 +2069,11 @@ namespace SolarModel
         /// <param name="ShdwBeam_Summer"></param>
         /// <param name="ShdwBeam_Winter"></param>
         /// <param name="ShdwSky"></param>
-        public void SetShadowsInterpolatedMT(List<bool[]> ShdwBeam_Equinox, List<bool[]> ShdwBeam_Summer, List<bool[]> ShdwBeam_Winter, List<bool[]> ShdwSky)
+        public void SetShadowsInterpolatedMT(List<bool[]> ShdwBeam_Equinox, List<bool[]> ShdwBeam_Summer, List<bool[]> ShdwBeam_Winter, List<bool[]> ShdwSky, 
+            ParallelOptions paropts)
         {
 
-            Parallel.For(0, sky.Length, i =>
+            Parallel.For(0, sky.Length, paropts, i =>
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
@@ -2089,7 +2095,7 @@ namespace SolarModel
             y6 = 443;   //equinox spring
 
 
-            Parallel.For(0, this.sky.Length, i =>
+            Parallel.For(0, this.sky.Length, paropts, i =>
             {
                 int fullF1, fullF2;
                 double factor = 1.0;
@@ -2215,9 +2221,10 @@ namespace SolarModel
         /// <param name="EndDays"></param>
         /// <param name="ShdwBeam"></param>
         /// <param name="ShdwSky"></param>
-        public void SetShadowsInterpolatedMT(int[] StartDays, int[] EndDays, List<bool[][]> ShdwBeam, List<bool[]> ShdwSky)
+        public void SetShadowsInterpolatedMT(int[] StartDays, int[] EndDays, List<bool[][]> ShdwBeam, List<bool[]> ShdwSky, 
+            ParallelOptions paropts)
         {
-            Parallel.For(0, sky.Length, i =>
+            Parallel.For(0, sky.Length, paropts, i =>
             {
                 for (int u = 0; u < ShdwSky[i].Length; u++)
                 {
@@ -2347,9 +2354,10 @@ namespace SolarModel
         /// <param name="snow_threshold">Snow threshold, after which no radiation is assumed to reach the sensor point.</param>
         /// <param name="tilt_treshold">Sensor point tilt threshold (degree). More flat angles will not allow irradiation. Steeper angles are assumed to let the snow slide down the sensor point.</param>
         /// <param name="weather">Weather data.</param>
-        public void SetSnowcoverMT(double snow_threshold, double tilt_treshold, Context.cWeatherdata weather)
+        public void SetSnowcoverMT(double snow_threshold, double tilt_treshold, Context.cWeatherdata weather, 
+            ParallelOptions paropts)
         {
-            Parallel.For(0, this.I.Length, i =>
+            Parallel.For(0, this.I.Length, paropts, i =>
             {
                 for (int t = 0; t < 8760; t++)
                 {
@@ -2386,9 +2394,9 @@ namespace SolarModel
         /// <param name="HOY">Hour of the year, HOY ∈ [0, 8759]</param>
         /// <param name="_Ispecular">Irradiation values by specular reflection for one hour of the year and for each sensor point.</param>
         /// <param name="_Idiffuse">Irradiation values by diffuse reflection for each sensor point.</param>
-        public void SetInterreflectionMT(int HOY, double[] _Ispecular, double[] _Idiffuse)
+        public void SetInterreflectionMT(int HOY, double[] _Ispecular, double[] _Idiffuse, ParallelOptions paropts)
         {
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 this.Irefl_spec[i][HOY] = _Ispecular[i];
                 this.Irefl_diff[i][HOY] = _Idiffuse[i];
@@ -2419,9 +2427,9 @@ namespace SolarModel
         /// </summary>
         /// <param name="_IreflSpecular">Irradiation values by specular reflection for each sensor point and each hour of the year.</param>
         /// <param name="_IreflDiffuse">Irradiation values by diffuse reflection for each sensor point and each hour of the year.</param>
-        public void SetInterrefl_AnnualMT(double[][] _IreflSpecular, double[][] _IreflDiffuse)
+        public void SetInterrefl_AnnualMT(double[][] _IreflSpecular, double[][] _IreflDiffuse, ParallelOptions paropts)
         {
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 for (int t = 0; t < 8760; t++)
                 {
