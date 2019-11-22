@@ -17,7 +17,7 @@ using System.Diagnostics;
 namespace GHSolar
 {
     /// <summary>
-    /// Handles the calculations with all the necessary different classes (SunVector, Irradiation, cShadow, ...).
+    /// Handles solar calculations for a mesh surface, calling different classes from both SolarModel.dll as well as GHSolar.gha (SunVector, Irradiation, cShadow, ...).
     /// </summary>
     public class CCalculateSolarMesh
     {
@@ -111,10 +111,10 @@ namespace GHSolar
         /// <param name="diffIReflSkyRes">Skydome resolution for diffuse inter-reflection.</param>
         /// <param name="diffIReflSkyRes2nd">Skydome resolution at secondary sensorpoints of diffuse inter-reflection (0 - 2).</param>
         public void RunHourSimulationMT(int month, int day, int hour,
-            int mainSkyRes, int specBounces, int diffIReflSkyRes, int diffIReflSkyRes2nd, bool mt)
+            int mainSkyRes, int specBounces, int diffIReflSkyRes, int diffIReflSkyRes2nd)
         {
             int tasks = 1;
-            if (mt) tasks = Environment.ProcessorCount;
+            if (this.mt) tasks = Environment.ProcessorCount;
             ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
             //________________________________________________________________________________________________________________________________________
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,7 +241,7 @@ namespace GHSolar
                 if (objTrees.Count > 0)
                 {
                     double[] shdw_sky_dbl = shdw_sky.Select<bool, double>(s => Convert.ToDouble(s)).ToArray<double>();
-                    CShadow.CalcPermBeam(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, objTrees, HOY, ref shdw_sky_dbl);
+                    CShadow.CalcPermBeamMT(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, objTrees, HOY, paropts, ref shdw_sky_dbl);
                     ShdwSky[i] = shdw_sky_dbl;
                 }
                 else
@@ -260,7 +260,7 @@ namespace GHSolar
                 if (objTrees.Count > 0)
                 {
                     double[] shdw_beam_dbl = new double[1] { Convert.ToDouble(shdw_beam[0]) };
-                    CShadow.CalcPermBeam(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam, objTrees, HOY, ref shdw_beam_dbl);
+                    CShadow.CalcPermBeamMT(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam, objTrees, HOY, paropts, ref shdw_beam_dbl);
                     ShdwBeam_hour[i] = shdw_beam_dbl[0];
                 }
                 else
@@ -399,10 +399,10 @@ namespace GHSolar
         /// <param name="tolerance"></param>
         public void RunAnnualSimulation_MT(double tolerance,
             int mainSkyRes, int mainInterpMode, int specBounces, int specInterpMode,
-            int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode, bool mt)
+            int diffIReflSkyRes, int diffIReflSkyRes2nd, int diffIReflMode)
         {
             int tasks = 1;
-            if (mt) tasks = Environment.ProcessorCount;
+            if (this.mt) tasks = Environment.ProcessorCount;
             ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
 
             Rhino.RhinoApp.WriteLine("SOLAR MODEL. https://github.com/christophwaibel/GH_Solar_V2");
@@ -624,7 +624,7 @@ namespace GHSolar
                 ShdwSky[i] = shdw_sky;
                 if (this.objTrees.Count > 0)
                 {
-                    CShadow.CalcPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, sunshinesky, this.objTrees, shdw_sky,
+                    CShadow.CalcPermMT(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_sky, sunshinesky, this.objTrees, shdw_sky, paropts,
                         out SkyPermIs[i], out SkyPermRefs[i], out SkyPermLength[i]);
                 }
                 /////////////////////////////////////////////////////////////////////
@@ -647,13 +647,13 @@ namespace GHSolar
 
                     if (this.objTrees.Count > 0)
                     {
-                        CShadow.CalcPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_equ, sunshine_equ, this.objTrees, shdw_beam_equ,
+                        CShadow.CalcPermMT(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_equ, sunshine_equ, this.objTrees, shdw_beam_equ, paropts, 
                             out BeamPermIs_equ[i], out BeamPermRefs_equ[i], out BeamPermLength_equ[i]);
 
-                        CShadow.CalcPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_sum, sunshine_sum, this.objTrees, shdw_beam_sum,
+                        CShadow.CalcPermMT(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_sum, sunshine_sum, this.objTrees, shdw_beam_sum, paropts, 
                             out BeamPermIs_sum[i], out BeamPermRefs_sum[i], out BeamPermLength_sum[i]);
 
-                        CShadow.CalcPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_win, sunshine_win, this.objTrees, shdw_beam_win,
+                        CShadow.CalcPermMT(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_win, sunshine_win, this.objTrees, shdw_beam_win, paropts,
                             out BeamPermIs_win[i], out BeamPermRefs_win[i], out BeamPermLength_win[i]);
                     }
                 }
@@ -671,7 +671,7 @@ namespace GHSolar
                     {
                         for (int d = 0; d < 12; d++)
                         {
-                            CShadow.CalcPerm(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_12d[d], sunshine_12d[d], this.objTrees, shdw_beam_12d[d],
+                            CShadow.CalcPermMT(coords[i], mshvrtnorm[i], mshobj.tolerance, vec_beam_12d[d], sunshine_12d[d], this.objTrees, shdw_beam_12d[d], paropts,
                                 out BeamPermIs_12d[i][d], out BeamPermRefs_12d[i][d], out BeamPermLength_12d[i][d]);
                         }
                     }
