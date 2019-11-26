@@ -116,6 +116,8 @@ namespace GHSolar
             int tasks = 1;
             if (this.mt) tasks = Environment.ProcessorCount;
             ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
+            ParallelOptions paropts_1cpu = new ParallelOptions { MaxDegreeOfParallelism = 1 };
+
             //________________________________________________________________________________________________________________________________________
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ///////////////////////   INPUTS   ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -404,6 +406,7 @@ namespace GHSolar
             int tasks = 1;
             if (this.mt) tasks = Environment.ProcessorCount;
             ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
+            ParallelOptions paropts_1cpu = new ParallelOptions { MaxDegreeOfParallelism = 1 };
 
             Rhino.RhinoApp.WriteLine("SOLAR MODEL. https://github.com/christophwaibel/GH_Solar_V2");
             Stopwatch stopwatch = Stopwatch.StartNew(); //creates and start the instance of Stopwatch
@@ -737,11 +740,14 @@ namespace GHSolar
                         int[][][] IObstRef1st_equ, IObstRef1st_win, IObstRef1st_sum;
                         int[][][] IObstRef2nd_equ, IObstRef2nd_win, IObstRef2nd_sum;
                         Vector3d[][][] Inormals_equ, Inormals_win, Inormals_sum;
-                        CShadow.CalcSpecularNormal5(mshvrt_1, mshvrtnorm_1, vec_beam_equ, sunshine_equ, this.objObst, this.objTrees, specBounces,
+                        CShadow.CalcSpecularNormal5MT(mshvrt_1, mshvrtnorm_1, vec_beam_equ, sunshine_equ, this.objObst, this.objTrees, specBounces,
+                            paropts,
                             out IObstRef1st_equ, out IObstRef2nd_equ, out Inormals_equ);       //equinox with 24 vectors
-                        CShadow.CalcSpecularNormal5(mshvrt_1, mshvrtnorm_1, vec_beam_win, sunshine_win, this.objObst, this.objTrees, specBounces,
+                        CShadow.CalcSpecularNormal5MT(mshvrt_1, mshvrtnorm_1, vec_beam_win, sunshine_win, this.objObst, this.objTrees, specBounces,
+                            paropts,
                             out IObstRef1st_win, out IObstRef2nd_win, out Inormals_win);       //winter with 24 vectors
-                        CShadow.CalcSpecularNormal5(mshvrt_1, mshvrtnorm_1, vec_beam_sum, sunshine_sum, this.objObst, this.objTrees, specBounces,
+                        CShadow.CalcSpecularNormal5MT(mshvrt_1, mshvrtnorm_1, vec_beam_sum, sunshine_sum, this.objObst, this.objTrees, specBounces,
+                            paropts,
                             out IObstRef1st_sum, out IObstRef2nd_sum, out Inormals_sum);       //summer
 
                         CShadow.CalcSpecularIncident_AnnualMT(
@@ -757,12 +763,12 @@ namespace GHSolar
                         int[][][][] IObstRef2nd_12d = new int[12][][][];
                         Vector3d[][][][] Inormals_12d = new Vector3d[12][][][];
 
-                        for (int d = 0; d < 12; d++)
+                        Parallel.For(0, 12, paropts, d =>
                         {
-                            CShadow.CalcSpecularNormal5(mshvrt_1, mshvrtnorm_1, vec_beam_12d[d], sunshine_12d[d],
-                                this.objObst, this.objTrees, specBounces,
+                            CShadow.CalcSpecularNormal5MT(mshvrt_1, mshvrtnorm_1, vec_beam_12d[d], sunshine_12d[d], this.objObst, this.objTrees, specBounces,
+                                paropts_1cpu,
                                 out IObstRef1st_12d[d], out IObstRef2nd_12d[d], out Inormals_12d[d]);       //summer
-                        }
+                        });
                         CShadow.CalcSpecularIncident_AnnualMT(startDays, endDays, IObstRef1st_12d, IObstRef2nd_12d, Inormals_12d,
                             this.objObst, weather.DNI.ToArray(), mshvrtnorm_1, paropts,
                             out _Ispec_annual_1);
@@ -798,12 +804,6 @@ namespace GHSolar
             {
                 p.SetInterrefl_AnnualMT(_Ispec_annual, _Idiffuse, paropts);
             }
-
-
-
-
-
-
 
 
 
@@ -875,9 +875,6 @@ namespace GHSolar
             //________________________________________________________________________________________________________________________________________
 
 
-
-
-
             stopwatch.Stop();
             Rhino.RhinoApp.WriteLine("(3/4): " + Convert.ToString(stopwatch.Elapsed));
             stopwatch.Reset();
@@ -939,8 +936,5 @@ namespace GHSolar
         {
             return resultsIreflOut;
         }
-
-
     }
-
 }

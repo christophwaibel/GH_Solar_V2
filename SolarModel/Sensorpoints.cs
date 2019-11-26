@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
 
 /*
  * Sensorpoints.cs
@@ -11,6 +9,7 @@ using System.Threading.Tasks;
  * 
  * This work is licensed under the GNU GPL license version 3.
 */
+
 
 namespace SolarModel
 {
@@ -73,6 +72,24 @@ namespace SolarModel
         /// Number of sensor points in this object.
         /// </summary>
         public int SPCount { get; private set; }
+        /// <summary>
+        /// 3d vector.
+        /// </summary>
+        public struct v3d
+        {
+            public double X;
+            public double Y;
+            public double Z;
+        }
+        /// <summary>
+        /// 3d point.
+        /// </summary>
+        public struct p3d
+        {
+            public double X;
+            public double Y;
+            public double Z;
+        }
 
 
         /// <summary>
@@ -124,11 +141,7 @@ namespace SolarModel
         }
 
 
-
-
-
         #region PublicFunctions
-
         /// <summary>
         /// Calculates total solar irradiation on a sensor point for one hour of the year.
         /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759]. HOY = (DOY-1) * 24 + LT.</para>
@@ -154,6 +167,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// Calculates total solar irradiation on a sensor point for one hour of the year. Multi-Threading version.
@@ -183,6 +197,7 @@ namespace SolarModel
             });
         }
 
+
         /// <summary>
         /// Calculates hourly total solar irradiation on the sensor point for the entire year.
         /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759].</para>
@@ -208,6 +223,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// Calculates hourly total solar irradiation on the sensor point for the entire year. Multi-Threading version.
@@ -312,33 +328,7 @@ namespace SolarModel
                 }
             });
         }
-
         #endregion
-
-
-
-
-
-
-        /// <summary>
-        /// 3d vector.
-        /// </summary>
-        public struct v3d
-        {
-            public double X;
-            public double Y;
-            public double Z;
-        }
-        /// <summary>
-        /// 3d point.
-        /// </summary>
-        public struct p3d
-        {
-            public double X;
-            public double Y;
-            public double Z;
-        }
-
 
 
         #region PrivateFunctions
@@ -366,6 +356,7 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Calculates diffuse irradiation on the sensor point for one hour of the year. Multi-Threading version.
         /// <para>Access: total: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
@@ -390,6 +381,7 @@ namespace SolarModel
             });
         }
 
+
         /// <summary>
         /// Calculates hourly diffuse radiation on the sensor point for the entire year.
         /// <para>Access: total: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
@@ -408,6 +400,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// Calculates hourly diffuse radiation on the sensor point for the entire year. Multi-Threading version.
@@ -462,6 +455,7 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Calculates beam (direct) irradiation on the sensor point for one hour of the year. Multi-Threading version.
         /// <para>Access: this.Ibeam[HOY]; HOY ∈ [0, 8759].</para>
@@ -497,6 +491,7 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Calculates hourly beam (direct) irradiation on the sensor point for the entire year. 
         /// <para>Access: this.Ibeam[HOY]; HOY ∈ [0, 8759].</para>
@@ -510,6 +505,7 @@ namespace SolarModel
                 CalcIbeam(t, weather, sunvectors);
             }
         }
+
 
         /// <summary>
         /// Calculates hourly beam (direct) irradiation on the sensor point for the entire year. Multi-Threading version.
@@ -527,13 +523,7 @@ namespace SolarModel
         #endregion
 
 
-
-
-
-
-
         #region ExternalComputingNecessary
-
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
         /// </summary>
@@ -554,6 +544,7 @@ namespace SolarModel
                 this.sky[i].SetShadow_Beam(HOY, Convert.ToDouble(ShdwBeam_hour[i]));
             }
         }
+
 
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points. Multi-threading version.
@@ -576,6 +567,7 @@ namespace SolarModel
             });
         }
 
+
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
         /// </summary>
@@ -597,6 +589,7 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points. Multi-threading version.
         /// </summary>
@@ -617,6 +610,7 @@ namespace SolarModel
                 this.sky[i].SetShadow_Beam(HOY, ShdwBeam_hour[i]);
             });
         }
+
 
         /// <summary>
         /// Applys shadow / obstruction factors from externally calculated view factor calculations to the sensor points.
@@ -640,6 +634,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// Set annual shadows, using interpolation of several calculated days.
@@ -812,6 +807,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// Set annual shadows, using interpolation of several calculated days. Multi-threading version.
@@ -1400,6 +1396,7 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Set annual shadows, using interpolation of three calculated days: Equinox, summer and winter solstice. Multi-threading version.
         /// </summary>
@@ -1817,6 +1814,7 @@ namespace SolarModel
             });
         }
 
+
         /// <summary>
         /// 3 days interpolation (equinox, summer, winter solstices)
         /// </summary>
@@ -1952,6 +1950,7 @@ namespace SolarModel
 
         }
 
+
         /// <summary>
         /// Multiple days interpolation (e.g. 12 days: 1st day of each month)
         /// </summary>
@@ -2061,6 +2060,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// 3 days interpolation (equinox, summer, winter solstices)
@@ -2327,6 +2327,7 @@ namespace SolarModel
             });
         }
 
+
         /// <summary>
         /// Goes through each hour of the year and applys snow cover, if surface angle is flat enough and if the weather data indicates snow on that hour.
         /// </summary>
@@ -2347,6 +2348,7 @@ namespace SolarModel
             }
 
         }
+
 
         /// <summary>
         /// Goes through each hour of the year and applys snow cover, if surface angle is flat enough and if the weather data indicates snow on that hour. Multi-threading version.
@@ -2370,7 +2372,6 @@ namespace SolarModel
         }
 
 
-
         /// <summary>
         /// Set irradiation by inter-reflections for one hour of the year. 
         /// Actual irradiation calculation needs to be done externally.
@@ -2387,6 +2388,7 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Set irradiation by inter-reflections for one hour of the year. Multi-threading version.
         /// Actual irradiation calculation needs to be done externally.
@@ -2402,6 +2404,7 @@ namespace SolarModel
                 this.Irefl_diff[i][HOY] = _Idiffuse[i];
             });
         }
+
 
         /// <summary>
         /// Set irradiation by inter-reflections for all hours of the year, using interpolation for specular reflection. 
@@ -2421,6 +2424,7 @@ namespace SolarModel
             }
         }
 
+
         /// <summary>
         /// Set irradiation by inter-reflections for all hours of the year, using interpolation for specular reflection. Multi-threading version.
         /// Actual irradiation calculation needs to be done externally.
@@ -2438,11 +2442,6 @@ namespace SolarModel
                 }
             });
         }
-
-
         #endregion
-
-
-
     }
 }
