@@ -6,7 +6,7 @@ Please refer to this publication for citation: [Waibel et al. (2017)](http://www
 Features:
 - [Perez (1987)](https://www.sciencedirect.com/science/article/pii/S0038092X87800312) all-weather solar model
 - considers snow-coverage
-- multi-layer tree approach according to [Krayenhoff (2014](https://link.springer.com/article/10.1007/s10546-013-9883-1)
+- multi-layer tree approach according to [Krayenhoff (2014)](https://link.springer.com/article/10.1007/s10546-013-9883-1)
 - specular inter-reflections max 2 bounces
 - diffuse inter-reflections max 1 bounce
 
