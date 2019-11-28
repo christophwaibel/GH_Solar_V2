@@ -90,7 +90,10 @@ namespace SolarModel
             public double Y;
             public double Z;
         }
-
+        /// <summary>
+        /// single thread option
+        /// </summary>
+        private ParallelOptions singleparopts = new ParallelOptions { MaxDegreeOfParallelism = 1 };
 
         /// <summary>
         /// Sensor point object, to calculate solar irradiation.
@@ -152,19 +155,12 @@ namespace SolarModel
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
         public void CalcIrradiation(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors)
         {
-            int HOY = (DOY - 1) * 24 + LT;
+            int HOY = calc_HOY(DOY, LT);
             CalcIbeam(HOY, weather, sunvectors);
             CalcIdiff(DOY, HOY, weather, sunvectors);
-            for (int i = 0; i < this.I.Length; i++)
+            for(int i=0;i< this.I.Length; i++)
             {
-                if (this.snowcovered[i][HOY])
-                {
-                    this.I[i][HOY] = 0.0;
-                }
-                else
-                {
-                    this.I[i][HOY] = this.Ibeam[i][HOY] + this.Idiff[i][HOY] + this.Irefl_spec[i][HOY] + this.Irefl_diff[i][HOY];
-                }
+                CalcIrradiation_1SP(i, HOY);
             }
         }
 
@@ -179,49 +175,13 @@ namespace SolarModel
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
         public void CalcIrradiationMT(int DOY, int LT, Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
-            int HOY = (DOY - 1) * 24 + LT;
-
-            CalcIbeam_MT(HOY, weather, sunvectors);
-            CalcIdiff_MT(DOY, HOY, weather, sunvectors);
-
+            int HOY = calc_HOY(DOY, LT);
+            CalcIbeam_MT(HOY, weather, sunvectors, paropts);
+            CalcIdiff_MT(DOY, HOY, weather, sunvectors, paropts);
             Parallel.For(0, this.I.Length, paropts, i =>
             {
-                if (this.snowcovered[i][HOY])
-                {
-                    this.I[i][HOY] = 0.0;
-                }
-                else
-                {
-                    this.I[i][HOY] = this.Ibeam[i][HOY] + this.Idiff[i][HOY] + this.Irefl_spec[i][HOY] + this.Irefl_diff[i][HOY];
-                }
+                CalcIrradiation_1SP(i, HOY);
             });
-        }
-
-
-        /// <summary>
-        /// Calculates hourly total solar irradiation on the sensor point for the entire year.
-        /// <para>Access: this.I[HOY]; HOY ∈ [0, 8759].</para>
-        /// </summary>
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        public void CalcIrradiation(Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            CalcIbeam(weather, sunvectors);
-            CalcIdiff(weather, sunvectors);
-            for (int i = 0; i < this.I.Length; i++)
-            {
-                for (int t = 0; t < 8760; t++)
-                {
-                    if (this.snowcovered[i][t])
-                    {
-                        this.I[i][t] = 0.0;
-                    }
-                    else
-                    {
-                        this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t] + this.Irefl_spec[i][t] + this.Irefl_diff[i][t];
-                    }
-                }
-            }
         }
 
 
@@ -233,37 +193,37 @@ namespace SolarModel
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
         public void CalcIrradiationMT(Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
-            CalcIbeam_MT(weather, sunvectors);
-            CalcIdiff_MT(weather, sunvectors);
+            CalcIbeam_MT(weather, sunvectors, paropts);
+            CalcIdiff_MT(weather, sunvectors, paropts);
             Parallel.For(0, this.I.Length, paropts, i =>
             {
-                for (int t = 0; t < 8760; t++)
-                {
-                    if (this.snowcovered[i][t])
-                    {
-                        this.I[i][t] = 0.0;
-                    }
-                    else
-                    {
-                        this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t] + this.Irefl_spec[i][t] + this.Irefl_diff[i][t];
-                    }
-                }
+                CalcIrradiation_1SP(i);
             });
         }
 
 
         /// <summary>
-        /// Set simple sky dome obstruction by taking into account the sensor points tilt angles.
+        /// Calculates 8760 irradiance on one sensor point
         /// </summary>
-        /// <param name="tiltangle">Sensor points tilt angles, in degree.</param>
-        public void SetSimpleSky(double[] tiltangle)
+        /// <param name="i">index of sensor point</param>
+        public void CalcIrradiation_1SP(int i, int HOY = -1)
         {
-            for (int i = 0; i < this.SPCount; i++)
+            int tstart = 0;
+            int tend = 8760;
+            if (HOY != -1)
             {
-                double visibleHemisphere = (1 + Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2;
-                for (int HOY = 0; HOY < 8760; HOY++)
+                tstart = HOY;
+                tend = HOY + 1;
+            }
+            for (int t = tstart; t < tend; t++)
+            {
+                if (this.snowcovered[i][t])
                 {
-                    this.sky[i].ShdwDome[HOY] = 1 - visibleHemisphere;
+                    this.I[i][t] = 0.0;
+                }
+                else
+                {
+                    this.I[i][t] = this.Ibeam[i][t] + this.Idiff[i][t] + this.Irefl_spec[i][t] + this.Irefl_diff[i][t];
                 }
             }
         }
@@ -285,28 +245,6 @@ namespace SolarModel
             });
         }
 
-
-        /// <summary>
-        /// Set simplified ground reflection values, based on albedo value of the ground.
-        /// </summary>
-        /// <remarks>Reflected irradiation is added to the current diffuse inter-reflection value.</remarks>
-        /// <param name="tiltangle">Sensor points tilt angles, in degree. [i] = for each sensor point.</param>
-        /// <param name="albedo">Albedo of the ground. 8760 time series, [t] = for each hour of the year.</param>
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">8760 sunvectors, [t] = for each hour of the year.</param>
-        public void SetSimpleGroundReflection(double[] tiltangle, double[] albedo, Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            for (int i = 0; i < this.SPCount; i++)
-            {
-                for (int HOY = 0; HOY < 8760; HOY++)
-                {
-                    this.Irefl_diff[i][HOY] += (albedo[HOY] *
-                        (weather.DNI[HOY] * Math.Cos((sunvectors[HOY].udtCoordinates.dZenithAngle) * (Math.PI / 180))
-                        + weather.DHI[HOY])) * ((1 - Math.Cos(tiltangle[i] * (Math.PI / 180))) / 2);
-                }
-            }
-        }
-        
 
         /// <summary>
         /// Set simplified ground reflection values, based on albedo value of the ground. Multi-threading version.
@@ -334,24 +272,24 @@ namespace SolarModel
         #region PrivateFunctions
         /// <summary>
         /// Calculates diffuse irradiation on the sensor point for one hour of the year.
-        /// <para>Access: total diffuse irradiation: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
+        /// <para>Access: total: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
         /// </summary>
         /// <param name="DOY">Day of the year, ∈ [1, 365].</param>
         /// <param name="HOY">Hour of the year, ∈ [0, 8759].</param>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIdiff(int DOY, int HOY, Context.cWeatherdata weather, SunVector [] sunvectors)
+        private void CalcIdiff(int DOY, int HOY, Context.cWeatherdata weather, SunVector[] sunvectors)
         {
-            for (int i = 0; i < this.SPCount; i++)
+            for(int i=0;i< this.SPCount;i++)
             {
-                if (this.snowcovered[i][HOY])
+                if (snowcovered[i][HOY])
                     this.Idiff[i][HOY] = 0.0;
                 else
                 {
                     this.Idiff[i][HOY] = Irradiation.Diffuse(
                         weather.DHI[HOY], weather.DNI[HOY], sunvectors[HOY].udtCoordinates.dZenithAngle,
                         sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], DOY,
-                        this.sky[i].ShdwHorizon[HOY], this.sky[i].ShdwDome[HOY], this.sky[i].ShdwBeam[HOY]);
+                        sky[i].ShdwHorizon[HOY], sky[i].ShdwDome[HOY], sky[i].ShdwBeam[HOY]);
                 }
             }
         }
@@ -365,9 +303,9 @@ namespace SolarModel
         /// <param name="HOY">Hour of the year, ∈ [0, 8759].</param>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIdiff_MT(int DOY, int HOY, Context.cWeatherdata weather, SunVector[] sunvectors)
+        private void CalcIdiff_MT(int DOY, int HOY, Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
-            Parallel.For(0, this.SPCount, i =>
+            Parallel.For(0, this.SPCount, paropts, i =>
             {
                 if (snowcovered[i][HOY])
                     this.Idiff[i][HOY] = 0.0;
@@ -383,42 +321,21 @@ namespace SolarModel
 
 
         /// <summary>
-        /// Calculates hourly diffuse radiation on the sensor point for the entire year.
-        /// <para>Access: total: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
-        /// </summary>        
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIdiff(Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            int HOY = 0;
-            for (int i = 1; i < 366; i++)
-            {
-                for (int u = 0; u < 24; u++)
-                {
-                    CalcIdiff(i, HOY, weather, sunvectors);
-                    HOY++;
-                }
-            }
-        }
-
-
-        /// <summary>
         /// Calculates hourly diffuse radiation on the sensor point for the entire year. Multi-Threading version.
         /// <para>Access: total: this.Idiff[HOY][0]; horizon: this.Idiff[HOY][1]; sky: this.Idiff[HOY][2]; circumsolar: this.Idiff[HOY][3]. HOY ∈ [0, 8759].</para>
         /// </summary>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIdiff_MT(Context.cWeatherdata weather, SunVector[] sunvectors)
+        private void CalcIdiff_MT(Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
-            Parallel.For(1, 366, i =>
+            Parallel.For(1, 366, paropts, i =>
             {
                 for (int u = 0; u < 24; u++)
                 {
                     int HOY = (i - 1) * 24 + u;
-                    CalcIdiff(i, HOY, weather, sunvectors);
+                    CalcIdiff_MT(i, HOY, weather, sunvectors, singleparopts);
                 }
             });
-
         }
 
 
@@ -428,30 +345,32 @@ namespace SolarModel
         /// </summary>
         /// <param name="DOY">Day of the year, ∈ [1, 365].</param>
         /// <param name="HOY">Hour of the year, ∈ [0, 8759].</param>
-        /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>        
+        /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>      
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
         private void CalcIbeam(int HOY, Context.cWeatherdata weather, SunVector[] sunvectors)
         {
             if (sunvectors[HOY].Sunshine == true)
             {
-                for (int i = 0; i < this.SPCount; i++)
+                for(int i=0;i< this.SPCount;i++)
                 {
-                    if (this.sky[i].ShdwBeam[HOY] + Convert.ToDouble(snowcovered[i][HOY]) >= 1.0)
+                    if (this.sky[i].ShdwBeam[HOY] + Convert.ToDouble(snowcovered[i][HOY]) > 1.0)
                         this.Ibeam[i][HOY] = 0.0;
                     else
                     {
                         this.Ibeam[i][HOY] = Irradiation.Beam(
-                            weather.DNI[HOY], sunvectors[HOY].udtCoordinates.dZenithAngle,
-                            sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i], 
-                            this.sky[i].ShdwBeam[HOY]);
+                                weather.DNI[HOY], sunvectors[HOY].udtCoordinates.dZenithAngle,
+                                sunvectors[HOY].udtCoordinates.dAzimuth, this.beta[i], this.psi[i],
+                                this.sky[i].ShdwBeam[HOY]);
                     }
                 }
             }
             else
             {
-                for (int i = 0; i < this.SPCount; i++)
+                for(int i=0;i< this.SPCount;i++)
+                {
                     this.Ibeam[i][HOY] = 0;
+                }
             }
         }
 
@@ -465,11 +384,11 @@ namespace SolarModel
         /// <param name="LT">Local time, i.e. hour of the day, ∈ [0, 23].</param>      
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIbeam_MT(int HOY, Context.cWeatherdata weather, SunVector[] sunvectors)
+        private void CalcIbeam_MT(int HOY, Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
             if (sunvectors[HOY].Sunshine == true)
             {
-                Parallel.For(0, this.SPCount, i =>
+                Parallel.For(0, this.SPCount, paropts, i =>
                 {
                     if (this.sky[i].ShdwBeam[HOY] + Convert.ToDouble(snowcovered[i][HOY]) > 1.0)
                         this.Ibeam[i][HOY] = 0.0;
@@ -484,25 +403,10 @@ namespace SolarModel
             }
             else
             {
-                Parallel.For(0, this.SPCount, i =>
+                Parallel.For(0, this.SPCount, paropts, i =>
                 {
                     this.Ibeam[i][HOY] = 0;
                 });
-            }
-        }
-
-
-        /// <summary>
-        /// Calculates hourly beam (direct) irradiation on the sensor point for the entire year. 
-        /// <para>Access: this.Ibeam[HOY]; HOY ∈ [0, 8759].</para>
-        /// </summary>      
-        /// <param name="weather">Weather data.</param>
-        /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIbeam(Context.cWeatherdata weather, SunVector[] sunvectors)
-        {
-            for (int t = 0; t < 8760; t++)
-            {
-                CalcIbeam(t, weather, sunvectors);
             }
         }
 
@@ -513,12 +417,24 @@ namespace SolarModel
         /// </summary>
         /// <param name="weather">Weather data.</param>
         /// <param name="sunvectors">Sunvectors, [0, 8759].</param>
-        private void CalcIbeam_MT(Context.cWeatherdata weather, SunVector[] sunvectors)
+        private void CalcIbeam_MT(Context.cWeatherdata weather, SunVector[] sunvectors, ParallelOptions paropts)
         {
-            Parallel.For(0, 8760, t =>
+            Parallel.For(0, 8760, paropts, t =>
             {
-                CalcIbeam(t, weather, sunvectors);
+                CalcIbeam_MT(t, weather, sunvectors, singleparopts);
             });
+        }
+
+
+        /// <summary>
+        /// Calculate Hour of the Year (HOY)
+        /// </summary>
+        /// <param name="DOY">Day of the year [1, 365]</param>
+        /// <param name="LT">Hour of the day (local time), [0, 23]</param>
+        /// <returns>Hour of the year</returns>
+        private int calc_HOY(int DOY, int LT)
+        {
+            return (DOY - 1) * 24 + LT;
         }
         #endregion
 

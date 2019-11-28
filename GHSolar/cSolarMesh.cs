@@ -340,7 +340,7 @@ namespace GHSolar
                 }
                 else
                 {
-                    p.SetSimpleGroundReflection(arrbeta, groundalbedo.ToArray(), weather, sunvectors);
+                    p.SetSimpleGroundReflectionMT(arrbeta, groundalbedo.ToArray(), weather, sunvectors, paropts);
                 }
 
                 //interreflections specular
