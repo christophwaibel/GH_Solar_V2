@@ -4,6 +4,9 @@ using SolarModel;
 
 namespace GHSolar
 {
+    /// <summary>
+    /// Results class for solar simulation. Used to transfer results data to other grasshopper components, such as the mesh visualizer.
+    /// </summary>
     public class CResults
     {
         public Matrix I_hourly;
@@ -35,6 +38,9 @@ namespace GHSolar
     }
 
 
+    /// <summary>
+    /// Results class for specular interreflections of a solar simulation.
+    /// </summary>
     public class CResultsInterreflections
     {
         //variables for diffuse inter-reflection

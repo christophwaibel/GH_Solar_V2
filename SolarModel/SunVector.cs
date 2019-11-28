@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 /*
  * SunVector.cs
@@ -11,6 +9,7 @@ using System.Threading.Tasks;
  * 
  * This work is licensed under the GNU GPL license version 3.
 */
+
 
 namespace SolarModel
 {
@@ -36,6 +35,7 @@ namespace SolarModel
         public cSunXYZ udtCoordXYZ;
 
         public bool Sunshine;
+
 
         /// <summary>
         /// Create a Solar Vector for a specific time and location.
@@ -118,7 +118,6 @@ namespace SolarModel
 
             return equsol;
         }
-
 
 
         /// <summary>
@@ -233,6 +232,7 @@ namespace SolarModel
             return SunposXYZout;
         }
 
+
         /// <summary>
         /// Solar zenith and azimuth angles.
         /// </summary>
@@ -241,6 +241,8 @@ namespace SolarModel
             public double dZenithAngle;
             public double dAzimuth;
         }
+       
+        
         /// <summary>
         /// 3d solar vectors.
         /// </summary>
@@ -250,8 +252,6 @@ namespace SolarModel
             public double y;
             public double z;
         }
-
-
 
 
         /// <summary>
@@ -277,6 +277,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// Create solar vectors objects for each hour of the year, copy pasting solar vectors from an external source (e.g. .epw file) instead of the solar vector algorithm.
@@ -314,5 +315,4 @@ namespace SolarModel
             }
         }
     }
-
 }

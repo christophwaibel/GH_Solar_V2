@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+
 
 /*
  * Context.cs
@@ -11,6 +8,7 @@ using System.Threading.Tasks;
  * 
  * This work is licensed under the GNU GPL license version 3.
 */
+
 
 namespace SolarModel
 {

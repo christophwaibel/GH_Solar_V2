@@ -12,7 +12,7 @@ using Rhino.Geometry;
 namespace GHSolar
 {
     /// <summary>
-    /// 
+    /// Miscellaneous functions.
     /// </summary>
     public static class CMisc
     {
@@ -55,22 +55,19 @@ namespace GHSolar
         }
 
 
-
-
         /// <summary>
-        /// 
+        /// Gives an RGB color to a value. E.g. for drawing coloured meshes or similar.
         /// </summary>
-        /// <param name="colourSheme"></param>
-        /// <param name="quantity"></param>
-        /// <param name="top"></param>
-        /// <param name="low"></param>
-        /// <returns></returns>
+        /// <param name="colourSheme">0 = from blue to red; 1 = from blue to yellow; 2 = black/white.</param>
+        /// <param name="quantity">value to be turned into color</param>
+        /// <param name="top">upper bound of values</param>
+        /// <param name="low">lower bound of values</param>
+        /// <returns>A Color</returns>
         public static Color GetRGB(int colourSheme, double quantity, double top, double low)
         {
             double RR = 0.0;
             double GG = 0.0;
             double BB = 0.0;
-
 
             quantity = (quantity - low) / (top - low);
             double third = 1.0 / 5.0;
@@ -132,7 +129,6 @@ namespace GHSolar
             if (BB > 255) BB = 255;
             else if (BB < 0) BB = 0;
             return Color.FromArgb((int)RR, (int)GG, (int)BB);
-
         }
 
 
@@ -147,12 +143,13 @@ namespace GHSolar
             return Vector3d.Subtract(incident_vector, Vector3d.Multiply(Vector3d.Multiply(incident_vector, srf_normal) * 2.0, srf_normal));
         }
 
+
         /// <summary>
         /// 3x3 Rotation matrix to project vector a onto vector b.
         /// </summary>
         /// <param name="a">Vector a.</param>
         /// <param name="b">Vector b.</param>
-        /// <returns></returns>
+        /// <returns>Rotation matrix</returns>
         public static double [,] RotationMatrix(Vector3d a, Vector3d b)
         {
             a.Unitize();

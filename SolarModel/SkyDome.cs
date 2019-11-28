@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
 using System.Windows;
+
 
 /*
  * SkyDome.cs
@@ -12,6 +10,7 @@ using System.Windows;
  * 
  * This work is licensed under the GNU GPL license version 3.
 */
+
 
 namespace SolarModel
 {
@@ -68,8 +67,6 @@ namespace SolarModel
         public double[] ShdwBeam { get; private set; }
 
 
-
-
         /// <summary>
         /// Creates a sky dome (hemisphere) as a halfed icosahedron. 
         /// </summary>
@@ -96,6 +93,7 @@ namespace SolarModel
             //create a list of size of the facaes of the dome. use this list for shadow factors...
         }
 
+
         /// <summary>
         /// Copy object.
         /// </summary>
@@ -116,6 +114,7 @@ namespace SolarModel
             //ShdwHorizon, ShdwDome, ShdwSunVector must be re-evaluated for new sensor point
         }
 
+
         /// <summary>
         /// Replace the vertex vectors of the hemisphere.
         /// <para>E.g. for externally rotating the hemisphere.</para>
@@ -132,6 +131,7 @@ namespace SolarModel
                 }
             }
         }
+
 
         /// <summary>
         /// Rotate vertex vectors of the hemisphere with a rotation matrix.
@@ -297,9 +297,6 @@ namespace SolarModel
         }
 
 
-
-
-
         /// <summary>
         /// Indicate for a certain hour of the year, if the center of the skydome lies in shadow. I.e. has no beam radiation.
         /// </summary>
@@ -449,6 +446,7 @@ namespace SolarModel
 
         }
 
+
         /// <summary>
         /// Calculate the segment weights of the horizon vertices. 
         /// <para>We need this, because unfortunately the vertices on the horizon are not equally distributed.</para>
@@ -503,6 +501,5 @@ namespace SolarModel
                 this.HorizonSegments[i] = angle;
             }
         }
-
     }
 }

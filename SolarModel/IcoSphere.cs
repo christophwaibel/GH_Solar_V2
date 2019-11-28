@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Media.Media3D;
+
 
 /*
  * IcoSphere.cs
@@ -13,6 +11,7 @@ using System.Windows.Media.Media3D;
  * This work is licensed under the GNU GPL license version 3.
 */
 
+
 namespace SolarModel
 {
     /// <summary>
@@ -21,10 +20,16 @@ namespace SolarModel
     /// </summary>
     public class IcoSphere
     {
+        private MeshGeometry3D geometry;
+        private int index;
+        private Dictionary<Int64, int> middlePointIndexCache;
+
+
         /// <summary>
         /// Mesh Geometry of the IcoSphere as Windows.Media.Media3D object.
         /// </summary>
         public MeshGeometry3D IcoSphere3D;
+
 
         /// <summary>
         /// Create instance of IcoSphere.
@@ -34,6 +39,7 @@ namespace SolarModel
         {
             IcoSphere3D = CreateGeometry(recursionLevel);
         }
+
 
         /// <summary>
         /// Get a list of faces of the IcoSphere. 
@@ -50,6 +56,7 @@ namespace SolarModel
             return facesOut;
         }
 
+
         /// <summary>
         /// Get a list of 3d vertex coordinates.
         /// </summary>
@@ -64,6 +71,7 @@ namespace SolarModel
             }
             return coordsOut;
         }
+
 
         private MeshGeometry3D CreateGeometry(int recursionLevel)
         {
@@ -167,9 +175,6 @@ namespace SolarModel
             }
         }
 
-        private MeshGeometry3D geometry;
-        private int index;
-        private Dictionary<Int64, int> middlePointIndexCache;
 
         // add vertex to mesh, fix position to be on unit sphere, return index
         private int addVertex(Point3D p)
@@ -178,6 +183,7 @@ namespace SolarModel
             geometry.Positions.Add(new Point3D(p.X / length, p.Y / length, p.Z / length));
             return index++;
         }
+
 
         // return index of point in the middle of p1 and p2
         private int getMiddlePoint(int p1, int p2)
@@ -209,6 +215,5 @@ namespace SolarModel
             this.middlePointIndexCache.Add(key, i);
             return i;
         }
-
     }
 }

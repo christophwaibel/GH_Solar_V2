@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Rhino.Geometry;
+using System;
 
 /*
  * cObstacleObject.cs
@@ -11,6 +12,9 @@ using Rhino.Geometry;
 
 namespace GHSolar
 {
+    /// <summary>
+    /// Obstascle class for solar simulation
+    /// </summary>
     public class CObstacleObject
     {
         public Mesh mesh;
@@ -36,6 +40,10 @@ namespace GHSolar
         /// <param name="mt">Multi-threading.</param>
         public CObstacleObject(Mesh _mesh, List<double> _albedos, List<double> _specCoeff, int _reflType, double _tolerance, string _name, bool mt)
         {
+            int tasks = 1;
+            if (mt) tasks = Environment.ProcessorCount;
+            ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
+
             mesh = _mesh;
             albedos = new List<double>(_albedos);
             specCoeff = new List<double>(_specCoeff);
@@ -48,28 +56,14 @@ namespace GHSolar
             normals = new Vector3d[mesh.Faces.Count];
             normalsRev = new Vector3d[mesh.Faces.Count];
             faceCen = new Point3d[mesh.Faces.Count];
-            if (!mt)
-            {
-                for (int k = 0; k < mesh.Faces.Count; k++)
-                {
-                    normals[k] = mesh.FaceNormals[k];
-                    normalsRev[k] = Vector3d.Negate(normals[k]);
-                    Point3d cen0 = mesh.Faces.GetFaceCenter(k);
-                    faceCen[k] = new Point3d(Point3d.Add(cen0, Vector3d.Multiply(Vector3d.Divide(normals[k], normals[k].Length), tolerance)));
-                }
-            }
-            else
-            {
-                Parallel.For(0, mesh.Faces.Count, k =>
-                {
-                    normals[k] = mesh.FaceNormals[k];
-                    normalsRev[k] = Vector3d.Negate(normals[k]);
-                    Point3d cen0 = mesh.Faces.GetFaceCenter(k);
-                    faceCen[k] = new Point3d(Point3d.Add(cen0, Vector3d.Multiply(Vector3d.Divide(normals[k], normals[k].Length), tolerance)));
-                });
-            }
 
-
+            Parallel.For(0, mesh.Faces.Count, paropts, k =>
+            {
+                normals[k] = mesh.FaceNormals[k];
+                normalsRev[k] = Vector3d.Negate(normals[k]);
+                Point3d cen0 = mesh.Faces.GetFaceCenter(k);
+                faceCen[k] = new Point3d(Point3d.Add(cen0, Vector3d.Multiply(Vector3d.Divide(normals[k], normals[k].Length), tolerance)));
+            });
         }
     }
 }

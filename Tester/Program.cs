@@ -19,6 +19,8 @@ namespace Tester
     {
         static void Main(string[] args)
         {
+            ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = 1 };
+
             Console.WriteLine("SolarModel V2.0");
             Console.WriteLine();
             Console.WriteLine("You will need: 2 txt files with hourly values for DHI and DNI respectively. They need to be named DNI.txt and DHI.txt");
@@ -152,9 +154,9 @@ namespace Tester
 
             Console.WriteLine("Calculating irradiation...");
             Sensorpoints p = new Sensorpoints(beta, psi, coord, normal, recursion);
-            p.SetSimpleSky(beta);
-            p.SetSimpleGroundReflection(beta, albedo, weather, sunvectors.ToArray());
-            p.CalcIrradiation(weather, sunvectors.ToArray());
+            p.SetSimpleSkyMT(beta, paropts);
+            p.SetSimpleGroundReflectionMT(beta, albedo, weather, sunvectors.ToArray(), paropts);
+            p.CalcIrradiationMT(weather, sunvectors.ToArray(), paropts);
 
             Console.WriteLine("Writing to path...");
             System.IO.StreamWriter write = new System.IO.StreamWriter(path + "\\calc.txt");

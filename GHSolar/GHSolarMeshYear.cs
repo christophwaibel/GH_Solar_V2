@@ -1,11 +1,8 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
-using System.Linq;
 
-using SolarModel;
 
 /*
  * GHSolarMeshYear.cs
@@ -19,7 +16,6 @@ namespace GHSolar
 {
     public class GHSolarMeshYear : GH_Component
     {
-
         public GHSolarMeshYear()
             : base("IrradiationMeshYear", "IrrMshY",
                 "Calculates hourly solar irradiation on a mesh for an entire year.",
@@ -137,9 +133,8 @@ namespace GHSolar
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //___________________________________________________________________
-            /////////////////////////////////////////////////////////////////////
-            //INPUTS
+            //______________________________________________________________________________________________
+            ////////////////////////////////        I N P U T S          ///////////////////////////////////
             Mesh msh = new Mesh();
             CObstacleObject mshobj = null;
             if (!DA.GetData(0, ref mshobj)) { return; }
@@ -179,19 +174,16 @@ namespace GHSolar
             List<double> solarAltitude = new List<double>();
             DA.GetDataList(15, solarAltitude);
 
-
             int MainSkyRes = 0;
             if (!DA.GetData(17, ref MainSkyRes)) { MainSkyRes = 1; }
             int MainInterpMode = 0;
             if (!DA.GetData(18, ref MainInterpMode)) { MainInterpMode = 0; }
-
 
             int SpecBounces = 1;
             if (!DA.GetData(20, ref SpecBounces)) { SpecBounces = 1; }
             SpecBounces = (SpecBounces < 0) ? 0 : SpecBounces;
             int SpecInterpMode = 0;
             if (!DA.GetData(21, ref SpecInterpMode)) { SpecInterpMode = 0; }
-
 
             int DiffIReflSkyRes = 0;
             if (!DA.GetData(23, ref DiffIReflSkyRes)) { DiffIReflSkyRes = 0; }
@@ -205,54 +197,34 @@ namespace GHSolar
 
             bool mt = false;
             if (!DA.GetData(29, ref mt)) { mt = false; }
-
-            /////////////////////////////////////////////////////////////////////
-            //___________________________________________________________________
-
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            //______________________________________________________________________________________________
 
 
-
-            #region SIMULATE
             //______________________________________________________________________________________________
             ////////////////////////////////        S I M U L A T E      ///////////////////////////////////
             CCalculateSolarMesh calc = new CCalculateSolarMesh(
                 mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
                 year, null, mt, solarAzimuth, solarAltitude);
-            if (mt)
-            {
-                calc.RunAnnualSimulation_MT(mshobj.tolerance,
-                    MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
-            }
-            else
-            {
-                calc.RunAnnualSimulation(mshobj.tolerance,
-                    MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
-            }
+            calc.RunAnnualSimulation_MT(
+                mshobj.tolerance, MainSkyRes, MainInterpMode, SpecBounces, SpecInterpMode, DiffIReflSkyRes, DiffIReflSkyRes2nd, DiffIReflMode);
+
             CResults results = calc.getResults();
             //cResultsInterreflections resultsIreflOut = calc.getResultsInterreflections();
             ////////////////////////////////////////////////////////////////////////////////////////////////
             //______________________________________________________________________________________________
-            #endregion
 
 
-
-
-
-
-            #region OUTPUT
             //______________________________________________________________________________________________
             ////////////////////////////////          O U T P U T        ///////////////////////////////////
             DA.SetData(0, results);
 
             ////////////////////////////////////////////////////////////////////////////////////////////////
             //______________________________________________________________________________________________
-            #endregion
-
 
 
             Rhino.RhinoApp.WriteLine("SOLAR MODEL... Done");
         }
-
 
 
         protected override System.Drawing.Bitmap Icon
@@ -264,7 +236,6 @@ namespace GHSolar
                 return GHSolar.Properties.Resources.pic_irrad_y;
             }
         }
-
 
 
         public override Guid ComponentGuid

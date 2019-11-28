@@ -9,9 +9,18 @@
 
 namespace GHSolar
 {
+    /// <summary>
+    /// Permeable obstacle object, e.g. a tree.
+    /// </summary>
     public class CPermObject
     {
+        /// <summary>
+        /// Rhino mesh geometry of the obstacle
+        /// </summary>
         public Mesh mesh;
+        /// <summary>
+        /// 8760 time series with coefficients [0.0, 1.0] to define permeability. 1.0 means it is non-permeable.
+        /// </summary>
         public double[] permeability = new double[8760];
 
         /// <summary>
