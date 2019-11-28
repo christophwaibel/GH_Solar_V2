@@ -12,6 +12,9 @@ Features:
 
 Version 2 with better physics than [version 1](https://github.com/christophwaibel/GH_Solar_V1).
 
+How to install:
+- Check the releases [here](releases) and put the SolarModel.dll and GHSolar.gha into your Rhino Grasshopper components folder.
+
 To Do:
 - [ ] specular inter-reflections refraction coefficients
 - [ ] Input points and normals, instead of analysis surface mesh... more control on where to place sensor points
