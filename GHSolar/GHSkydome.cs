@@ -22,7 +22,7 @@ namespace GHSolar
                 "EnergyHubs", "Solar Simulation")
         {
         }
-        
+
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
@@ -38,7 +38,7 @@ namespace GHSolar
             pManager.AddMeshParameter("context", "context", "Context, i.e. adjacent obstacles", GH_ParamAccess.list);
             pManager.AddPointParameter("sp", "sp", "Sensor Point, around which a skydome will be constructed.", GH_ParamAccess.item);
 
-            int[] ilist = new int[8] { 1, 2, 3, 4, 6, 7, 8, 9 };
+            int[] ilist = new int[7] { 1, 2, 3, 6, 7, 8, 9 };
             foreach (int i in ilist)
             {
                 pManager[i].Optional = true;
@@ -50,17 +50,21 @@ namespace GHSolar
         {
             pManager.AddMeshParameter("mesh", "mesh", "mesh", GH_ParamAccess.list);
             pManager.AddLineParameter("vectors", "vectors", "Hourly solar vectors.", GH_ParamAccess.list);
+            pManager.AddCurveParameter("sunpaths", "sunpaths", "sunpaths", GH_ParamAccess.list);
         }
 
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             int year = 2017;
-            int reclvl= 0;
-            if (!DA.GetData(0, ref reclvl)) { return; }
+            int reclvl = 0;
+            if (!DA.GetData(0, ref reclvl)) return;
+
+            List<int> hoy = new List<int>();
+            if (!DA.GetDataList(4, hoy)) return;
 
             List<double> loc = new List<double>();
-            if ((!DA.GetDataList(5, loc))) return;
+            if (!DA.GetDataList(5, loc)) return;
             double longitude = loc[0];
             double latitude = loc[1];
 
@@ -87,7 +91,7 @@ namespace GHSolar
             meshlist.Add(meshico);
             */
 
-            SkyDome dome = new SkyDome(reclvl);          
+            SkyDome dome = new SkyDome(reclvl);
             Mesh mesh = new Mesh();
             List<Mesh> meshlist = new List<Mesh>();
             foreach (double[] p in dome.VertexVectorsSphere)
@@ -107,17 +111,67 @@ namespace GHSolar
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
 
             List<Line> ln = new List<Line>();
-
-            //solar vector needs to reverted
-            Point3d solarpoint = new Point3d(Point3d.Add(sp, new Vector3d(sunvectors_list[0].udtCoordXYZ.x, sunvectors_list[0].udtCoordXYZ.y, sunvectors_list[0].udtCoordXYZ.z)));
-            ln.Add(new Line(sp, solarpoint));
+            foreach (int h in hoy)
+            {
+                Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
+                Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
+                ln.Add(new Line(sp, solarpoint));
+            }
 
             //CCalculateSolarMesh calc = new CCalculateSolarMesh(
             //    mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
             //    year, null, mt, solarAzimuth, solarAltitude);
             //calc.RunHourSimulationMT(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd);
-            //Line [] ln = calc.getSolarVec();
+            //Line[] ln = calc.getSolarVec();
             DA.SetDataList(1, ln);
+
+
+            List<PolylineCurve> crvs = new List<PolylineCurve>();
+
+            // draw solar paths: curves that connect each month, but for the same hour
+            for (int hod = 0; hod < 24; hod++)
+            {   
+                List<Point3d> pts = new List<Point3d>();
+                for (int d = 0; d < 365; d++)
+                {
+                    int h = hod + 24 * d;
+                    Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
+                    if (vec.Z > 0)
+                    {
+                        Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
+                        pts.Add(solarpoint);
+                    }
+                }
+                if (pts.Count > 0)
+                {
+                    PolylineCurve crv = new PolylineCurve(pts);
+                    crvs.Add(crv);
+                }
+            }
+
+            // draw solar paths; curves that connects each hour, but for the same month
+            int interv = 365 / 12;
+            for (int m = 0; m<12; m++)
+            {
+                List<Point3d> pts = new List<Point3d>();
+                for (int hod=0; hod<24; hod++)
+                {
+                    int h = hod + ((m * interv + interv / 2) * 24);
+                    Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
+                    if (vec.Z > 0)
+                    {
+                        Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
+                        pts.Add(solarpoint);
+                    }
+                }
+                if (pts.Count > 0)
+                {
+                    PolylineCurve crv = new PolylineCurve(pts);
+                    crvs.Add(crv);
+                }
+            }
+
+            DA.SetDataList(2, crvs);
         }
 
 
