@@ -57,8 +57,17 @@ namespace GHSolar
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             int year = 2017;
+
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /// INPUTS
             int reclvl = 0;
             if (!DA.GetData(0, ref reclvl)) return;
+
+            bool drawviewfactors = false;
+            if (!DA.GetData(1, ref drawviewfactors)) drawviewfactors = false;
+
+            bool drawcumskymatrix = false;
+            if (!DA.GetData(2, ref drawcumskymatrix)) drawcumskymatrix = false;
 
             List<int> hoy = new List<int>();
             if (!DA.GetDataList(4, hoy)) return;
@@ -68,29 +77,12 @@ namespace GHSolar
             double longitude = loc[0];
             double latitude = loc[1];
 
-            //10 for SP
             Point3d sp = new Point3d();
             if (!DA.GetData(10, ref sp)) return;
 
 
-            //Full Sphere
-            /*
-            IcoSphere ico = new IcoSphere(reclvl);
-            List<int[]> facesico = ico.getFaces();
-            List<double[]> vertexcoordsico = ico.getVertexCoordinates();
-            Mesh meshico = new Mesh();
-            foreach (double[] p in vertexcoordsico)
-            {
-                meshico.Vertices.Add(p[0], p[1], p[2]);
-                points.Add(new Point3d(p[0], p[1], p[2]));
-            }
-            foreach (int[] f in facesico)
-            {
-                meshico.Faces.AddFace(f[0], f[1], f[2]);
-            }
-            meshlist.Add(meshico);
-            */
-
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /// SKYDOME
             SkyDome dome = new SkyDome(reclvl);
             Mesh mesh = new Mesh();
             List<Mesh> meshlist = new List<Mesh>();
@@ -103,13 +95,22 @@ namespace GHSolar
                 mesh.Faces.AddFace(f[0], f[1], f[2]);
             }
             mesh.UnifyNormals();
+
+            if (drawviewfactors)
+            {
+                // using GHSolar, only compute obstructions for the skydome. W/o doing all the perez stuff.
+                // how?
+            }else if (drawcumskymatrix)
+            {
+                // Solarmodel.dll needs new function to compute cumulative sky view matrix (requires obstruction check from drawviewfactors
+            }
             meshlist.Add(mesh);
 
-            DA.SetDataList(0, meshlist);        // this mesh needs to be colored according to view factor or cumulative sky matrix
 
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /// Solar Vectors
             List<SunVector> sunvectors_list;
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
-
             List<Line> ln = new List<Line>();
             foreach (int h in hoy)
             {
@@ -118,14 +119,11 @@ namespace GHSolar
                 ln.Add(new Line(sp, solarpoint));
             }
 
-            //CCalculateSolarMesh calc = new CCalculateSolarMesh(
-            //    mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
-            //    year, null, mt, solarAzimuth, solarAltitude);
-            //calc.RunHourSimulationMT(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd);
-            //Line[] ln = calc.getSolarVec();
-            DA.SetDataList(1, ln);
 
-
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /// SUN PATH
+            /// !!! are longitude and latitude reversed?
+            /// !!! wierd sun paths at extreme longitudes and latitudes
             List<PolylineCurve> crvs = new List<PolylineCurve>();
 
             // draw solar paths: curves that connect each month, but for the same hour
@@ -171,6 +169,11 @@ namespace GHSolar
                 }
             }
 
+
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /// OUTPUT
+            DA.SetDataList(0, meshlist);        // this mesh needs to be colored according to view factor or cumulative sky matrix
+            DA.SetDataList(1, ln);
             DA.SetDataList(2, crvs);
         }
 
