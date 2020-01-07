@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
 using SolarModel;
-
+using System.Drawing;
 
 /*
  * GHSkydome.cs
@@ -54,6 +54,17 @@ namespace GHSolar
         }
 
 
+        private readonly List<Line> _solar_vectors = new List<Line>();
+        List<PolylineCurve> _sun_paths = new List<PolylineCurve>();
+        List<bool> _night_time = new List<bool>();
+        List<List<Curve>> _txt = new List<List<Curve>>();
+        protected override void BeforeSolveInstance()
+        {
+            _solar_vectors.Clear();
+            _night_time.Clear();
+            _sun_paths.Clear();
+            _txt.Clear();
+        }
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             int year = 2017;
@@ -96,6 +107,7 @@ namespace GHSolar
             }
             mesh.UnifyNormals();
 
+            // !!!!!!!!!!
             if (drawviewfactors)
             {
                 // using GHSolar, only compute obstructions for the skydome. W/o doing all the perez stuff.
@@ -109,23 +121,49 @@ namespace GHSolar
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// Solar Vectors
+            BoundingBox bb = mesh.GetBoundingBox(false);
+            double fontsize = (bb.Max.X - bb.Min.X) / 50.0;
             List<SunVector> sunvectors_list;
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
-            List<Line> ln = new List<Line>();
+            int count = 0;
             foreach (int h in hoy)
             {
                 Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
                 Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
-                ln.Add(new Line(sp, solarpoint));
+                Line ln = new Line(sp, solarpoint);
+                ln.Flip();
+                _solar_vectors.Add(ln);
+                if(sunvectors_list[h].udtCoordXYZ.z < 0) _night_time.Add(true);
+                else _night_time.Add(false);
+
+                int year_now = sunvectors_list[h].udtTime.iYear;
+                int month_now = sunvectors_list[h].udtTime.iMonth;
+                int day_now = sunvectors_list[h].udtTime.iDay;
+                double hour_now = sunvectors_list[h].udtTime.dHours;
+                string strval = Convert.ToString(year_now) + "; " + Convert.ToString(month_now) + "; " + Convert.ToString(day_now) + "; " + Convert.ToString(hour_now) + ":00";
+                Plane pl = new Plane(ln.From, new Vector3d(-1, 0, 0));
+                //Plane pl = new Plane(ln.From, vec);
+                var te = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(strval, pl, fontsize, "Baskerville", false, false);
+                Rhino.DocObjects.TextObject txt = Rhino.RhinoDoc.ActiveDoc.Objects.Find(te) as Rhino.DocObjects.TextObject;
+                _txt.Add(new List<Curve>());
+                if (txt != null)
+                {
+                    var tt = txt.Geometry as Rhino.Geometry.TextEntity;
+                    Curve[] A = tt.Explode();
+
+                    foreach (Curve crv in A)
+                    {
+                        _txt[count].Add(crv);
+                    }
+                }
+                count++;
+                Rhino.RhinoDoc.ActiveDoc.Objects.Delete(te, true);
             }
 
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// SUN PATH
-            /// !!! are longitude and latitude reversed?
-            /// !!! wierd sun paths at extreme longitudes and latitudes
-            List<PolylineCurve> crvs = new List<PolylineCurve>();
-
+            /// !!! wierd sun paths at extreme longitudes -> time shift... +/- UCT
             // draw solar paths: curves that connect each month, but for the same hour
             for (int hod = 0; hod < 24; hod++)
             {   
@@ -143,7 +181,7 @@ namespace GHSolar
                 if (pts.Count > 0)
                 {
                     PolylineCurve crv = new PolylineCurve(pts);
-                    crvs.Add(crv);
+                    _sun_paths.Add(crv);
                 }
             }
 
@@ -165,7 +203,7 @@ namespace GHSolar
                 if (pts.Count > 0)
                 {
                     PolylineCurve crv = new PolylineCurve(pts);
-                    crvs.Add(crv);
+                    _sun_paths.Add(crv);
                 }
             }
 
@@ -173,8 +211,33 @@ namespace GHSolar
             //////////////////////////////////////////////////////////////////////////////////////////
             /// OUTPUT
             DA.SetDataList(0, meshlist);        // this mesh needs to be colored according to view factor or cumulative sky matrix
-            DA.SetDataList(1, ln);
-            DA.SetDataList(2, crvs);
+            DA.SetDataList(1, _solar_vectors);
+            DA.SetDataList(2, _sun_paths);
+        }
+
+
+        public override void DrawViewportWires(IGH_PreviewArgs args)
+        {
+            Color col1 = Color.FromArgb(255, 223, 0);
+            Color col2 = Color.FromArgb(120, 120, 120);
+            
+
+            for (int i = 0; i < _solar_vectors.Count; i++)
+            {
+                Color c = col1;
+                if (_night_time[i]) c = col2;
+                args.Display.DrawLine(_solar_vectors[i], c, 2);
+                args.Display.DrawArrow(_solar_vectors[i], c);
+                foreach(Curve crv in _txt[i])
+                {
+                    args.Display.DrawCurve(crv, c, 1);
+                }
+            }
+
+            foreach (PolylineCurve crv in _sun_paths)
+            {
+                args.Display.DrawCurve(crv, col2, 1);
+            }
         }
 
 
