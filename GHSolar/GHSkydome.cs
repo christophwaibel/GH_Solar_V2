@@ -80,6 +80,9 @@ namespace GHSolar
             bool drawcumskymatrix = false;
             if (!DA.GetData(2, ref drawcumskymatrix)) drawcumskymatrix = false;
 
+            bool draw_sunpath = true;
+            if (!DA.GetData(3, ref draw_sunpath)) draw_sunpath = true;
+
             List<int> hoy = new List<int>();
             if (!DA.GetDataList(4, hoy)) return;
 
@@ -88,8 +91,54 @@ namespace GHSolar
             double longitude = loc[0];
             double latitude = loc[1];
 
+            double domesize = 1.2;
+            if (!DA.GetData(8, ref domesize)) domesize = 1.2;
+
+            List<Mesh> context = new List<Mesh>();
+            DA.GetDataList(9, context);
+
+
             Point3d sp = new Point3d();
             if (!DA.GetData(10, ref sp)) return;
+
+
+            //////////////////////////////////////////////////////////////////////////////////////////
+            /// size of skydome -> get max distance to furthest point of the context, if any exists
+            Point3d anchor = sp;
+            Point3d bb_furthest_point;    // max distance to furthest corner of context
+            double bb_max_distance = double.MinValue;
+            if (context.Count > 0)
+            {
+                
+                Mesh context_joined = new Mesh();
+                foreach (Mesh msh in context)
+                    context_joined.Append(msh);
+                BoundingBox bb_context = context_joined.GetBoundingBox(false);
+                if (bb_context.IsDegenerate(-1.0) == 4)
+                    bb_furthest_point = new Point3d(sp.X + 1.0, sp.Y + 1.0, sp.Z + 1.0);
+                else
+                {
+                    Point3d[] _pts = bb_context.GetCorners();
+                    int _p_index = 0;
+                    for (int i = 0; i < _pts.Length; i++)
+                    {
+                        double _d = sp.DistanceTo(_pts[i]);
+                        if (_d > bb_max_distance)
+                        {
+                            bb_max_distance = _d;
+                            _p_index = i;
+                        }
+                    }
+                    bb_furthest_point = _pts[_p_index];
+                }
+            }
+            else
+            {
+                bb_furthest_point = new Point3d(sp.X + 1.0, sp.Y + 1.0, sp.Z + 1.0);
+            }
+            Vector3d vec_sp = bb_furthest_point - sp;
+            vec_sp = Vector3d.Multiply(vec_sp, domesize);
+            double vec_sp_len = vec_sp.Length;
 
 
             //////////////////////////////////////////////////////////////////////////////////////////
@@ -99,12 +148,13 @@ namespace GHSolar
             List<Mesh> meshlist = new List<Mesh>();
             foreach (double[] p in dome.VertexVectorsSphere)
             {
-                mesh.Vertices.Add(p[0] + sp.X, p[1] + sp.Y, p[2] + sp.Z);
+                Vector3d vec = new Vector3d(p[0], p[1], p[2]);
+                vec = Vector3d.Multiply(vec_sp_len, vec);
+                //mesh.Vertices.Add(p[0] + sp.X, p[1] + sp.Y, p[2] + sp.Z);
+                mesh.Vertices.Add(vec + sp);
             }
             foreach (int[] f in dome.Faces)
-            {
                 mesh.Faces.AddFace(f[0], f[1], f[2]);
-            }
             mesh.UnifyNormals();
 
             // !!!!!!!!!!
@@ -121,14 +171,14 @@ namespace GHSolar
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// Solar Vectors
-            BoundingBox bb = mesh.GetBoundingBox(false);
-            double fontsize = (bb.Max.X - bb.Min.X) / 50.0;
+            double fontsize = vec_sp_len / 50.0;
             List<SunVector> sunvectors_list;
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
             int count = 0;
             foreach (int h in hoy)
             {
                 Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
+                vec = Vector3d.Multiply(vec_sp_len, vec);
                 Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
                 Line ln = new Line(sp, solarpoint);
                 ln.Flip();
@@ -140,7 +190,9 @@ namespace GHSolar
                 int month_now = sunvectors_list[h].udtTime.iMonth;
                 int day_now = sunvectors_list[h].udtTime.iDay;
                 double hour_now = sunvectors_list[h].udtTime.dHours;
-                string strval = Convert.ToString(year_now) + "; " + Convert.ToString(month_now) + "; " + Convert.ToString(day_now) + "; " + Convert.ToString(hour_now) + ":00";
+                string hour_now2 = Convert.ToString(hour_now);
+                if (hour_now < 10) hour_now2 = "0" + Convert.ToString(hour_now);
+                string strval = Convert.ToString(year_now) + "/ " + Convert.ToString(month_now) + "/ " + Convert.ToString(day_now) + "/ " + hour_now2 + ":00";
                 Plane pl = new Plane(ln.From, new Vector3d(-1, 0, 0));
                 //Plane pl = new Plane(ln.From, vec);
                 var te = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(strval, pl, fontsize, "Baskerville", false, false);
@@ -152,9 +204,7 @@ namespace GHSolar
                     Curve[] A = tt.Explode();
 
                     foreach (Curve crv in A)
-                    {
                         _txt[count].Add(crv);
-                    }
                 }
                 count++;
                 Rhino.RhinoDoc.ActiveDoc.Objects.Delete(te, true);
@@ -165,48 +215,52 @@ namespace GHSolar
             /// SUN PATH
             /// !!! wierd sun paths at extreme longitudes -> time shift... +/- UCT
             // draw solar paths: curves that connect each month, but for the same hour
-            for (int hod = 0; hod < 24; hod++)
-            {   
-                List<Point3d> pts = new List<Point3d>();
-                for (int d = 0; d < 365; d++)
-                {
-                    int h = hod + 24 * d;
-                    Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
-                    if (vec.Z > 0)
-                    {
-                        Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
-                        pts.Add(solarpoint);
-                    }
-                }
-                if (pts.Count > 0)
-                {
-                    PolylineCurve crv = new PolylineCurve(pts);
-                    _sun_paths.Add(crv);
-                }
-            }
-
-            // draw solar paths; curves that connects each hour, but for the same month
-            int interv = 365 / 12;
-            for (int m = 0; m<12; m++)
+            if (draw_sunpath)
             {
-                List<Point3d> pts = new List<Point3d>();
-                for (int hod=0; hod<24; hod++)
+                for (int hod = 0; hod < 24; hod++)
                 {
-                    int h = hod + ((m * interv + interv / 2) * 24);
-                    Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
-                    if (vec.Z > 0)
+                    List<Point3d> pts = new List<Point3d>();
+                    for (int d = 0; d < 365; d++)
                     {
-                        Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
-                        pts.Add(solarpoint);
+                        int h = hod + 24 * d;
+                        Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
+                        vec = Vector3d.Multiply(vec_sp_len, vec);
+                        if (vec.Z > 0)
+                        {
+                            Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
+                            pts.Add(solarpoint);
+                        }
+                    }
+                    if (pts.Count > 0)
+                    {
+                        PolylineCurve crv = new PolylineCurve(pts);
+                        _sun_paths.Add(crv);
                     }
                 }
-                if (pts.Count > 0)
+
+                // draw solar paths; curves that connects each hour, but for the same month
+                int interv = 365 / 12;
+                for (int m = 0; m < 12; m++)
                 {
-                    PolylineCurve crv = new PolylineCurve(pts);
-                    _sun_paths.Add(crv);
+                    List<Point3d> pts = new List<Point3d>();
+                    for (int hod = 0; hod < 24; hod++)
+                    {
+                        int h = hod + ((m * interv + interv / 2) * 24);
+                        Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
+                        vec = Vector3d.Multiply(vec_sp_len, vec);
+                        if (vec.Z > 0)
+                        {
+                            Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
+                            pts.Add(solarpoint);
+                        }
+                    }
+                    if (pts.Count > 0)
+                    {
+                        PolylineCurve crv = new PolylineCurve(pts);
+                        _sun_paths.Add(crv);
+                    }
                 }
             }
-
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// OUTPUT
