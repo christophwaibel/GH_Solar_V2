@@ -31,6 +31,7 @@ namespace GHSolar
             pManager.AddBooleanParameter("Viewfactors", "ViewFac?", "Showing the viewfactors on the sky dome. I.e. how much is the sensor point obstructed?", GH_ParamAccess.item);
             pManager.AddBooleanParameter("CumSkyMatrix", "SkyMat?", "Showing the cumulative sky matrix. Requires a weather file.", GH_ParamAccess.item);
             pManager.AddBooleanParameter("SunPath", "SunPath?", "Showing the annual sun path diagram.", GH_ParamAccess.item);
+            pManager.AddBooleanParameter("SolarVec", "SolarVec?", "Showing hourly solar vector?", GH_ParamAccess.item);
             pManager.AddIntegerParameter("HOY", "hoy", "Hour of the year. if empty, no hourly vector will be drawn. Needs a list, but could contain only one hour.", GH_ParamAccess.list);
             pManager.AddNumberParameter("location", "location", "Location, 2 numbers. 0: Latitude, 1: Longitude.", GH_ParamAccess.list);
             pManager.AddNumberParameter("DNI", "DNI", "DNI. 8760 time series.", GH_ParamAccess.list);
@@ -39,7 +40,7 @@ namespace GHSolar
             pManager.AddMeshParameter("context", "context", "Context, i.e. adjacent obstacles", GH_ParamAccess.list);
             pManager.AddPointParameter("sp", "sp", "Sensor Point, around which a skydome will be constructed.", GH_ParamAccess.item);
 
-            int[] ilist = new int[7] { 1, 2, 3, 6, 7, 8, 9 };
+            int[] ilist = new int[8] { 1, 2, 3, 4, 7, 8, 9, 10 };
             foreach (int i in ilist)
             {
                 pManager[i].Optional = true;
@@ -85,23 +86,25 @@ namespace GHSolar
             bool draw_sunpath = true;
             if (!DA.GetData(3, ref draw_sunpath)) draw_sunpath = true;
 
+            bool draw_solarvec = true;
+            if (!DA.GetData(4, ref draw_solarvec)) draw_solarvec = true;
+
             List<int> hoy = new List<int>();
-            if (!DA.GetDataList(4, hoy)) return;
+            if (!DA.GetDataList(5, hoy)) return;
 
             List<double> loc = new List<double>();
-            if (!DA.GetDataList(5, loc)) return;
+            if (!DA.GetDataList(6, loc)) return;
             double longitude = loc[0];
             double latitude = loc[1];
 
             double domesize = 1.2;
-            if (!DA.GetData(8, ref domesize)) domesize = 1.2;
+            if (!DA.GetData(9, ref domesize)) domesize = 1.2;
 
             List<Mesh> context = new List<Mesh>();
-            DA.GetDataList(9, context);
-
+            DA.GetDataList(10, context);
 
             Point3d sp = new Point3d();
-            if (!DA.GetData(10, ref sp)) return;
+            if (!DA.GetData(11, ref sp)) return;
 
 
             //////////////////////////////////////////////////////////////////////////////////////////
@@ -202,7 +205,19 @@ namespace GHSolar
             }
             else if (drawcumskymatrix)
             {
+                // https://www.sciencedirect.com/science/article/pii/S0038092X04001161
+                // http://alexandria.tue.nl/openaccess/635611/p1153final.pdf
                 // Solarmodel.dll needs new function to compute cumulative sky view matrix (requires obstruction check from drawviewfactors
+                // 1. calc perez diffuse for each hour. use that value (hor, circum, dome) and assign it to each mesh face
+                // 2. DNI is computed directly onto SP
+                // 3. visualize colored dome for diff only.
+                // 4. add text to sensorpoint, stating annual irradiation (DNI plus diff)
+                //
+                // cumskymatrix seperate component!! coz it can be re-used for several sensor points
+                // matrix inversion as in robinson stone to compute irradiation on all sensor points with refl.?
+                //
+                // needs a separate component that uses cumskymatrix on a number of SPs and visualizes that analysis surface. 
+                //... or use this component, output the sensorpoints, give it to a surface and make surface evaluate with the points, and recolor that surface
             }
 
             if (drawviewfactors || drawcumskymatrix) meshlist.Add(mesh);
