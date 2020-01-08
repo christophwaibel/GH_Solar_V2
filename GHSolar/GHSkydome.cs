@@ -4,6 +4,7 @@ using Grasshopper.Kernel;
 using Rhino.Geometry;
 using SolarModel;
 using System.Drawing;
+using System.Threading.Tasks;
 
 /*
  * GHSkydome.cs
@@ -51,6 +52,7 @@ namespace GHSolar
             pManager.AddMeshParameter("mesh", "mesh", "mesh", GH_ParamAccess.list);
             pManager.AddLineParameter("vectors", "vectors", "Hourly solar vectors.", GH_ParamAccess.list);
             pManager.AddCurveParameter("sunpaths", "sunpaths", "sunpaths", GH_ParamAccess.list);
+            pManager.AddBrepParameter("sun geo", "sun geo", "sun geo", GH_ParamAccess.list);
         }
 
 
@@ -103,7 +105,7 @@ namespace GHSolar
 
 
             //////////////////////////////////////////////////////////////////////////////////////////
-            /// size of skydome -> get max distance to furthest point of the context, if any exists
+            /// size of skydome 
             Point3d anchor = sp;
             Point3d bb_furthest_point;    // max distance to furthest corner of context
             double bb_max_distance = double.MinValue;
@@ -143,6 +145,7 @@ namespace GHSolar
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// SKYDOME
+            /// View factors and/or Cumulative SkyMatrix
             SkyDome dome = new SkyDome(reclvl);
             Mesh mesh = new Mesh();
             List<Mesh> meshlist = new List<Mesh>();
@@ -150,27 +153,64 @@ namespace GHSolar
             {
                 Vector3d vec = new Vector3d(p[0], p[1], p[2]);
                 vec = Vector3d.Multiply(vec_sp_len, vec);
-                //mesh.Vertices.Add(p[0] + sp.X, p[1] + sp.Y, p[2] + sp.Z);
                 mesh.Vertices.Add(vec + sp);
             }
             foreach (int[] f in dome.Faces)
                 mesh.Faces.AddFace(f[0], f[1], f[2]);
             mesh.UnifyNormals();
 
-            // !!!!!!!!!!
             if (drawviewfactors)
             {
-                // using GHSolar, only compute obstructions for the skydome. W/o doing all the perez stuff.
-                // how?
-            }else if (drawcumskymatrix)
+                //int tasks = 1;
+                //if (this.mt) tasks = Environment.ProcessorCount;
+                int tasks = Environment.ProcessorCount;
+                ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
+                //ParallelOptions paropts_1cpu = new ParallelOptions { MaxDegreeOfParallelism = 1 };
+                
+                List<Vector3d> vec_sky_list = new List<Vector3d>();
+                List<int> vec_int = new List<int>();
+                for (int i=0; i<mesh.Vertices.Count; i++)
+                {
+                    Vector3d testvec = mesh.Vertices[i] - sp;
+                    if (testvec.Z >= 0.0)
+                    {
+                        vec_sky_list.Add(testvec);
+                        vec_int.Add(i);
+                    }
+                }
+                Color[] colors = new Color[mesh.Vertices.Count];
+                for(int i=0; i<mesh.Vertices.Count; i++)
+                {
+                    colors[i] = Color.FromArgb(100, 255, 255, 255);  //alpha not working
+                }
+                mesh.VertexColors.SetColors(colors);
+                Vector3d[] vec_sky = vec_sky_list.ToArray();
+                bool[] shadow = new bool[vec_sky_list.Count];
+                if (context.Count > 0) CShadow.CalcShadowMT(sp, new Vector3d(0, 0, 1), 0.001, vec_sky, context.ToArray(), ref shadow, paropts);
+
+                int j = 0;
+                foreach(int i in vec_int)
+                {
+                    Color c = new Color();
+                    if (shadow[j])
+                    {
+                        c = Color.FromArgb(100, 0, 0, 0);   //alpha not working
+                        mesh.VertexColors.SetColor(i, c);
+                    }
+                    j++;
+                }
+            }
+            else if (drawcumskymatrix)
             {
                 // Solarmodel.dll needs new function to compute cumulative sky view matrix (requires obstruction check from drawviewfactors
             }
-            meshlist.Add(mesh);
+
+            if (drawviewfactors || drawcumskymatrix) meshlist.Add(mesh);
 
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// Solar Vectors
+            List<Sphere> spheres = new List<Sphere>();
             double fontsize = vec_sp_len / 50.0;
             List<SunVector> sunvectors_list;
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
@@ -208,6 +248,9 @@ namespace GHSolar
                 }
                 count++;
                 Rhino.RhinoDoc.ActiveDoc.Objects.Delete(te, true);
+
+                Sphere sph = new Sphere(ln.From, vec_sp_len / 30.0);
+                spheres.Add(sph);
             }
 
 
@@ -267,6 +310,7 @@ namespace GHSolar
             DA.SetDataList(0, meshlist);        // this mesh needs to be colored according to view factor or cumulative sky matrix
             DA.SetDataList(1, _solar_vectors);
             DA.SetDataList(2, _sun_paths);
+            DA.SetDataList(3, spheres);
         }
 
 
@@ -293,6 +337,7 @@ namespace GHSolar
                 args.Display.DrawCurve(crv, col2, 1);
             }
         }
+
 
 
         protected override System.Drawing.Bitmap Icon
