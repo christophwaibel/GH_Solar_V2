@@ -114,7 +114,7 @@ namespace GHSolar
             double bb_max_distance = double.MinValue;
             if (context.Count > 0)
             {
-                
+
                 Mesh context_joined = new Mesh();
                 foreach (Mesh msh in context)
                     context_joined.Append(msh);
@@ -169,10 +169,10 @@ namespace GHSolar
                 int tasks = Environment.ProcessorCount;
                 ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
                 //ParallelOptions paropts_1cpu = new ParallelOptions { MaxDegreeOfParallelism = 1 };
-                
+
                 List<Vector3d> vec_sky_list = new List<Vector3d>();
                 List<int> vec_int = new List<int>();
-                for (int i=0; i<mesh.Vertices.Count; i++)
+                for (int i = 0; i < mesh.Vertices.Count; i++)
                 {
                     Vector3d testvec = mesh.Vertices[i] - sp;
                     if (testvec.Z >= 0.0)
@@ -182,7 +182,7 @@ namespace GHSolar
                     }
                 }
                 Color[] colors = new Color[mesh.Vertices.Count];
-                for(int i=0; i<mesh.Vertices.Count; i++)
+                for (int i = 0; i < mesh.Vertices.Count; i++)
                 {
                     colors[i] = Color.FromArgb(100, 255, 255, 255);  //alpha not working
                 }
@@ -192,7 +192,7 @@ namespace GHSolar
                 if (context.Count > 0) CShadow.CalcShadowMT(sp, new Vector3d(0, 0, 1), 0.001, vec_sky, context.ToArray(), ref shadow, paropts);
 
                 int j = 0;
-                foreach(int i in vec_int)
+                foreach (int i in vec_int)
                 {
                     Color c = new Color();
                     if (shadow[j])
@@ -230,42 +230,45 @@ namespace GHSolar
             List<SunVector> sunvectors_list;
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
             int count = 0;
-            foreach (int h in hoy)
+            if (draw_solarvec)
             {
-                Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
-                vec = Vector3d.Multiply(vec_sp_len, vec);
-                Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
-                Line ln = new Line(sp, solarpoint);
-                ln.Flip();
-                _solar_vectors.Add(ln);
-                if(sunvectors_list[h].udtCoordXYZ.z < 0) _night_time.Add(true);
-                else _night_time.Add(false);
-
-                int year_now = sunvectors_list[h].udtTime.iYear;
-                int month_now = sunvectors_list[h].udtTime.iMonth;
-                int day_now = sunvectors_list[h].udtTime.iDay;
-                double hour_now = sunvectors_list[h].udtTime.dHours;
-                string hour_now2 = Convert.ToString(hour_now);
-                if (hour_now < 10) hour_now2 = "0" + Convert.ToString(hour_now);
-                string strval = Convert.ToString(year_now) + "/ " + Convert.ToString(month_now) + "/ " + Convert.ToString(day_now) + "/ " + hour_now2 + ":00";
-                Plane pl = new Plane(ln.From, new Vector3d(-1, 0, 0));
-                //Plane pl = new Plane(ln.From, vec);
-                var te = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(strval, pl, fontsize, "Baskerville", false, false);
-                Rhino.DocObjects.TextObject txt = Rhino.RhinoDoc.ActiveDoc.Objects.Find(te) as Rhino.DocObjects.TextObject;
-                _txt.Add(new List<Curve>());
-                if (txt != null)
+                foreach (int h in hoy)
                 {
-                    var tt = txt.Geometry as Rhino.Geometry.TextEntity;
-                    Curve[] A = tt.Explode();
+                    Vector3d vec = new Vector3d(sunvectors_list[h].udtCoordXYZ.x, sunvectors_list[h].udtCoordXYZ.y, sunvectors_list[h].udtCoordXYZ.z);
+                    vec = Vector3d.Multiply(vec_sp_len, vec);
+                    Point3d solarpoint = new Point3d(Point3d.Add(sp, vec));
+                    Line ln = new Line(sp, solarpoint);
+                    ln.Flip();
+                    _solar_vectors.Add(ln);
+                    if (sunvectors_list[h].udtCoordXYZ.z < 0) _night_time.Add(true);
+                    else _night_time.Add(false);
 
-                    foreach (Curve crv in A)
-                        _txt[count].Add(crv);
+                    int year_now = sunvectors_list[h].udtTime.iYear;
+                    int month_now = sunvectors_list[h].udtTime.iMonth;
+                    int day_now = sunvectors_list[h].udtTime.iDay;
+                    double hour_now = sunvectors_list[h].udtTime.dHours;
+                    string hour_now2 = Convert.ToString(hour_now);
+                    if (hour_now < 10) hour_now2 = "0" + Convert.ToString(hour_now);
+                    string strval = Convert.ToString(year_now) + "/ " + Convert.ToString(month_now) + "/ " + Convert.ToString(day_now) + "/ " + hour_now2 + ":00";
+                    Plane pl = new Plane(ln.From, new Vector3d(-1, 0, 0));
+                    //Plane pl = new Plane(ln.From, vec);
+                    var te = Rhino.RhinoDoc.ActiveDoc.Objects.AddText(strval, pl, fontsize, "Baskerville", false, false);
+                    Rhino.DocObjects.TextObject txt = Rhino.RhinoDoc.ActiveDoc.Objects.Find(te) as Rhino.DocObjects.TextObject;
+                    _txt.Add(new List<Curve>());
+                    if (txt != null)
+                    {
+                        var tt = txt.Geometry as Rhino.Geometry.TextEntity;
+                        Curve[] A = tt.Explode();
+
+                        foreach (Curve crv in A)
+                            _txt[count].Add(crv);
+                    }
+                    count++;
+                    Rhino.RhinoDoc.ActiveDoc.Objects.Delete(te, true);
+
+                    Sphere sph = new Sphere(ln.From, vec_sp_len / 30.0);
+                    spheres.Add(sph);
                 }
-                count++;
-                Rhino.RhinoDoc.ActiveDoc.Objects.Delete(te, true);
-
-                Sphere sph = new Sphere(ln.From, vec_sp_len / 30.0);
-                spheres.Add(sph);
             }
 
 
@@ -320,6 +323,7 @@ namespace GHSolar
                 }
             }
 
+
             //////////////////////////////////////////////////////////////////////////////////////////
             /// OUTPUT
             DA.SetDataList(0, meshlist);        // this mesh needs to be colored according to view factor or cumulative sky matrix
@@ -333,7 +337,7 @@ namespace GHSolar
         {
             Color col1 = Color.FromArgb(255, 223, 0);
             Color col2 = Color.FromArgb(120, 120, 120);
-            
+
 
             for (int i = 0; i < _solar_vectors.Count; i++)
             {
@@ -341,7 +345,7 @@ namespace GHSolar
                 if (_night_time[i]) c = col2;
                 args.Display.DrawLine(_solar_vectors[i], c, 2);
                 args.Display.DrawArrow(_solar_vectors[i], c);
-                foreach(Curve crv in _txt[i])
+                foreach (Curve crv in _txt[i])
                 {
                     args.Display.DrawCurve(crv, c, 1);
                 }
