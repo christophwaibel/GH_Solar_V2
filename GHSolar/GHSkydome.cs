@@ -27,17 +27,29 @@ namespace GHSolar
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
+            // 0
             pManager.AddIntegerParameter("recursion level", "Rec.", "Recursion level. 0: 10 vertices, 1: 29 vert., 2: 97 vert., 3: 353 vert., ...", GH_ParamAccess.item);
+            // 1
             pManager.AddBooleanParameter("Viewfactors", "ViewFac?", "Showing the viewfactors on the sky dome. I.e. how much is the sensor point obstructed?", GH_ParamAccess.item);
+            // 2
             pManager.AddBooleanParameter("CumSkyMatrix", "SkyMat?", "Showing the cumulative sky matrix. Requires a weather file.", GH_ParamAccess.item);
+            // 3
             pManager.AddBooleanParameter("SunPath", "SunPath?", "Showing the annual sun path diagram.", GH_ParamAccess.item);
+            // 4
             pManager.AddBooleanParameter("SolarVec", "SolarVec?", "Showing hourly solar vector?", GH_ParamAccess.item);
+            // 5
             pManager.AddIntegerParameter("HOY", "hoy", "Hour of the year. if empty, no hourly vector will be drawn. Needs a list, but could contain only one hour.", GH_ParamAccess.list);
+            // 6
             pManager.AddNumberParameter("location", "location", "Location, 2 numbers. 0: Latitude, 1: Longitude.", GH_ParamAccess.list);
+            // 7
             pManager.AddNumberParameter("DNI", "DNI", "DNI. 8760 time series.", GH_ParamAccess.list);
+            // 8
             pManager.AddNumberParameter("DHI", "DHI", "DHI. 8760 time series.", GH_ParamAccess.list);
+            // 9
             pManager.AddNumberParameter("size", "size", "Size of the skydome. By default it is the bounding box of all the context.", GH_ParamAccess.item);
+            // 10
             pManager.AddMeshParameter("context", "context", "Context, i.e. adjacent obstacles", GH_ParamAccess.list);
+            // 11
             pManager.AddPointParameter("sp", "sp", "Sensor Point, around which a skydome will be constructed.", GH_ParamAccess.item);
 
             int[] ilist = new int[8] { 1, 2, 3, 4, 7, 8, 9, 10 };
@@ -71,6 +83,12 @@ namespace GHSolar
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             int year = 2017;
+            //int tasks = 1;
+            //if (this.mt) tasks = Environment.ProcessorCount;
+            int tasks = Environment.ProcessorCount;
+            ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
+            //ParallelOptions paropts_1cpu = new ParallelOptions { MaxDegreeOfParallelism = 1 };
+            
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// INPUTS
@@ -96,6 +114,11 @@ namespace GHSolar
             if (!DA.GetDataList(6, loc)) return;
             double longitude = loc[0];
             double latitude = loc[1];
+
+            List<double> dni = new List<double>();
+            List<double> dhi = new List<double>();
+            DA.GetDataList(7, dni);
+            DA.GetDataList(8, dhi);
 
             double domesize = 1.2;
             if (!DA.GetData(9, ref domesize)) domesize = 1.2;
@@ -164,12 +187,6 @@ namespace GHSolar
 
             if (drawviewfactors)
             {
-                //int tasks = 1;
-                //if (this.mt) tasks = Environment.ProcessorCount;
-                int tasks = Environment.ProcessorCount;
-                ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
-                //ParallelOptions paropts_1cpu = new ParallelOptions { MaxDegreeOfParallelism = 1 };
-
                 List<Vector3d> vec_sky_list = new List<Vector3d>();
                 List<int> vec_int = new List<int>();
                 for (int i = 0; i < mesh.Vertices.Count; i++)
@@ -218,6 +235,45 @@ namespace GHSolar
                 //
                 // needs a separate component that uses cumskymatrix on a number of SPs and visualizes that analysis surface. 
                 //... or use this component, output the sensorpoints, give it to a surface and make surface evaluate with the points, and recolor that surface
+                
+                if(dni.Count==8760 && dhi.Count==8760)     // only continue, if solar irradiance time series are provided
+                {
+                    //Rhino.RhinoApp.WriteLine("Leggo!");
+                    //Context.cWeatherdata weather;
+                    //weather.DHI = dhi;
+                    //weather.DNI = dni;
+                    //weather.Snow = new List<double>();
+                    //double[] beta = new double[1] { beta_in };
+                    //double[] psi = new double[1] { psi_in };
+                    //Sensorpoints.p3d[] coord = new Sensorpoints.p3d[1];   //dummy variables. will not be used in this simplified simulation
+                    //coord[0].X = 0;
+                    //coord[0].Y = 0;
+                    //coord[0].Z = 0;
+                    //Sensorpoints.v3d[] normal = new Sensorpoints.v3d[1];   //dummy variables. will not be used in this simplified simulation
+                    //normal[0].X = 0;
+                    //normal[0].Y = 1;
+                    //normal[0].Z = 0;
+
+
+                    //double[] albedo = new double[8760];
+                    //for (int t = 0; t < 8760; t++)
+                    //{
+                    //    albedo[t] = albedo1;
+                    //}
+
+                    //Console.WriteLine("Calculating irradiation...");
+                    //Sensorpoints p = new Sensorpoints(beta, psi, coord, normal, reclvl);
+                    //p.SetSimpleSkyMT(beta, paropts);
+                    //p.SetSimpleGroundReflectionMT(beta, albedo, weather, sunvectors.ToArray(), paropts);
+                    //p.CalcIrradiationMT(weather, sunvectors.ToArray(), paropts);
+                    
+                // hold on... i need a new function in SolarModel for CumSkyMatrix
+
+                }
+                else
+                {
+                    Rhino.RhinoApp.WriteLine("No data for Direct Normal Irradiance and Diffuse Horizontal Irradiance provided... Please provide 8760 time series for each.");
+                }
             }
 
             if (drawviewfactors || drawcumskymatrix) meshlist.Add(mesh);

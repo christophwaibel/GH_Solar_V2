@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 
 
@@ -31,7 +32,11 @@ namespace SolarModel
         /// <summary>
         /// Surface area of each face. Most of them are identical, but since some had to be split when turning the sphere to a hemisphere, they are not all the same
         /// </summary>
-        public List<double> FaceAreas { get; private set; }    
+        public List<double> FaceAreas { get; private set; }
+        /// <summary>
+        /// Cumulative Irradiation per Dome Face, in kWh/m2. Generated with function This.GenCumulativeSky
+        /// </summary>
+        public List<double> CumulativeIrradiation { get; private set; }
         /// <summary>
         /// All vertex-vectors (points) of the complete sphere.
         /// </summary>
@@ -65,14 +70,18 @@ namespace SolarModel
         /// 8760 list (for each hour of the year) of booleans, indicating if the sun vector is obstructed or not (1=obstructed).
         /// </summary>
         public double[] ShdwBeam { get; private set; }
-
+        /// <summary>
+        /// Recursion level
+        /// </summary>
+        public int resolution { get; private set; }
 
         /// <summary>
         /// Creates a sky dome (hemisphere) as a halfed icosahedron. 
         /// </summary>
         /// <param name="resolution">Resolution level of the sky dome. 0: 12 faces, 10 vertices; 1: 44 faces, 29 vertices; 2: 168 faces, 97 vertices; 3: 656 faces, 353 vertices. 1 or 2 recommended.</param>
-        public SkyDome(int resolution)
+        public SkyDome(int _resolution)
         {
+            resolution = _resolution;
             ico = new IcoSphere(resolution);
             Faces = ico.getFaces();
             VertexVectorsSphere = ico.getVertexCoordinates();
@@ -91,6 +100,8 @@ namespace SolarModel
 
             VertexShadowSphere = new double[VertexVectorsSphere.Count];
             //create a list of size of the facaes of the dome. use this list for shadow factors...
+
+            CumulativeIrradiation = new List<double>();
         }
 
 
@@ -100,6 +111,7 @@ namespace SolarModel
         /// <param name="copy"></param>
         public SkyDome(SkyDome copy)
         {
+            resolution = resolution;
             ico = copy.ico;
             Faces = copy.Faces;
             FaceAreas = copy.FaceAreas;
@@ -112,7 +124,46 @@ namespace SolarModel
             HorizonSegments = copy.HorizonSegments;
             VertexShadowSphere = new double[VertexVectorsSphere.Count];
             //ShdwHorizon, ShdwDome, ShdwSunVector must be re-evaluated for new sensor point
+            CumulativeIrradiation = copy.CumulativeIrradiation;
         }
+
+
+
+        //public void GenCumulativeSky(double [] DNI, double [] DHI, double[] albedo, Context.cWeatherdata weather, SunVector[] sunvectors)
+        //{
+        //    // https://www.radiance-online.org/community/workshops/2004-fribourg/presentations/Robinson_talk.pdf
+        //    // http://alexandria.tue.nl/openaccess/635611/p1153final.pdf
+        //    // https://www.sciencedirect.com/science/article/pii/S0038092X04001161#FD14
+        //    //
+        //    // Perez 1993, eqt. (1) - luminance / radiance at sky element
+        //    // https://www.sciencedirect.com/science/article/pii/0038092X9390017I          
+
+        //    int tasks = 1;
+        //    ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
+
+        //    double[] beta = new double[1] { 0.0 };
+        //    double[] psi = new double[1] { 0.0 };
+        //    Sensorpoints.p3d[] coord = new Sensorpoints.p3d[1];   //dummy variables. will not be used in this simplified simulation
+        //    coord[0].X = 0;
+        //    coord[0].Y = 0;
+        //    coord[0].Z = 0;
+        //    Sensorpoints.v3d[] normal = new Sensorpoints.v3d[1];   //dummy variables. will not be used in this simplified simulation
+        //    normal[0].X = 0;
+        //    normal[0].Y = 1;
+        //    normal[0].Z = 0;
+
+        //    Console.WriteLine("Calculating irradiation...");
+        //    Sensorpoints p = new Sensorpoints(beta, psi, coord, normal, this.resolution);
+        //    p.SetSimpleSkyMT(beta, paropts);
+        //    p.SetSimpleGroundReflectionMT(beta, albedo, weather, sunvectors, paropts);
+        //    p.CalcIrradiationMT(weather, sunvectors, paropts);
+
+        //    // only cast p.Idiff onto the faces
+        //    for (int t=0; t<p.Idiff.Length; t++)
+        //    {
+
+        //    }
+        //}
 
 
         /// <summary>
