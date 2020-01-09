@@ -1,3 +1,4 @@
 
 *.ide
 *.ide-shm
+*.ide-wal
