@@ -40,7 +40,7 @@ namespace GHSolar
             // 5
             pManager.AddIntegerParameter("HOY", "hoy", "Hour of the year. if empty, no hourly vector will be drawn. Needs a list, but could contain only one hour.", GH_ParamAccess.list);
             // 6
-            pManager.AddNumberParameter("location", "location", "Location, 2 numbers. 0: Latitude, 1: Longitude.", GH_ParamAccess.list);
+            pManager.AddNumberParameter("location", "location", "Location, 2 numbers. 0: Longitude, 1: Latitude.", GH_ParamAccess.list);
             // 7
             pManager.AddNumberParameter("DNI", "DNI", "DNI. 8760 time series.", GH_ParamAccess.list);
             // 8
