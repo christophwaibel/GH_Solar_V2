@@ -1,9 +1,0 @@
-c:\users\wach\documents\visual studio 2012\Projects\GHSolar\GHSolar\bin\GHSolar.dll
-c:\users\wach\documents\visual studio 2012\Projects\GHSolar\GHSolar\bin\GHSolar.pdb
-c:\users\wach\documents\visual studio 2012\Projects\GHSolar\GHSolar\obj\Debug32\GHSolar.csprojResolveAssemblyReference.cache
-c:\users\wach\documents\visual studio 2012\Projects\GHSolar\GHSolar\obj\Debug32\GHSolar.dll
-c:\users\wach\documents\visual studio 2012\Projects\GHSolar\GHSolar\obj\Debug32\GHSolar.pdb
-C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\GHSolar\bin\SolarModel.dll
-C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\GHSolar\bin\SolarModel.pdb
-C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\GHSolar\obj\Debug32\GHSolar.Properties.Resources.resources
-C:\Users\wach\Documents\Visual Studio 2012\Projects\GHSolar\GHSolar\obj\Debug32\GHSolar.csproj.GenerateResource.Cache
