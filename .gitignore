@@ -2,3 +2,6 @@
 *.ide
 *.ide-shm
 *.ide-wal
+
+GHSolar/bin
+GHSolar/obj
