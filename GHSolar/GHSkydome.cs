@@ -66,6 +66,7 @@ namespace GHSolar
             pManager.AddLineParameter("vectors", "vectors", "Hourly solar vectors.", GH_ParamAccess.list);
             pManager.AddCurveParameter("sunpaths", "sunpaths", "sunpaths", GH_ParamAccess.list);
             pManager.AddBrepParameter("sun geo", "sun geo", "sun geo", GH_ParamAccess.list);
+            pManager.AddLineParameter("sunsetrise", "sunsetrise", "sunsetrise", GH_ParamAccess.list);
         }
 
 
@@ -331,9 +332,34 @@ namespace GHSolar
             //////////////////////////////////////////////////////////////////////////////////////////
             /// SUN PATH
             /// !!! wierd sun paths at extreme longitudes -> time shift... +/- UCT
-            // draw solar paths: curves that connect each month, but for the same hour
+            List<Line> ss_sr_lines = new List<Line>();
             if (draw_sunpath)
             {
+                // draw sunrise to sunset circles
+                for (int d=0; d < 365; d++)
+                {
+                    double[] sunrise_sunset = SunVector.GetSunriseSunsetAzimuth(latitude, d);
+                    int h = 12 + 24 * d;
+                    double dAzimuth = sunvectors_list[h].udtCoordinates.dAzimuth;
+                    double sunrise_angle = dAzimuth + sunrise_sunset[2];
+                    double sunset_angle = dAzimuth - sunrise_sunset[2];
+                    Vector3d vec = new Vector3d(0, -vec_sp_len, 0);
+                    Vector3d negvec = new Vector3d(0, -vec_sp_len, 0);
+                    vec.Rotate(sunrise_angle * Math.PI / 180.0, new Vector3d(0,0,1));
+                    negvec.Rotate(sunset_angle * Math.PI / 180.0, new Vector3d(0, 0, 1));
+                    Point3d sunrisePt = new Point3d(Point3d.Add(sp, vec));
+                    Point3d sunsetPt = new Point3d(Point3d.Add(sp, negvec));
+                    Line ln = new Line(sunrisePt, sunsetPt);
+                    ss_sr_lines.Add(ln);
+                }
+                // alternatively, plot a line between the last sunshine hour of a day and the first night hour,
+                // respectively, the last morning night hour and the first morning sunshine hour, 
+                // and get the intersection point on the ground plane over the SP. that would be the lame solution
+
+
+
+
+                // draw solar paths: curves that connect each month, but for the same hour
                 for (int hod = 0; hod < 24; hod++)
                 {
                     List<Point3d> pts = new List<Point3d>();
@@ -386,6 +412,7 @@ namespace GHSolar
             DA.SetDataList(1, _solar_vectors);
             DA.SetDataList(2, _sun_paths);
             DA.SetDataList(3, spheres);
+            DA.SetDataList(4, ss_sr_lines);
         }
 
 

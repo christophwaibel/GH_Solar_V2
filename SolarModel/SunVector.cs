@@ -60,8 +60,8 @@ namespace SolarModel
             udtLocation.dLatitude = _latitude;
             udtLocation.dLongitude = _longitude;
 
-            udtCoordinates = sunpos();
-            udtCoordXYZ = SunposXYZ();
+            udtCoordinates = CalcSunPos(udtTime, udtLocation);
+            udtCoordXYZ = CalcSunPosXYZ(udtCoordinates);
 
             if (udtCoordinates.dZenithAngle <= 90)
                 Sunshine = true;
@@ -126,7 +126,7 @@ namespace SolarModel
         /// http://www.sciencedirect.com/science/article/pii/S0038092X00001560
         /// </summary>
         /// <returns></returns>
-        private cSunCoordinates sunpos()
+        private cSunCoordinates CalcSunPos(Context.cTime udtTime, Context.cLocation udtLocation)
         {
             //Main variables
             double dElapsedJulianDays;
@@ -220,7 +220,7 @@ namespace SolarModel
         /// translate Spherical Coordinate System (Azimuth and Zenith) to Cartesian (XYZ)
         /// </summary>
         /// <returns></returns>
-        private cSunXYZ SunposXYZ()
+        private cSunXYZ CalcSunPosXYZ(cSunCoordinates udtCoordinates)
         {
             //http://ch.mathworks.com/help/matlab/ref/sph2cart.html?requestedDomain=www.mathworks.com
             double r = 1;
@@ -303,7 +303,7 @@ namespace SolarModel
                         SunVector sunvec = new SunVector(year, m, d, i, 0, 0, longitude, latitude);
                         sunvec.udtCoordinates.dAzimuth = solarAzimuth[HOY];
                         sunvec.udtCoordinates.dZenithAngle = 90.0 - solarAltitude[HOY];
-                        sunvec.udtCoordXYZ = sunvec.SunposXYZ();
+                        sunvec.udtCoordXYZ = sunvec.CalcSunPosXYZ(sunvec.udtCoordinates);
                         if (sunvec.udtCoordinates.dZenithAngle <= 90)
                             sunvec.Sunshine = true;
                         else
@@ -313,6 +313,56 @@ namespace SolarModel
                     }
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Calculates the hour angle of sunrise or sunset
+        /// https://www.sciencedirect.com/topics/engineering/hour-angle
+        /// Solar Energy Engineering (Second Edition) - Processes and Systems
+        /// CHAPTER 2 Environmental Characteristics
+        /// also:
+        /// https://www.itacanet.org/the-sun-as-a-source-of-energy/part-3-calculating-solar-angles/
+        /// </summary>
+        /// <param name="latitude">Latitude of the observer on the Earth</param>
+        /// <param name="longitude">Longitude west (west negative, east positive)</param>
+        /// <param name="day">Day of the year, [1, 365]</param>
+        /// <param name="sunrise">Optional. If true (default), sunrise angle is calculated. Otherwise sunset.</param>
+        /// <returns></returns>
+        public static double [] GetSunriseSunsetAzimuth(double latitude, int _day, bool sunrise = true)
+        {
+            double day = Convert.ToDouble(_day);
+            double toRad = Math.PI / 180.0;
+            double toDeg = 180.0 / Math.PI;
+
+            // latitude in rad
+            double L = latitude * toRad; //input in degrees
+
+            // declination angle
+            double delta = 23.45 * (Math.Sin((360.0 * (284.0 + day) / 365.0) * toRad));
+            delta *= toRad;
+
+            // hour angle
+            double h = (-1 * Math.Tan(L)) * Math.Tan(delta);
+            h = Math.Acos(h);
+            if (sunrise) h = -h;
+
+            // altitude
+            double alpha = Math.Sin(L) * Math.Sin(delta) + Math.Cos(L) * Math.Cos(delta) * Math.Cos(h);
+            alpha = Math.Asin(alpha);
+            
+            // azimuth
+            double z = Math.Cos(delta) * (Math.Sin(h) / Math.Cos(alpha));
+            z = Math.Asin(z);
+
+            // 
+            double daylength = 2.0 * (h * toDeg) / 15.0;
+            double hour_sunset = 1.0 / 15.0 * (Math.Acos(-1 * Math.Tan(L) * Math.Tan(delta)) * toDeg);
+            double hour_sunrise = 12.0 - hour_sunset;
+
+            return new double[6] { z * toDeg, delta * toDeg, h * toDeg, alpha * toDeg, daylength , hour_sunrise};
+
+            
         }
     }
 }
