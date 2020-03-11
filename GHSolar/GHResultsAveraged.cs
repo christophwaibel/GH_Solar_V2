@@ -131,6 +131,10 @@ namespace GHSolar
 
         }
 
+
+        public override GH_Exposure Exposure => GH_Exposure.tertiary;
+
+
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
