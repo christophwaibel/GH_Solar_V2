@@ -401,19 +401,22 @@ namespace GHSolar
         {
             base.DrawViewportMeshes(args);
 
-            // could be a global variable, if needed to be changed by some smiulation
-            //Material material = new Material();
-            //material.Transparency = 0.2;
-            //_mat = new Rhino.Display.DisplayMaterial(material);
+            //could be a global variable, if needed to be changed by some smiulation
+            Material material = new Material();
+            material.Transparency = 0.2;
+            Color c = new Color();
+            c = Color.FromArgb(100, 0, 0, 0);
+            material.DiffuseColor = c;
+            _mat = new Rhino.Display.DisplayMaterial(material);
 
-            //if (_mat != null)
-            //{
-            //    foreach (Mesh msh in _colouredMesh)
-            //    {
-            //        args.Display.DrawMeshShaded(msh, _mat);
-            //        args.Display.DrawMeshFalseColors(msh);
-            //    }
-            //}
+            if (_mat != null)
+            {
+                foreach (Mesh msh in _colouredMesh)
+                {
+                    args.Display.DrawMeshShaded(msh, _mat);
+                    args.Display.DrawMeshFalseColors(msh);
+                }
+            }
         }
 
 
