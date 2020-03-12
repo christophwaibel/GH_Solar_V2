@@ -5,6 +5,7 @@ using Rhino.Geometry;
 using SolarModel;
 using System.Drawing;
 using System.Threading.Tasks;
+using Rhino.DocObjects;
 
 /*
  * GHSkydome.cs
@@ -73,12 +74,17 @@ namespace GHSolar
         List<PolylineCurve> _sun_paths = new List<PolylineCurve>();
         List<bool> _night_time = new List<bool>();
         List<List<Curve>> _txt = new List<List<Curve>>();
+        Rhino.Display.DisplayMaterial _mat;
+        //Mesh _skydomeViewFactors = new Mesh();
+        List<Mesh> _colouredMesh = new List<Mesh>();
+
         protected override void BeforeSolveInstance()
         {
             _solar_vectors.Clear();
             _night_time.Clear();
             _sun_paths.Clear();
             _txt.Clear();
+            _colouredMesh.Clear();
         }
         protected override void SolveInstance(IGH_DataAccess DA)
         {
@@ -174,7 +180,7 @@ namespace GHSolar
             /// View factors and/or Cumulative SkyMatrix
             SkyDome dome = new SkyDome(reclvl);
             Mesh mesh = new Mesh();
-            List<Mesh> meshlist = new List<Mesh>();
+            //List<Mesh> meshlist = new List<Mesh>();
             foreach (double[] p in dome.VertexVectorsSphere)
             {
                 Vector3d vec = new Vector3d(p[0], p[1], p[2]);
@@ -214,6 +220,7 @@ namespace GHSolar
                     Color c = new Color();
                     if (shadow[j])
                     {
+                        // Custom material, DisplayMaterial (rhinostyle) rendering material. and make in override DrawViewportMesh
                         c = Color.FromArgb(100, 0, 0, 0);   //alpha not working
                         mesh.VertexColors.SetColor(i, c);
                     }
@@ -276,8 +283,10 @@ namespace GHSolar
                 }
             }
 
-            if (drawviewfactors || drawcumskymatrix) meshlist.Add(mesh);
-
+            if (drawviewfactors || drawcumskymatrix)
+            {
+                _colouredMesh.Add(mesh);
+            }
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// Solar Vectors
@@ -382,10 +391,29 @@ namespace GHSolar
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// OUTPUT
-            DA.SetDataList(0, meshlist);        // this mesh needs to be colored according to view factor or cumulative sky matrix
+            DA.SetDataList(0, _colouredMesh);        // this mesh needs to be colored according to view factor or cumulative sky matrix
             DA.SetDataList(1, _solar_vectors);
             DA.SetDataList(2, _sun_paths);
             DA.SetDataList(3, spheres);
+        }
+
+        public override void DrawViewportMeshes(IGH_PreviewArgs args)
+        {
+            base.DrawViewportMeshes(args);
+
+            // could be a global variable, if needed to be changed by some smiulation
+            //Material material = new Material();
+            //material.Transparency = 0.2;
+            //_mat = new Rhino.Display.DisplayMaterial(material);
+
+            //if (_mat != null)
+            //{
+            //    foreach (Mesh msh in _colouredMesh)
+            //    {
+            //        args.Display.DrawMeshShaded(msh, _mat);
+            //        args.Display.DrawMeshFalseColors(msh);
+            //    }
+            //}
         }
 
 
@@ -413,6 +441,8 @@ namespace GHSolar
             }
         }
 
+
+        public override GH_Exposure Exposure => GH_Exposure.tertiary;
 
 
         protected override System.Drawing.Bitmap Icon

@@ -227,6 +227,9 @@ namespace GHSolar
         }
 
 
+        public override GH_Exposure Exposure => GH_Exposure.secondary;
+
+
         protected override System.Drawing.Bitmap Icon
         {
             get
