@@ -403,10 +403,11 @@ namespace GHSolar
 
             //could be a global variable, if needed to be changed by some smiulation
             Material material = new Material();
-            material.Transparency = 0.2;
+            material.Transparency = 0.5;
             Color c = new Color();
             c = Color.FromArgb(100, 0, 0, 0);
-            material.DiffuseColor = c;
+            material.DiffuseColor = Color.Red;
+            material.TransparentColor = Color.Blue;
             _mat = new Rhino.Display.DisplayMaterial(material);
 
             if (_mat != null)
