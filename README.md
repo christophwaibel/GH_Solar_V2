@@ -15,18 +15,3 @@ Version 2 with better physics than [version 1](https://github.com/christophwaibe
 How to install:
 - Check the releases [here](https://github.com/christophwaibel/GH_Solar_V2/releases) and put the SolarModel.dll and GHSolar.gha into your Rhino Grasshopper components folder.
 - For the current built navigate [here](GHSolar/bin) and get the SolarModel.dll and GHSolar.gha
-
-To Do:
-- [ ] specular inter-reflections refraction coefficients
-- [ ] Input points and normals, instead of analysis surface mesh... more control on where to place sensor points
-- [ ] precise calculation of equinox & solstice dates (SunVector.cs, int [] GetEquinoxSolstice(...))
-- [ ] replace rhino libraries for geometry operations with open source libraries (https://doc.cgal.org/ ?). solar.dll should have no rhino dependency. ghsolar.gha should be the rhino wrapper
-
-
-Bugs:
-- [ ] Memory build up over time... get's slower over time... 
-- [ ] mesh surfaces far away from the origin become crumpled when used as analysis surface 
-- [ ] values underestimated for geometries close to origin (0,0,0)
-- [ ] Out of Memory in Rhino... write results into .txt file, reather than into Rhino directly
-- [ ] rhino geometry intersection class not thread safe
-- [ ] only works properly in meter as workspace unit in Rhino
