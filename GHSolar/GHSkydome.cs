@@ -66,17 +66,20 @@ namespace GHSolar
             pManager.AddMeshParameter("mesh", "mesh", "mesh", GH_ParamAccess.list);
             pManager.AddLineParameter("vectors", "vectors", "Hourly solar vectors.", GH_ParamAccess.list);
             pManager.AddCurveParameter("sunpaths", "sunpaths", "sunpaths", GH_ParamAccess.list);
-            pManager.AddBrepParameter("sun geo", "sun geo", "sun geo", GH_ParamAccess.list);
+            pManager.AddBrepParameter("sun geo", "sun geo", "sun geo", GH_ParamAccess.item);
         }
 
 
         private readonly List<Line> _solar_vectors = new List<Line>();
-        List<PolylineCurve> _sun_paths = new List<PolylineCurve>();
-        List<bool> _night_time = new List<bool>();
-        List<List<Curve>> _txt = new List<List<Curve>>();
-        Rhino.Display.DisplayMaterial _mat;
-        //Mesh _skydomeViewFactors = new Mesh();
-        List<Mesh> _colouredMesh = new List<Mesh>();
+        private List<PolylineCurve> _sun_paths = new List<PolylineCurve>();
+        private List<bool> _night_time = new List<bool>();
+        private List<List<Curve>> _txt = new List<List<Curve>>();
+        private Rhino.Display.DisplayMaterial _mat;
+        //private Mesh _skydomeViewFactors = new Mesh();
+        //private List<Mesh> _colouredMesh = new List<Mesh>();
+        private Mesh _viewFactors;
+        private List<int> _vectorsObstructed = new List<int>();
+
 
         protected override void BeforeSolveInstance()
         {
@@ -84,7 +87,9 @@ namespace GHSolar
             _night_time.Clear();
             _sun_paths.Clear();
             _txt.Clear();
-            _colouredMesh.Clear();
+            //_colouredMesh.Clear();
+            _vectorsObstructed.Clear();
+            _viewFactors = new Mesh();
         }
         protected override void SolveInstance(IGH_DataAccess DA)
         {
@@ -94,7 +99,7 @@ namespace GHSolar
             int tasks = Environment.ProcessorCount;
             ParallelOptions paropts = new ParallelOptions { MaxDegreeOfParallelism = tasks };
             //ParallelOptions paropts_1cpu = new ParallelOptions { MaxDegreeOfParallelism = 1 };
-            
+
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// INPUTS
@@ -179,37 +184,40 @@ namespace GHSolar
             /// SKYDOME
             /// View factors and/or Cumulative SkyMatrix
             SkyDome dome = new SkyDome(reclvl);
-            Mesh mesh = new Mesh();
-            //List<Mesh> meshlist = new List<Mesh>();
+
+            // create 2 meshes, one with obstructed views (make it black transparent), and one unobstructed (regular GH_Mesh color)
+            Mesh meshObstructed = new Mesh();
+
             foreach (double[] p in dome.VertexVectorsSphere)
             {
                 Vector3d vec = new Vector3d(p[0], p[1], p[2]);
                 vec = Vector3d.Multiply(vec_sp_len, vec);
-                mesh.Vertices.Add(vec + sp);
+                meshObstructed.Vertices.Add(vec + sp);
             }
             foreach (int[] f in dome.Faces)
-                mesh.Faces.AddFace(f[0], f[1], f[2]);
-            mesh.UnifyNormals();
+                meshObstructed.Faces.AddFace(f[0], f[1], f[2]);
+            meshObstructed.UnifyNormals();
 
             if (drawviewfactors)
             {
+
                 List<Vector3d> vec_sky_list = new List<Vector3d>();
                 List<int> vec_int = new List<int>();
-                for (int i = 0; i < mesh.Vertices.Count; i++)
+                for (int i = 0; i < meshObstructed.Vertices.Count; i++)
                 {
-                    Vector3d testvec = mesh.Vertices[i] - sp;
+                    Vector3d testvec = meshObstructed.Vertices[i] - sp;
                     if (testvec.Z >= 0.0)
                     {
                         vec_sky_list.Add(testvec);
                         vec_int.Add(i);
                     }
                 }
-                Color[] colors = new Color[mesh.Vertices.Count];
-                for (int i = 0; i < mesh.Vertices.Count; i++)
+                Color[] colors = new Color[meshObstructed.Vertices.Count];
+                for (int i = 0; i < meshObstructed.Vertices.Count; i++)
                 {
                     colors[i] = Color.FromArgb(100, 255, 255, 255);  //alpha not working
                 }
-                mesh.VertexColors.SetColors(colors);
+                meshObstructed.VertexColors.SetColors(colors);
                 Vector3d[] vec_sky = vec_sky_list.ToArray();
                 bool[] shadow = new bool[vec_sky_list.Count];
                 if (context.Count > 0) CShadow.CalcShadowMT(sp, new Vector3d(0, 0, 1), 0.001, vec_sky, context.ToArray(), ref shadow, paropts);
@@ -222,10 +230,12 @@ namespace GHSolar
                     {
                         // Custom material, DisplayMaterial (rhinostyle) rendering material. and make in override DrawViewportMesh
                         c = Color.FromArgb(100, 0, 0, 0);   //alpha not working
-                        mesh.VertexColors.SetColor(i, c);
+                        meshObstructed.VertexColors.SetColor(i, c);
+                        _vectorsObstructed.Add(i);
                     }
                     j++;
                 }
+
             }
             else if (drawcumskymatrix)
             {
@@ -242,8 +252,8 @@ namespace GHSolar
                 //
                 // needs a separate component that uses cumskymatrix on a number of SPs and visualizes that analysis surface. 
                 //... or use this component, output the sensorpoints, give it to a surface and make surface evaluate with the points, and recolor that surface
-                
-                if(dni.Count==8760 && dhi.Count==8760)     // only continue, if solar irradiance time series are provided
+
+                if (dni.Count == 8760 && dhi.Count == 8760)     // only continue, if solar irradiance time series are provided
                 {
                     //Rhino.RhinoApp.WriteLine("Leggo!");
                     //Context.cWeatherdata weather;
@@ -273,8 +283,8 @@ namespace GHSolar
                     //p.SetSimpleSkyMT(beta, paropts);
                     //p.SetSimpleGroundReflectionMT(beta, albedo, weather, sunvectors.ToArray(), paropts);
                     //p.CalcIrradiationMT(weather, sunvectors.ToArray(), paropts);
-                    
-                // hold on... i need a new function in SolarModel for CumSkyMatrix
+
+                    // hold on... i need a new function in SolarModel for CumSkyMatrix
 
                 }
                 else
@@ -285,7 +295,8 @@ namespace GHSolar
 
             if (drawviewfactors || drawcumskymatrix)
             {
-                _colouredMesh.Add(mesh);
+                //_colouredMesh.Add(meshObstructed);
+                _viewFactors = meshObstructed;
             }
 
             //////////////////////////////////////////////////////////////////////////////////////////
@@ -391,7 +402,7 @@ namespace GHSolar
 
             //////////////////////////////////////////////////////////////////////////////////////////
             /// OUTPUT
-            DA.SetDataList(0, _colouredMesh);        // this mesh needs to be colored according to view factor or cumulative sky matrix
+            DA.SetData(0, _viewFactors);        // this mesh needs to be colored according to view factor or cumulative sky matrix
             DA.SetDataList(1, _solar_vectors);
             DA.SetDataList(2, _sun_paths);
             DA.SetDataList(3, spheres);
@@ -399,33 +410,32 @@ namespace GHSolar
 
         public override void DrawViewportMeshes(IGH_PreviewArgs args)
         {
-            base.DrawViewportMeshes(args);
+            //base.DrawViewportMeshes(args);
 
             //could be a global variable, if needed to be changed by some smiulation
             Material material = new Material();
-            material.Transparency = 0.5;
-            Color c = new Color();
-            c = Color.FromArgb(100, 0, 0, 0);
-            material.DiffuseColor = Color.Red;
-            material.TransparentColor = Color.Blue;
+            material.Transparency = 0.3;
             _mat = new Rhino.Display.DisplayMaterial(material);
 
-            if (_mat != null)
+            if (_viewFactors != null)
             {
-                foreach (Mesh msh in _colouredMesh)
-                {
-                    args.Display.DrawMeshShaded(msh, _mat);
-                    args.Display.DrawMeshFalseColors(msh);
-                }
+                args.Display.DrawMeshShaded(_viewFactors, _mat);
+                //foreach (Mesh msh in _colouredMesh)
+                //{
+                //    args.Display.DrawMeshShaded(msh, _mat);
+
+                //    //args.Display.DrawMeshFalseColors(msh);
+                //}
             }
         }
 
 
         public override void DrawViewportWires(IGH_PreviewArgs args)
         {
+            //base.DrawViewportWires(args);
+
             Color col1 = Color.FromArgb(255, 223, 0);
             Color col2 = Color.FromArgb(120, 120, 120);
-
 
             for (int i = 0; i < _solar_vectors.Count; i++)
             {
@@ -442,6 +452,17 @@ namespace GHSolar
             foreach (PolylineCurve crv in _sun_paths)
             {
                 args.Display.DrawCurve(crv, col2, 1);
+            }
+
+
+            if (_viewFactors != null)
+            {
+                foreach (int i in _vectorsObstructed)
+                {
+                    Point3d point = _viewFactors.Vertices[i];
+                    if (args.Display.Viewport.CameraLocation.DistanceTo(point) < 20)
+                        args.Display.DrawPoint(point, Rhino.Display.PointStyle.ActivePoint, (float)5, Color.DarkRed);
+                }
             }
         }
 
