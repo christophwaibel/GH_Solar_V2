@@ -899,11 +899,14 @@ namespace GHSolar
                 Ih.Add(0.0);
                 for (int HOY = 0; HOY < 8760; HOY++)
                 {
-                    I[i] += p.I[i][HOY];
+                    double temp = p.I[i][HOY];
+                    double pINow =  temp < 0.0 ? 0.0 : temp;
+
+                    I[i] += pINow;
                     Ib[i] += p.Ibeam[i][HOY];
                     Ih[i] += p.Idiff[i][HOY];
 
-                    I_hourly[i, HOY] = p.I[i][HOY];
+                    I_hourly[i, HOY] = pINow;
                     Ib_hourly[i, HOY] = p.Ibeam[i][HOY];
                     Id_hourly[i, HOY] = p.Idiff[i][HOY];
                 }
