@@ -314,50 +314,7 @@ namespace GHSolar
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
             
             //shifting list of sunvectors according to timezone, so it matches weather file data
-            if (timezone != 0)
-            {
-                int horizon = sunvectors_list.Count;
-                List<SunVector> copy_array = new List<SunVector>();
-                int [] shifted_indices = new int[horizon];
-                for (int i = 0; i < horizon; i++)
-                    shifted_indices[i] = i;
-                if (timezone < 0)
-                {
-                    int _count = 0;
-                    for (int i = Math.Abs(timezone); i < horizon; i++)
-                    {
-                        shifted_indices[_count] = i;
-                        _count++;
-                    }
-
-                    for (int i = 0; i < Math.Abs(timezone); i++)
-                    {
-                        shifted_indices[_count] = i;
-                        _count++;
-                    }
-                }
-                else
-                {
-                    int _count = 0;
-                    for (int i = 0; i < horizon-timezone; i++)
-                    {
-                        shifted_indices[_count+timezone] = i;
-                        _count++;
-                    }
-
-                    _count = 0;
-                    for (int i = horizon-timezone; i <horizon; i++)
-                    {
-                        shifted_indices[_count] = i;
-                        _count++;
-                    }
-                }
-
-                for (int i = 0; i < horizon; i++)
-                    copy_array.Add(sunvectors_list[i]);
-                for (int i = 0; i < horizon; i++)
-                    sunvectors_list[i] = copy_array[shifted_indices[i]];
-            }
+            SunVector.ShiftSunVectorsByTimezone(ref sunvectors_list, timezone);
 
             int count = 0;
             if (draw_solarvec)

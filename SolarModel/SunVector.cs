@@ -314,5 +314,60 @@ namespace SolarModel
                 }
             }
         }
+
+
+        /// <summary>
+        /// needs to be done if weather file with local timezone stamps is used
+        /// </summary>
+        /// <param name="sunVectors"></param>
+        /// <param name="timezone"></param>
+        public static void ShiftSunVectorsByTimezone(ref List<SunVector> sunVectors, int timezone)
+        {
+            //shifting list of sunvectors according to timezone, so it matches weather file data
+            if (timezone != 0)
+            {
+                int horizon = sunVectors.Count;
+                List<SunVector> copyList = new List<SunVector>();
+                int[] shiftedIndices = new int[horizon];
+                for (int i = 0; i < horizon; i++)
+                    shiftedIndices[i] = i;
+                if (timezone < 0)
+                {
+                    int _count = 0;
+                    for (int i = Math.Abs(timezone); i < horizon; i++)
+                    {
+                        shiftedIndices[_count] = i;
+                        _count++;
+                    }
+
+                    for (int i = 0; i < Math.Abs(timezone); i++)
+                    {
+                        shiftedIndices[_count] = i;
+                        _count++;
+                    }
+                }
+                else
+                {
+                    int _count = 0;
+                    for (int i = 0; i < horizon - timezone; i++)
+                    {
+                        shiftedIndices[_count + timezone] = i;
+                        _count++;
+                    }
+
+                    _count = 0;
+                    for (int i = horizon - timezone; i < horizon; i++)
+                    {
+                        shiftedIndices[_count] = i;
+                        _count++;
+                    }
+                }
+
+                for (int i = 0; i < horizon; i++)
+                    copyList.Add(sunVectors[i]);
+                for (int i = 0; i < horizon; i++)
+                    sunVectors[i] = copyList[shiftedIndices[i]];
+            }
+        }
     }
 }

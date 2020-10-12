@@ -107,6 +107,8 @@ namespace GHSolar
 
             pManager.AddBooleanParameter("MT", "MT", "Multi threading. Default is (false).", GH_ParamAccess.item);
             pManager[27].Optional = true;
+
+            pManager.AddIntegerParameter("timezone", "timezone", "timezone", GH_ParamAccess.item, 0);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -184,6 +186,9 @@ namespace GHSolar
             bool mt = false;
             if (!DA.GetData(27, ref mt)) { mt = false; }
 
+            int timezone = 0;
+            DA.GetData(28, ref timezone);
+
             /////////////////////////////////////////////////////////////////////
             //___________________________________________________________________
             #endregion
@@ -195,8 +200,8 @@ namespace GHSolar
             //______________________________________________________________________________________________
             ////////////////////////////////        S I M U L A T E      ///////////////////////////////////
             CCalculateSolarMesh calc = new CCalculateSolarMesh(
-                mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold, tilt_threshold,
-                year, null, mt, solarAzimuth, solarAltitude);
+                mshobj, objObst, treeObst, latitude, longitude, DNI, DHI, SNOW, groundalbedo, snow_threshold,
+                tilt_threshold, year, null, mt, solarAzimuth, solarAltitude, timezone);
             calc.RunHourSimulationMT(month, day, hour, MainSkyRes, SpecBounces, DiffIReflSkyRes, DiffIReflSkyRes2nd);
             Line ln = calc.getSolarVec();
             CResults results = calc.getResults();

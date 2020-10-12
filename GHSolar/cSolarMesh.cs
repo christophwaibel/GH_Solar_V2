@@ -56,7 +56,8 @@ namespace GHSolar
             double _latitude, double _longitude, List<double> _DNI, List<double> _DHI,
             List<double> _SNOW, List<double> _groundalbedo, double _snow_threshold, double _tilt_threshold,
             int _year, CResultsInterreflections _ResultsIreflIn,
-            bool _mt, List<double> solarAzimuth, List<double> solarAltitude)
+            bool _mt, List<double> solarAzimuth, List<double> solarAltitude,
+            int timezone = 0)
         {
             mshobj = _mshobj;
             objObst = _objObst;
@@ -94,6 +95,7 @@ namespace GHSolar
             else
             {
                 SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
+                SunVector.ShiftSunVectorsByTimezone(ref sunvectors_list, timezone);
             }
             sunvectors = sunvectors_list.ToArray();
 
