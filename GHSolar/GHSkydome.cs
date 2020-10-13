@@ -5,6 +5,8 @@ using Rhino.Geometry;
 using SolarModel;
 using System.Drawing;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+using Grasshopper.GUI.IconEditor;
 using Rhino.DocObjects;
 
 /*
@@ -52,6 +54,8 @@ namespace GHSolar
             pManager.AddMeshParameter("context", "context", "Context, i.e. adjacent obstacles", GH_ParamAccess.list);
             // 11
             pManager.AddPointParameter("sp", "sp", "Sensor Point, around which a skydome will be constructed.", GH_ParamAccess.item);
+            //12
+            pManager.AddIntegerParameter("timezone", "timezone", "timezone", GH_ParamAccess.item, 0);
 
             int[] ilist = new int[8] { 1, 2, 3, 4, 7, 8, 9, 10 };
             foreach (int i in ilist)
@@ -139,6 +143,9 @@ namespace GHSolar
 
             Point3d sp = new Point3d();
             if (!DA.GetData(11, ref sp)) return;
+
+            int timezone = 0;
+            DA.GetData(12, ref timezone);
 
 
             //////////////////////////////////////////////////////////////////////////////////////////
@@ -305,6 +312,10 @@ namespace GHSolar
             double fontsize = vec_sp_len / 50.0;
             List<SunVector> sunvectors_list;
             SunVector.Create8760SunVectors(out sunvectors_list, longitude, latitude, year);
+            
+            //shifting list of sunvectors according to timezone, so it matches weather file data
+            SunVector.ShiftSunVectorsByTimezone(ref sunvectors_list, timezone);
+
             int count = 0;
             if (draw_solarvec)
             {
