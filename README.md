@@ -14,4 +14,3 @@ Version 2 with better physics than [version 1](https://github.com/christophwaibe
 
 How to install:
 - Check the releases [here](https://github.com/christophwaibel/GH_Solar_V2/releases) and put the SolarModel.dll and GHSolar.gha into your Rhino Grasshopper components folder.
-- For the current built navigate [here](GHSolar/bin) and get the SolarModel.dll and GHSolar.gha
