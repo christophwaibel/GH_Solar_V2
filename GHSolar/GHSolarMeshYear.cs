@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Grasshopper.Kernel;
 using Rhino.Geometry;
-
+using System.Reflection;
 
 /*
  * GHSolarMeshYear.cs
@@ -135,6 +135,10 @@ namespace GHSolar
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            //read InformationalVersion attribute from AssemblyInfo.cs to display as message under the component
+            Message = CMisc.GetInformationalVersionAttribute();
+
+
             //______________________________________________________________________________________________
             ////////////////////////////////        I N P U T S          ///////////////////////////////////
             Mesh msh = new Mesh();
