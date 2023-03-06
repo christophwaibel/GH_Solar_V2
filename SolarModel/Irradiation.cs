@@ -36,6 +36,7 @@ namespace SolarModel
 
         /// <summary>
         /// Diffuse radiation, considering anisotropic sky. See Perez 1990, or EnergyPlus Engineering Documentation.
+        /// Also see https://pvpmc.sandia.gov/modeling-steps/1-weather-design-inputs/plane-of-array-poa-irradiance/calculating-poa-irradiance/poa-sky-diffuse/perez-sky-diffuse-model/
         /// </summary>
         /// <param name="DHI">Diffuse Horizontal Irradiation (DHI). From a weatherfile, e.g. *.epw.</param>
         /// <param name="DOY">Direct Normal Irradiation (DNI). From a weatherfile, e.g. *.epw.</param>
@@ -57,16 +58,35 @@ namespace SolarModel
             }
 
             //relative optical air mass
-            double m = 1.0 / Math.Cos(rad * θZ);
+            //double m = 1.0 / Math.Cos(rad * θZ);
+
+            Func<double, double> CalculateRelativeAirMassKasten = (zenithAngleDeg) =>
+            {
+                double zenithAngleRad = Math.PI * zenithAngleDeg / 180.0;
+                double am = 1.0 / (Math.Cos(zenithAngleRad) + 0.50572 * Math.Pow((96.07995 - zenithAngleDeg), -1.6364));
+                return am;
+            };
+
+            // https://pvpmc.sandia.gov/PVLIB_Matlab_Help/
+            Func<double, double> CalculateRelativeAirMassKastenYoung = (solarZenithAngle) =>
+            {
+                double am = 1.0 / (Math.Cos(Math.PI / 180.0 * solarZenithAngle) + 0.50572 *
+                    Math.Pow(96.07995 - solarZenithAngle, -1.6364));
+                return am;
+            };
+
+            double m = CalculateRelativeAirMassKastenYoung(θZ);
+
             if (m > 40.0) m = 40.0; //because the simple model is too simple. value could become too high with high zenith angles
 
             //extraterrestrial irradiance
             //double I0 = 1353.0;           //constant assumed by energyplus
-            double b = 2.0 * pi * (Convert.ToDouble(DOY) / 365.0);// *rad;
-            double I0 = Isc * (1.00011 + 0.034221 * Math.Cos(b) + 0.00128 * Math.Sin(b) + 0.000719 * Math.Cos(2.0 * b) + 0.000077 * Math.Sin(2.0 * b));
+            double bExtraterrestrial = 2.0 * pi * (Convert.ToDouble(DOY) / 365.0);// *rad;
+            double I0 = Isc * (1.00011 + 0.034221 * Math.Cos(bExtraterrestrial) + 0.00128 * Math.Sin(bExtraterrestrial) + 0.000719 * Math.Cos(2.0 * bExtraterrestrial) + 0.000077 * Math.Sin(2.0 * bExtraterrestrial));
 
             //Sky Brightness factor
             double Δ = DHI * m / I0;
+            if (Δ > 1) Δ = 1;
 
             //Sky clearness factor (ε)
             double ε = ((DHI + DNI) / DHI + 1.041 * Math.Pow((θZ * rad), 3)) / (1 + 1.041 * Math.Pow((θZ * rad), 3));
@@ -102,7 +122,7 @@ namespace SolarModel
             //angle of incidence
             double AOI = Math.Acos(Math.Cos(θZ * rad) * Math.Cos(θβ * rad) + Math.Sin(θZ * rad) * Math.Sin(θβ * rad) * Math.Cos((θA - θAsrf) * rad));
             double a = Math.Max(0, Math.Cos(AOI));
-            b = Math.Max(Math.Cos(85 * rad), Math.Cos(θZ * rad));
+            double b = Math.Max(Math.Cos(85 * rad), Math.Cos(θZ * rad));
 
             // Dhorizon + Ddome + Dcircumsolar
             //double D = DHI * ((1 - F1) * ((1 + Math.Cos(θβ * rad)) / 2) + F1 * (a / b) + F2 * Math.Sin(θβ * rad));
@@ -116,7 +136,6 @@ namespace SolarModel
             double Ddome = DHI * (1 - F1) * (1.0 - domeshdw);
             double Dcircum = (DHI * F1 * (a / b)) * (1.0 - circumsolshdw);
             D = Dhorizon + Ddome + Dcircum;
-
             return Math.Max(0.0, D);
         }
 

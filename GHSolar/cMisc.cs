@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using Rhino.Geometry;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 /*
  * cMisc.cs
@@ -198,6 +200,18 @@ namespace GHSolar
         public static Point3d OffsetPt(Point3d pt, Vector3d vec, double offset)
         {
             return Point3d.Add(pt, Vector3d.Multiply(Vector3d.Divide(vec, vec.Length), offset));
+        }
+
+
+
+        //read InformationalVersion attribute from AssemblyInfo.cs to display as message under the components
+        public static string GetInformationalVersionAttribute()
+        {
+            Assembly asm = Assembly.GetExecutingAssembly();
+            object[] assemblyInformationalVersion = asm.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false);
+
+            var versionAttribute = assemblyInformationalVersion[0] as AssemblyInformationalVersionAttribute;
+            return versionAttribute.InformationalVersion;
         }
     }
 }
