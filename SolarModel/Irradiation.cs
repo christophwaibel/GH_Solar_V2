@@ -60,7 +60,7 @@ namespace SolarModel
             //relative optical air mass
             //double m = 1.0 / Math.Cos(rad * θZ);
 
-            Func<double, double> CalculateRelativeAirMassKasten = (zenithAngleDeg) =>
+            Func<double, double> CalculateAirMassKasten = (zenithAngleDeg) =>
             {
                 double zenithAngleRad = Math.PI * zenithAngleDeg / 180.0;
                 double am = 1.0 / (Math.Cos(zenithAngleRad) + 0.50572 * Math.Pow((96.07995 - zenithAngleDeg), -1.6364));
@@ -68,14 +68,14 @@ namespace SolarModel
             };
 
             // https://pvpmc.sandia.gov/PVLIB_Matlab_Help/
-            Func<double, double> CalculateRelativeAirMassKastenYoung = (solarZenithAngle) =>
+            Func<double, double> CalculateAirMassKastenYoung = (solarZenithAngle) =>
             {
                 double am = 1.0 / (Math.Cos(Math.PI / 180.0 * solarZenithAngle) + 0.50572 *
                     Math.Pow(96.07995 - solarZenithAngle, -1.6364));
                 return am;
             };
 
-            double m = CalculateRelativeAirMassKastenYoung(θZ);
+            double m = CalculateAirMassKastenYoung(θZ);
 
             if (m > 40.0) m = 40.0; //because the simple model is too simple. value could become too high with high zenith angles
 
