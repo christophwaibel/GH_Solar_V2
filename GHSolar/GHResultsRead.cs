@@ -33,7 +33,10 @@ namespace GHSolar
             pManager.AddMeshParameter("Mesh", "Mesh", "Analysis mesh", GH_ParamAccess.item);
             pManager.AddGenericParameter("I", "I", "Results data from solar irradiation calculation.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Value", "Value",
-                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], [3] = Total annual irradiation per mesh [kWh/a], [4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], [7] = Total hourly per mesh [W].",
+                "Select the value to output: [0] = Total specific annual irradiation [kWh/m^2a], [1] = Specific beam annual [kWh/m^2a], [2] = Specific diffuse annual [kWh/m^2a], " +
+                "[3] = Total annual irradiation per mesh [kWh/a], " +
+                "[4] = Total specific hourly [W/m^2], [5] = Specific beam hourly [W/m^2], [6] = Specific diffuse hourly [W/m^2], " +
+                "[7] = Total hourly per mesh [W], [8] = Beam hourly per mesh [W], [9] = Diffuse hourly per mesh [W].",
                 GH_ParamAccess.item);
             pManager[2].Optional = true;
             pManager.AddIntegerParameter("SP", "SP", "Select sensor point to read values from (not for Value type 3 or 7).", GH_ParamAccess.item);
@@ -105,9 +108,25 @@ namespace GHSolar
                     {
                         double[] val_t = new double[results.I_hourly.ColumnCount];
                         for (int t = 0; t < results.I_hourly.ColumnCount; t++)
-                        {
                             val_t[t] = results.I_hourly[i, t];
-                        }
+                        valin2.Add(val_t);
+                    }
+                    break;
+                case 8: // but only beam
+                    for (int i = 0; i < results.Ib_hourly.RowCount; i++)
+                    {
+                        double[] val_t = new double[results.Ib_hourly.ColumnCount];
+                        for (int t = 0; t < results.Ib_hourly.ColumnCount; t++)
+                            val_t[t] = results.Ib_hourly[i, t];
+                        valin2.Add(val_t);
+                    }
+                    break;
+                case 9: // but only diffuse
+                    for (int i = 0; i < results.Id_hourly.RowCount; i++)
+                    {
+                        double[] val_t = new double[results.Id_hourly.ColumnCount];
+                        for (int t = 0; t < results.Id_hourly.ColumnCount; t++)
+                            val_t[t] = results.Id_hourly[i, t];
                         valin2.Add(val_t);
                     }
                     break;
@@ -140,7 +159,7 @@ namespace GHSolar
                 valin = new List<double>();
                 valin.Add(totVal);
             }
-            else if (outputType == 7)
+            else if (outputType == 7 || outputType == 8 || outputType == 9)
             {
                 List<double> valout = new List<double>();
 
